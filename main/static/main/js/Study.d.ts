@@ -5,6 +5,7 @@
 /// <reference path="CarbonSummation.d.ts" />
 /// <reference path="DataGrid.d.ts" />
 /// <reference path="StudyGraphing.d.ts" />
+/// <reference path="StudyBarGraph.d.ts" />
 declare var EDDData: EDDData;
 declare module StudyD {
     var metabolicMapID: any;
