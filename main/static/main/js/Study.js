@@ -5,6 +5,7 @@
 /// <reference path="CarbonSummation.ts" />
 /// <reference path="DataGrid.ts" />
 /// <reference path="StudyGraphing.ts" />
+/// <reference path="StudyBarGraph.ts" />
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -930,7 +931,8 @@ var StudyD;
         var csIDs;
         // Prepare the main data overview graph at the top of the page
         if (this.mainGraphObject === null && $('#maingraph').size() === 1) {
-            this.mainGraphObject = Object.create(StudyDGraphing);
+            // this.mainGraphObject = Object.create(StudyDGraphing);
+            this.mainGraphObject = Object.create(StudyBarGraph);
             this.mainGraphObject.Setup('maingraph');
         }
         $('#mainFilterSection').on('mouseover mousedown mouseup', function () { return _this.queueMainGraphRemake(); })
@@ -1150,7 +1152,8 @@ var StudyD;
     function checkRedrawRequired(context, force) {
         var redraw = false;
         // do not redraw if graph is not initialized yet
-        if (StudyDGraphing && context.mainGraphObject) {
+        // if (StudyDGraphing && context.mainGraphObject) {
+        if (StudyBarGraph && context.mainGraphObject) {
             redraw = !!force;
             // Walk down the filter widget list.  If we encounter one whose collective checkbox
             // state has changed since we last made this walk, then a redraw is required. Note that
@@ -2074,7 +2077,8 @@ var DataGridAssays = (function (_super) {
         var spec = this.getSpec(), g, convert, compare;
         // if called directly, cancel any pending requests in "queue"
         this._cancelGraph();
-        if (!StudyDGraphing || !spec || !spec.graphObject) {
+        // if (!StudyDGraphing || !spec || !spec.graphObject) {
+        if (!StudyBarGraph || !spec || !spec.graphObject) {
             return;
         }
         g = spec.graphObject;
@@ -2682,7 +2686,8 @@ var DataGridSpecAssays = (function (_super) {
                 $(this.graphAreaHeaderSpec.element).html('<div id="' + graphid +
                     '" class="graphContainer"></div>');
                 // Initialize the graph object
-                this.graphObject = Object.create(StudyDGraphing);
+                this.graphObject = Object.create(StudyBarGraph);
+                // this.graphObject = Object.create(StudyDGraphing);
                 this.graphObject.Setup(graphid);
             }
         }

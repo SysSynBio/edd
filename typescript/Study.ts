@@ -5,6 +5,7 @@
 /// <reference path="CarbonSummation.ts" />
 /// <reference path="DataGrid.ts" />
 /// <reference path="StudyGraphing.ts" />
+/// <reference path="StudyBarGraph.ts" />
 
 declare var EDDData:EDDData;
 
@@ -1051,7 +1052,8 @@ module StudyD {
         var csIDs;
         // Prepare the main data overview graph at the top of the page
         if (this.mainGraphObject === null && $('#maingraph').size() === 1) {
-            this.mainGraphObject = Object.create(StudyDGraphing);
+            // this.mainGraphObject = Object.create(StudyDGraphing);
+            this.mainGraphObject = Object.create(StudyBarGraph);
             this.mainGraphObject.Setup('maingraph');
         }
 
@@ -1287,7 +1289,8 @@ module StudyD {
     function checkRedrawRequired(context:any, force?:boolean):boolean {
         var redraw:boolean = false;
         // do not redraw if graph is not initialized yet
-        if (StudyDGraphing && context.mainGraphObject) {
+        // if (StudyDGraphing && context.mainGraphObject) {
+        if (StudyBarGraph && context.mainGraphObject) {
             redraw = !!force;
             // Walk down the filter widget list.  If we encounter one whose collective checkbox
             // state has changed since we last made this walk, then a redraw is required. Note that
@@ -2379,7 +2382,8 @@ class DataGridAssays extends DataGrid {
         // if called directly, cancel any pending requests in "queue"
         this._cancelGraph();
 
-        if (!StudyDGraphing || !spec || !spec.graphObject) {
+        // if (!StudyDGraphing || !spec || !spec.graphObject) {
+        if (!StudyBarGraph || !spec || !spec.graphObject) {
             return;
         }
 
@@ -3111,7 +3115,8 @@ class DataGridSpecAssays extends DataGridSpecBase {
                 $(this.graphAreaHeaderSpec.element).html('<div id="' + graphid +
                         '" class="graphContainer"></div>');
                 // Initialize the graph object
-                this.graphObject = Object.create(StudyDGraphing);
+                this.graphObject = Object.create(StudyBarGraph);
+                // this.graphObject = Object.create(StudyDGraphing);
                 this.graphObject.Setup(graphid);
             }
         }
