@@ -32,7 +32,8 @@ StudyBarGraph = {
         bar: {
             align: "center",
             barWidth: 0.5,
-            horizontal: false,
+            // horizontal: false,
+            horizontal: true,
             fillColor: { colors: [{ opacity: 0.5 }, { opacity: 1 }] },
             lineWidth: 1
         },
@@ -72,7 +73,7 @@ StudyBarGraph = {
         }
         // this.graphDiv.bind("plothover", this.hoverFunction);
         // this.graphDiv.bind("plotclick", this.plotClickFunction);
-        this.graphOptions.xaxis.ticks = this.tickGeneratorFunction;
+        // this.graphOptions.xaxis.ticks = this.tickGeneratorFunction;
         this.graphOptions.xaxis.currentGraphDOMObject = this.graphDiv;
         this.graphOptions.yaxes = []; // Default: Show 1 y axis, fit all data to it.
         this.plotObject = $.plot(this.graphDiv, this.dataSets, this.graphOptions);
@@ -215,11 +216,13 @@ StudyBarGraph = {
     rebuildXAxis: function () {
         var _this = this;
         this.tickArray = [];
+        console.log("BEGIN: this.dataSets");
+        console.log(this.dataSets);
+        console.log("END: this.dataSets");
+        ;
         this.dataSets.forEach(function (series) {
             var di = 0, ti = 0, oldTickArray = _this.tickArray, d, t;
             if (series.data) {
-                console.log("DEBUG: series.data: " + series.data + " :END_DEBUG");
-                console.log("DEBUG: 1 oldTickArray: " + oldTickArray + " :END_DEBUG");
                 _this.tickArray = [];
                 while ((di < series.data.length) && (ti < oldTickArray.length)) {
                     d = parseFloat(series.data[di][0]);
@@ -236,14 +239,14 @@ StudyBarGraph = {
                     di++;
                     ti++;
                 }
-                console.log("DEBUG: 1 this.tickArray: " + _this.tickArray + " :END_DEBUG");
             }
         });
+        console.log("BEGIN: this.dataSets");
+        console.log(this.dataSets);
+        console.log("END: this.dataSets");
         // 	this.dataSets.forEach((series) => {
         // 		var di = 0, ti = 0, oldTickArray = this.tickArray, d, t;
         // 		if (series.data) {
-        // 			console.log("DEBUG: series.data: " + series.data + " :END_DEBUG")
-        // 			console.log("DEBUG: 1 oldTickArray: " + oldTickArray + " :END_DEBUG")
         // 			this.tickArray = [];
         // 			while ((di < series.data.length) && (ti < oldTickArray.length)) {
         // 				d = parseFloat(series.data[di][0]);
@@ -260,19 +263,16 @@ StudyBarGraph = {
         // 					ti++;
         // 				}
         // 			}
-        // 			console.log("DEBUG: 1 this.tickArray: " + this.tickArray + " :END_DEBUG")
         // 			while (di < series.data.length) {
         // 				d = parseFloat(series.data[di][0]);
         // 				this.tickArray.push([d, d]);
         // 				di++;
         // 			}
-        // 			console.log("DEBUG: 2 this.tickArray: " + this.tickArray + " :END_DEBUG")
         // 			while (ti < oldTickArray.length) {
         // 				t = oldTickArray[ti][0];
         // 				this.tickArray.push([t, oldTickArray[ti][1]]);
         // 				ti++;
         // 			}
-        // 			console.log("DEBUG: 3 this.tickArray: " + this.tickArray + " :END_DEBUG")
         // 		}
         // 	});
         // if(bars.data) {
@@ -298,13 +298,9 @@ StudyBarGraph = {
         if (!graphDivWidth) {
             return res;
         }
-        // console.log("DEBUG: fullaxis:\n" + fullaxis.toSource() + "\nDEBUG END")
-        console.log("DEBUG: fullaxis:\n");
-        for (var key in fullaxis) {
-            // var value = objects[key];
-            console.log("fullaxis: " + key + " : " + fullaxis[key] + "\n");
-        }
-        console.log("END_DEBUG\n");
+        console.log("BEGIN: fullaxis");
+        console.log(fullaxis);
+        console.log("END: fullaxis");
         /* older */
         var axisApertureSize = fullaxis.max - fullaxis.min;
         if (axisApertureSize < 1) {
