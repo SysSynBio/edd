@@ -259,11 +259,16 @@ StudyBarGraph = {
 		console.log(this.dataSets);
 		console.log("END: this.dataSets");;
 
-
+		var find_max_value = 0
 
 		this.dataSets.forEach((series) => {
 			var di = 0, ti = 0, oldTickArray = this.tickArray, d, t;
 			if (series.data) {
+
+				if (find_max_value < series.data[0][1]) {
+					// console.log("new max: " + series.data[0][1])
+					find_max_value = series.data[0][1]
+				}
 
 
 				this.tickArray = [];
@@ -301,6 +306,63 @@ StudyBarGraph = {
 				// }
 			}			
 		});
+
+		console.log("max_value: " + find_max_value);
+		var chart_max_value;
+		if (find_max_value < 10) {
+			chart_max_value = 10;
+		}
+		else {
+			// Ensure that the largest value is near the top of the chart.
+
+			// take the highest digit G. next highest H, if H<=5 H = 5 else if H > 5 H = 0 & G++
+
+
+
+
+			// Strip digits after index 'lastSig' - the last significant digit
+			function stripTrailingDigits(str, lastSig) {
+				var i;
+				for (i = lastSig; i < str.length; i++) {
+					if(str[i] === ".") {
+						i--;
+						break;
+					}
+				}
+				var zeroCount = i - lastSig;
+				var sigs = str.slice(0, lastSig + 1);
+				for (var z = 0; z < zeroCount; z++) {
+					sigs = sigs + "0"
+				}
+				return sigs;
+			}
+
+			// Scale the graph to the data
+			var find_max_value_str = find_max_value.toString()
+			var most_significant_digit;
+			var second_most_significant_digit = null;
+			var most_significant_digit_re = /[1-9]/
+			var most_significant_digit_index = find_max_value_str.search( most_significant_digit_re );
+			if (most_significant_digit_index < 0) {
+				most_significant_digit = 0;
+			}
+			else {
+				most_significant_digit = find_max_value_str[most_significant_digit_index ]
+				if (most_significant_digit_index + 1 < find_max_value_str.length) {
+					second_most_significant_digit = find_max_value_str[ most_significant_digit_index + 1 ]
+					var check_below_five_re = /[0-4]/
+					if ( second_most_significant_digit.search(check_below_five_re) != -1) {
+						// is below five, only go half way
+
+					}
+
+				}
+			}
+
+
+			chart_max_value = 
+			console.log("chart_max_value: " + chart_max_value);
+		}
 
 		console.log("BEGIN: this.dataSets");
 		console.log(this.dataSets);
