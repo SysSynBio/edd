@@ -216,17 +216,16 @@ StudyBarGraph = {
     rebuildXAxis: function () {
         var _this = this;
         this.tickArray = [];
-        console.log("BEGIN: this.dataSets");
-        console.log(this.dataSets);
-        console.log("END: this.dataSets");
-        ;
-        var find_max_value = 0;
+        // console.log("BEGIN: this.dataSets");
+        // console.log(this.dataSets);
+        // console.log("END: this.dataSets");;
+        var findMaxValue = 0;
         this.dataSets.forEach(function (series) {
             var di = 0, ti = 0, oldTickArray = _this.tickArray, d, t;
             if (series.data) {
-                if (find_max_value < series.data[0][1]) {
+                if (findMaxValue < series.data[0][1]) {
                     // console.log("new max: " + series.data[0][1])
-                    find_max_value = series.data[0][1];
+                    findMaxValue = series.data[0][1];
                 }
                 _this.tickArray = [];
                 while ((di < series.data.length) && (ti < oldTickArray.length)) {
@@ -246,15 +245,15 @@ StudyBarGraph = {
                 }
             }
         });
-        console.log("max_value: " + find_max_value);
-        var chart_max_value;
-        if (find_max_value < 10) {
-            chart_max_value = 10;
+        console.log("Max Value: " + findMaxValue);
+        var chartMaxValue;
+        if (findMaxValue < 10) {
+            chartMaxValue = 10;
         }
         else {
             // Ensure that the largest value is near the top of the chart.
             // take the highest digit G. next highest H, if H<=5 H = 5 else if H > 5 H = 0 & G++
-            // Strip digits after index 'lastSig' - the last significant digit
+            // Zero out digits after the last significant digit
             function stripTrailingDigits(str, lastSig) {
                 var i;
                 for (i = lastSig; i < str.length; i++) {
@@ -271,29 +270,29 @@ StudyBarGraph = {
                 return sigs;
             }
             // Scale the graph to the data
-            var find_max_value_str = find_max_value.toString();
-            var most_significant_digit;
-            var second_most_significant_digit = null;
-            var most_significant_digit_re = /[1-9]/;
-            var most_significant_digit_index = find_max_value_str.search(most_significant_digit_re);
-            if (most_significant_digit_index < 0) {
-                most_significant_digit = 0;
+            var findMaxValueStr = findMaxValue.toString();
+            var mostSignificantDigit;
+            var secondMostSignificantDigit = null;
+            var mostSignificantDigitRE = /[1-9]/;
+            var mostSignificantDigitIndex = findMaxValueStr.search(mostSignificantDigitRE);
+            if (mostSignificantDigitIndex < 0) {
+                mostSignificantDigit = 0;
             }
             else {
-                most_significant_digit = find_max_value_str[most_significant_digit_index];
-                if (most_significant_digit_index + 1 < find_max_value_str.length) {
-                    second_most_significant_digit = find_max_value_str[most_significant_digit_index + 1];
-                    var check_below_five_re = /[0-4]/;
-                    if (second_most_significant_digit.search(check_below_five_re) != -1) {
+                mostSignificantDigit = findMaxValueStr[mostSignificantDigitIndex];
+                if (mostSignificantDigitIndex + 1 < findMaxValueStr.length) {
+                    secondMostSignificantDigit = findMaxValueStr[mostSignificantDigitIndex + 1];
+                    var checkIsBelowFiveRE = /[0-4]/;
+                    if (secondMostSignificantDigit.search(checkIsBelowFiveRE) != -1) {
                     }
                 }
             }
-            chart_max_value =
-                console.log("chart_max_value: " + chart_max_value);
+            chartMaxValue =
+                console.log("chartMaxValue: " + chartMaxValue);
         }
-        console.log("BEGIN: this.dataSets");
-        console.log(this.dataSets);
-        console.log("END: this.dataSets");
+        // console.log("BEGIN: this.dataSets");
+        // console.log(this.dataSets);
+        // console.log("END: this.dataSets");
         // 	this.dataSets.forEach((series) => {
         // 		var di = 0, ti = 0, oldTickArray = this.tickArray, d, t;
         // 		if (series.data) {
