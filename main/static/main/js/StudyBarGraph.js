@@ -246,50 +246,63 @@ StudyBarGraph = {
             }
         });
         console.log("Max Value: " + findMaxValue);
-        var chartMaxValue;
-        if (findMaxValue < 10) {
-            chartMaxValue = 10;
-        }
-        else {
-            // Ensure that the largest value is near the top of the chart.
-            // take the highest digit G. next highest H, if H<=5 H = 5 else if H > 5 H = 0 & G++
+        // Ensure that the largest value is near the top of the chart.
+        // take the highest digit G. next highest H, if H<=5 : H = 5 else if H > 5 : { H = 0 ; G++ }
+        function determineChartMaxValue(maxValue) {
             // Zero out digits after the last significant digit
-            function stripTrailingDigits(str, lastSig) {
+            function stripTrailingDigits(str, lastSigIndex) {
                 var i;
-                for (i = lastSig; i < str.length; i++) {
+                for (i = lastSigIndex; i < str.length; i++) {
                     if (str[i] === ".") {
                         i--;
                         break;
                     }
                 }
-                var zeroCount = i - lastSig;
-                var sigs = str.slice(0, lastSig + 1);
+                var zeroCount = i - lastSigIndex;
+                var sigs = str.slice(0, lastSigIndex + 1);
                 for (var z = 0; z < zeroCount; z++) {
                     sigs = sigs + "0";
                 }
                 return sigs;
             }
             // Scale the graph to the data
-            var findMaxValueStr = findMaxValue.toString();
-            var mostSignificantDigit;
-            var secondMostSignificantDigit = null;
-            var mostSignificantDigitRE = /[1-9]/;
-            var mostSignificantDigitIndex = findMaxValueStr.search(mostSignificantDigitRE);
+            var mostSignificantDigit, secondMostSignificantDigit;
+            var findMaxValueStr = maxValue.toString();
+            var mostSignificantDigitIndex = findMaxValueStr.search(/[1-9]/);
+            var secondMostSignificantDigitIndex = mostSignificantDigitIndex + 1;
             if (mostSignificantDigitIndex < 0) {
                 mostSignificantDigit = 0;
             }
             else {
                 mostSignificantDigit = findMaxValueStr[mostSignificantDigitIndex];
-                if (mostSignificantDigitIndex + 1 < findMaxValueStr.length) {
-                    secondMostSignificantDigit = findMaxValueStr[mostSignificantDigitIndex + 1];
-                    var checkIsBelowFiveRE = /[0-4]/;
-                    if (secondMostSignificantDigit.search(checkIsBelowFiveRE) != -1) {
+                if (secondMostSignificantDigitIndex < findMaxValueStr.length) {
+                    secondMostSignificantDigit = findMaxValueStr[secondMostSignificantDigitIndex];
+                    var sigDigits;
+                    if (parseInt(secondMostSignificantDigit) < 5) {
+                        // half of the graph will be blank, trim ( MSD +0, SMSD +5 )
+                        sigDigits = stripTrailingDigits(findMaxValueStr, secondMostSignificantDigitIndex);
+                        sigDigits = sigDigits.substr(0, secondMostSignificantDigitIndex) + "5" + sigDigits.substr(secondMostSignificantDigitIndex + 1);
                     }
+                    else {
+                        // the largest number is more the half way up ( MSD +1 )
+                        sigDigits = stripTrailingDigits(findMaxValueStr, mostSignificantDigitIndex);
+                        var newDigit = parseInt(mostSignificantDigit) + 1;
+                        if (newDigit > 9) {
+                            sigDigits = sigDigits.substr(0, mostSignificantDigitIndex) + "10" + sigDigits.substr(mostSignificantDigitIndex + 1);
+                        }
+                        else {
+                            sigDigits = sigDigits.substr(0, mostSignificantDigitIndex) + newDigit.toString() + sigDigits.substr(mostSignificantDigitIndex + 1);
+                        }
+                    }
+                    chartMaxValue = parseFloat(sigDigits);
                 }
             }
-            chartMaxValue =
-                console.log("chartMaxValue: " + chartMaxValue);
+            return chartMaxValue;
         }
+        // Note: this is a redundant assignment because of global variable scope
+        var chartMaxValue = determineChartMaxValue(findMaxValue);
+        console.log("chartMaxValue: " + chartMaxValue);
+        // }
         // console.log("BEGIN: this.dataSets");
         // console.log(this.dataSets);
         // console.log("END: this.dataSets");
