@@ -321,6 +321,9 @@ This section contains directions for setting up a development environment on EDD
         <Context docBase="/var/lib/tomcat7/webapps/solr.war" debug="0" crossContext="true">
           <Environment name="solr/home" type="java.lang.String" value="/var/lib/tomcat7/solr" override="true" />
         </Context>
+    * Point the EDD to the Solr app
+        * Edit [edd download]/server.cfg
+        * Under “solr”, change “url” to “http://localhost:8080/solr/"
     * Start Tomcat/Solr:
         * `sudo /etc/init.d/tomcat7 start`
     * Optional:
