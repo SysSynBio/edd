@@ -116,18 +116,24 @@ This section contains directions for setting up a development environment on EDD
         * Note that `data/` must exist for Solr to work, but files are purposefully copied to its
           parent, `/usr/local/var/solr/` in subsequent steps.
     * Copy Solr configuration from `edd-django/solr` to `/usr/local/var/solr/`
+        * `cp -r <edd-direcotry>/solr/* /usr/local/var/solr/`
     * Modify `/usr/local/tomcat/conf/server.xml` to only listen on localhost
         * find `<Connector port="8080" ...`
         * add attribute `address="localhost"`
     * Modify `/usr/local/tomcat/conf/Catalina/localhost/ROOT.xml` to point docbase to the Solr WAR
       at `/usr/local/solr/example/webapps/solr.war`
+        * `<Context
+		    docBase="/usr/local/solr/example/webapps/solr.war"
+		    path=""
+		    reloadable="true"
+		  />`
     * Add a `setenv.sh` to `/usr/local/tomcat/bin/` and `chmod +x /usr/local/tomcat/bin/setenv.sh`
     
             #!/bin/bash
             JAVA_OPTS="$JAVA_OPTS -Dsolr.solr.home=/usr/local/var/solr"
 
     * Service is controlled with `catalina` command; `catalina start` and `catalina stop`
-    * Access admin interface via <http://localhost:8080/>
+    * Access admin interface via <http://localhost:8080/solr/>
 
 * Solr <a name="Solr"/>
     * For versions 5.0+. Optional if using non-local server for Solr
@@ -350,7 +356,7 @@ URL's to interact with them.
     * Configuration file for port etc is at /etc/postgresql/9.x/main/postgresql.conf .
 * Solr
     * Solr 4.X / Tomcat
-        * Sample monitoring interface URL: <http://localhost:8080/>
+        * Sample monitoring interface URL: <http://localhost:8080/solr/>
         * `catalina start` / `catalina stop`
     * Solr 5.+:
         * Sample monitoring interface URL: <http://localhost:8983/>

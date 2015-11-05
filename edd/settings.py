@@ -131,7 +131,7 @@ AUTH_LDAP_PROFILE_ATTR_MAP = {
 # Solr/Haystack Configuration
 EDD_MAIN_SOLR = {
     'default': {
-        'URL': config['solr'].get('url', 'http://localhost:8080/'),
+        'URL': config['solr'].get('url', 'http://localhost:8080/solr/'),
     },
 }
 

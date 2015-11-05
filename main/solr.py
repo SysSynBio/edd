@@ -24,7 +24,7 @@ class SolrSearch(object):
         else:
             log.warning('Using default fallback Solr configuration, no setting key for %s'
                         % (settings_key))
-            self.settings = {'URL': 'http://localhost:8080/', }
+            self.settings = {'URL': 'http://localhost:8080/solr/', }
         if url is not None:
             self.settings['URL'] = url
 
