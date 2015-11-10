@@ -1054,7 +1054,7 @@ module StudyD {
         if (this.mainGraphObject === null && $('#maingraph').size() === 1) {
             // this.mainGraphObject = Object.create(StudyDGraphing);
             this.mainGraphObject = Object.create(StudyBarGraph);
-            console.log("calling Setup from prepareAfterLinesTable with maingraph")
+            console.log("Calling setup for graphid: maingraph")
             this.mainGraphObject.Setup('maingraph');
         }
 
@@ -3111,7 +3111,7 @@ class DataGridSpecAssays extends DataGridSpecBase {
 
         var p = this.protocolID;
         var graphid = "pro" + p + "graph";
-        console.log("OnInitialized: graphid: " + graphid)
+        console.log("Calling setup for graphid: " + graphid)
         if (this.graphAreaHeaderSpec) {
             if (this.measuringTimesHeaderSpec.element) {
                 $(this.graphAreaHeaderSpec.element).html('<div id="' + graphid +
@@ -3119,7 +3119,6 @@ class DataGridSpecAssays extends DataGridSpecBase {
                 // Initialize the graph object
                 this.graphObject = Object.create(StudyBarGraph);
                 // this.graphObject = Object.create(StudyDGraphing);
-                console.log("calling Setup from onInitialized in DataGridAssays")
                 this.graphObject.Setup(graphid);
             }
         }

@@ -933,6 +933,7 @@ var StudyD;
         if (this.mainGraphObject === null && $('#maingraph').size() === 1) {
             // this.mainGraphObject = Object.create(StudyDGraphing);
             this.mainGraphObject = Object.create(StudyBarGraph);
+            console.log("Calling setup for graphid: maingraph");
             this.mainGraphObject.Setup('maingraph');
         }
         $('#mainFilterSection').on('mouseover mousedown mouseup', function () { return _this.queueMainGraphRemake(); })
@@ -2681,6 +2682,7 @@ var DataGridSpecAssays = (function (_super) {
         }
         var p = this.protocolID;
         var graphid = "pro" + p + "graph";
+        console.log("Calling setup for graphid: " + graphid);
         if (this.graphAreaHeaderSpec) {
             if (this.measuringTimesHeaderSpec.element) {
                 $(this.graphAreaHeaderSpec.element).html('<div id="' + graphid +

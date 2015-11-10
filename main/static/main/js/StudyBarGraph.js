@@ -1,5 +1,6 @@
 var StudyBarGraph;
 StudyBarGraph = {
+    id: null,
     graphDiv: null,
     plotObject: null,
     dataSets: [],
@@ -14,6 +15,7 @@ StudyBarGraph = {
     setsFetched: {},
     axesSeen: {},
     axesCount: 0,
+    chartMaxValue: 0.0,
     graphOptions: {
         series: {
             // 			lines: {
@@ -71,63 +73,90 @@ StudyBarGraph = {
         else {
             this.graphDiv = $("#graphDiv");
         }
+        this.id = graphdiv;
         // this.graphDiv.bind("plothover", this.hoverFunction);
         // this.graphDiv.bind("plotclick", this.plotClickFunction);
         // this.graphOptions.xaxis.ticks = this.tickGeneratorFunction;
         this.graphOptions.xaxis.currentGraphDOMObject = this.graphDiv;
         this.graphOptions.yaxes = []; // Default: Show 1 y axis, fit all data to it.
         this.plotObject = $.plot(this.graphDiv, this.dataSets, this.graphOptions);
+        var findMaxValue = 0.0;
+        this.bars = [];
+        this.setIndex = 0;
     },
     clearAllSets: function () {
+        console.log("clearAllSets");
         this.graphOptions.yaxes = [];
-        this.axesSeen = {};
-        this.axesCount = 0;
-        this.setsFetched = {};
+        // this.axesSeen = {};
+        // this.axesCount = 0;
+        // this.setsFetched = {};
+        this.findMaxValue = 0.0;
+        this.bars = [];
+        this.chartMaxValue = 0.0;
+        this.setIndex = 0;
     },
     addNewSet: function (newSet) {
+        console.log("addNewSet...");
+        // console.log(newSet.data)
         if (!newSet.label) {
             $('#debug').text('Failed to fetch series.');
             return;
         }
-        var leftAxis = { show: true, position: "left" };
-        var rightAxis = { show: true, position: "right" };
-        var blankAxis = { show: false };
+        // this.dataSets.forEach((series) => {
+        var ti = 0, oldTickArray = this.tickArray;
+        // console.log("BEGIN: series.data");
+        // console.log(series.data);
+        // console.log("END: series.data");;
+        var value = parseFloat(newSet.data[0][1]);
+        // Retain the maximum valued data item
+        if (this.findMaxValue < value) {
+            this.findMaxValue = value;
+        }
+        // newSet.data = [[newSet.data[0][1], this.setIndex]];
+        newSet.data = [[this.setIndex, newSet.data[0][1]]];
+        console.log("BEGIN: newSet.data");
+        console.log(newSet.data);
+        console.log("END: newSet.data");
+        ;
+        this.setIndex += 1;
+        // console.log("Max Value: " + this.findMaxValue);
+        // var leftAxis = {   show: true, position:"left" };
+        // var rightAxis = {   show: true, position:"right" };
+        // var blankAxis = {   show: false };
         // If we get any data sets that are not assigned to the default y axis (or y axis 1),
         // then we need to create a set of "hidden" y axis objects in the graphOptions to
         // inform flot.
-        if (newSet.yaxisByMeasurementTypeID) {
-            if (typeof this.axesSeen[newSet.yaxisByMeasurementTypeID] === "undefined") {
-                this.axesCount++;
-                this.axesSeen[newSet.yaxisByMeasurementTypeID] = this.axesCount;
-            }
-            // This has the effect of remaking the numbers by the sequence encountered
-            newSet.yaxis = this.axesSeen[newSet.yaxisByMeasurementTypeID];
-            while (this.graphOptions.yaxes.length < newSet.yaxis) {
-                var chosenAxis = leftAxis;
-                if (this.graphOptions.yaxes.length > 1) {
-                    chosenAxis = blankAxis;
-                }
-                else if (this.graphOptions.yaxes.length > 0) {
-                    chosenAxis = rightAxis;
-                }
-                if (newSet.logscale) {
-                    chosenAxis.transform = function (v) {
-                        if (v == 0)
-                            v = 0.00001;
-                        return Math.log(v);
-                    };
-                    chosenAxis.inverseTransform = function (v) {
-                        return Math.exp(v);
-                    };
-                    chosenAxis.autoscaleMargin = null;
-                }
-                this.graphOptions.yaxes.push(chosenAxis);
-            }
-        }
-        if (newSet.iscontrol) {
-            newSet.lines = { show: false };
-            newSet.dashes = { show: true, lineWidth: 2, dashLength: [3, 1] };
-        }
+        // if (newSet.yaxisByMeasurementTypeID) {
+        // if (typeof this.axesSeen[newSet.yaxisByMeasurementTypeID] === "undefined") {
+        // 		this.axesCount++;
+        // 		this.axesSeen[newSet.yaxisByMeasurementTypeID] = this.axesCount;
+        // 	}
+        // 	// This has the effect of remaking the numbers by the sequence encountered
+        // 	newSet.yaxis = this.axesSeen[newSet.yaxisByMeasurementTypeID];
+        // 	while (this.graphOptions.yaxes.length < newSet.yaxis) {
+        // 		var chosenAxis:any = leftAxis;
+        // 		if (this.graphOptions.yaxes.length > 1) {
+        // 			chosenAxis = blankAxis;
+        // 		} else if (this.graphOptions.yaxes.length > 0) {
+        // 			chosenAxis = rightAxis;
+        // 		}
+        // 		if (newSet.logscale) {
+        // 			chosenAxis.transform = function (v) {
+        // 												if (v == 0) v = 0.00001;
+        // 												return Math.log(v);
+        // 											};
+        // 			chosenAxis.inverseTransform = function (v) {
+        // 												return Math.exp(v);
+        // 											};
+        // 			chosenAxis.autoscaleMargin = null;
+        // 		}
+        // 		this.graphOptions.yaxes.push(chosenAxis);
+        // 	}
+        // }
+        // if (newSet.iscontrol) {
+        // 	newSet.lines = {show:false};
+        // 	newSet.dashes = {show:true, lineWidth:2, dashLength:[3, 1]};
+        // }
         //		console.log(this.graphOptions.yaxes);
         this.setsFetched[newSet.label] = newSet;
         //		this.reassignGraphColors();
@@ -136,8 +165,64 @@ StudyBarGraph = {
     drawSets: function () {
         this.reassignGraphColors();
         this.redrawGraph();
+        this.chartMaxValue = this.determineChartMaxValue();
+        console.log("chartMaxValue: " + this.chartMaxValue);
+    },
+    // Ensure that the largest value is near the top of the chart.
+    // take the highest digit G. next highest H, if H<=5 : H = 5 else if H > 5 : { H = 0 ; G++ }
+    determineChartMaxValue: function () {
+        // Zero out digits after the last significant digit
+        function stripTrailingDigits(str, lastSigIndex) {
+            var i;
+            for (i = lastSigIndex; i < str.length; i++) {
+                if (str[i] === ".") {
+                    i--;
+                    break;
+                }
+            }
+            var zeroCount = i - lastSigIndex;
+            var sigs = str.slice(0, lastSigIndex + 1);
+            for (var z = 0; z < zeroCount; z++) {
+                sigs = sigs + "0";
+            }
+            return sigs;
+        }
+        // Scale the graph to the data
+        var mostSignificantDigit, secondMostSignificantDigit;
+        var findMaxValueStr = this.findMaxValue.toString();
+        var mostSignificantDigitIndex = findMaxValueStr.search(/[1-9]/);
+        var secondMostSignificantDigitIndex = mostSignificantDigitIndex + 1;
+        if (mostSignificantDigitIndex < 0) {
+            mostSignificantDigit = 0;
+        }
+        else {
+            mostSignificantDigit = findMaxValueStr[mostSignificantDigitIndex];
+            if (secondMostSignificantDigitIndex < findMaxValueStr.length) {
+                secondMostSignificantDigit = findMaxValueStr[secondMostSignificantDigitIndex];
+                var sigDigits;
+                if (parseInt(secondMostSignificantDigit) < 5) {
+                    // half of the graph will be blank, trim ( MSD +0, SMSD +5 )
+                    sigDigits = stripTrailingDigits(findMaxValueStr, secondMostSignificantDigitIndex);
+                    sigDigits = sigDigits.substr(0, secondMostSignificantDigitIndex) + "5" + sigDigits.substr(secondMostSignificantDigitIndex + 1);
+                }
+                else {
+                    // the largest number is more the half way up ( MSD +1 )
+                    sigDigits = stripTrailingDigits(findMaxValueStr, mostSignificantDigitIndex);
+                    var newDigit = parseInt(mostSignificantDigit) + 1;
+                    if (newDigit > 9) {
+                        sigDigits = sigDigits.substr(0, mostSignificantDigitIndex) + "10" + sigDigits.substr(mostSignificantDigitIndex + 1);
+                    }
+                    else {
+                        sigDigits = sigDigits.substr(0, mostSignificantDigitIndex) + newDigit.toString() + sigDigits.substr(mostSignificantDigitIndex + 1);
+                    }
+                }
+                this.chartMaxValue = parseFloat(sigDigits);
+            }
+        }
+        return this.chartMaxValue;
     },
     reassignGraphColors: function () {
+        console.log("reassignGraphColors");
         var setCount = 0; // Damn, there has to be a better way to do this.
         var activeSetCount = 0;
         for (var i in this.setsFetched) {
@@ -200,6 +285,7 @@ StudyBarGraph = {
         return 'rgb(' + r + ', ' + g + ', ' + b + ')';
     },
     redrawGraph: function () {
+        console.log("redrawGraph");
         this.dataSets = [];
         for (var oneSet in this.setsFetched) {
             this.dataSets.push(this.setsFetched[oneSet]);
@@ -214,136 +300,10 @@ StudyBarGraph = {
         this.plotObject = $.plot(this.graphDiv, this.dataSets, this.graphOptions);
     },
     rebuildXAxis: function () {
-        var _this = this;
-        this.tickArray = [];
-        // console.log("BEGIN: this.dataSets");
-        // console.log(this.dataSets);
-        // console.log("END: this.dataSets");;
-        var findMaxValue = 0;
-        this.dataSets.forEach(function (series) {
-            var di = 0, ti = 0, oldTickArray = _this.tickArray, d, t;
-            if (series.data) {
-                if (findMaxValue < series.data[0][1]) {
-                    // console.log("new max: " + series.data[0][1])
-                    findMaxValue = series.data[0][1];
-                }
-                _this.tickArray = [];
-                while ((di < series.data.length) && (ti < oldTickArray.length)) {
-                    d = parseFloat(series.data[di][0]);
-                    // t = oldTickArray[ti][0];
-                    // if (d < t) {
-                    //this.tickArray.push([d, ti]);
-                    _this.tickArray.push([15 + ti, ti]);
-                    // di++;
-                    // } else if (t < d) {
-                    // this.tickArray.push([t, oldTickArray[ti][1]]);
-                    // ti++;
-                    // } else {
-                    // this.tickArray.push([t, oldTickArray[ti][1]]);
-                    di++;
-                    ti++;
-                }
-            }
-        });
-        console.log("Max Value: " + findMaxValue);
-        // Ensure that the largest value is near the top of the chart.
-        // take the highest digit G. next highest H, if H<=5 : H = 5 else if H > 5 : { H = 0 ; G++ }
-        function determineChartMaxValue(maxValue) {
-            // Zero out digits after the last significant digit
-            function stripTrailingDigits(str, lastSigIndex) {
-                var i;
-                for (i = lastSigIndex; i < str.length; i++) {
-                    if (str[i] === ".") {
-                        i--;
-                        break;
-                    }
-                }
-                var zeroCount = i - lastSigIndex;
-                var sigs = str.slice(0, lastSigIndex + 1);
-                for (var z = 0; z < zeroCount; z++) {
-                    sigs = sigs + "0";
-                }
-                return sigs;
-            }
-            // Scale the graph to the data
-            var mostSignificantDigit, secondMostSignificantDigit;
-            var findMaxValueStr = maxValue.toString();
-            var mostSignificantDigitIndex = findMaxValueStr.search(/[1-9]/);
-            var secondMostSignificantDigitIndex = mostSignificantDigitIndex + 1;
-            if (mostSignificantDigitIndex < 0) {
-                mostSignificantDigit = 0;
-            }
-            else {
-                mostSignificantDigit = findMaxValueStr[mostSignificantDigitIndex];
-                if (secondMostSignificantDigitIndex < findMaxValueStr.length) {
-                    secondMostSignificantDigit = findMaxValueStr[secondMostSignificantDigitIndex];
-                    var sigDigits;
-                    if (parseInt(secondMostSignificantDigit) < 5) {
-                        // half of the graph will be blank, trim ( MSD +0, SMSD +5 )
-                        sigDigits = stripTrailingDigits(findMaxValueStr, secondMostSignificantDigitIndex);
-                        sigDigits = sigDigits.substr(0, secondMostSignificantDigitIndex) + "5" + sigDigits.substr(secondMostSignificantDigitIndex + 1);
-                    }
-                    else {
-                        // the largest number is more the half way up ( MSD +1 )
-                        sigDigits = stripTrailingDigits(findMaxValueStr, mostSignificantDigitIndex);
-                        var newDigit = parseInt(mostSignificantDigit) + 1;
-                        if (newDigit > 9) {
-                            sigDigits = sigDigits.substr(0, mostSignificantDigitIndex) + "10" + sigDigits.substr(mostSignificantDigitIndex + 1);
-                        }
-                        else {
-                            sigDigits = sigDigits.substr(0, mostSignificantDigitIndex) + newDigit.toString() + sigDigits.substr(mostSignificantDigitIndex + 1);
-                        }
-                    }
-                    chartMaxValue = parseFloat(sigDigits);
-                }
-            }
-            return chartMaxValue;
-        }
-        // Note: this is a redundant assignment because of global variable scope
-        var chartMaxValue = determineChartMaxValue(findMaxValue);
-        console.log("chartMaxValue: " + chartMaxValue);
-        // }
-        // console.log("BEGIN: this.dataSets");
-        // console.log(this.dataSets);
-        // console.log("END: this.dataSets");
-        // 	this.dataSets.forEach((series) => {
-        // 		var di = 0, ti = 0, oldTickArray = this.tickArray, d, t;
-        // 		if (series.data) {
-        // 			this.tickArray = [];
-        // 			while ((di < series.data.length) && (ti < oldTickArray.length)) {
-        // 				d = parseFloat(series.data[di][0]);
-        // 				t = oldTickArray[ti][0];
-        // 				if (d < t) {
-        // 					this.tickArray.push([d, d]);
-        // 					di++;
-        // 				} else if (t < d) {
-        // 					this.tickArray.push([t, oldTickArray[ti][1]]);
-        // 					ti++;
-        // 				} else {
-        // 					this.tickArray.push([t, oldTickArray[ti][1]]);
-        // 					di++;
-        // 					ti++;
-        // 				}
-        // 			}
-        // 			while (di < series.data.length) {
-        // 				d = parseFloat(series.data[di][0]);
-        // 				this.tickArray.push([d, d]);
-        // 				di++;
-        // 			}
-        // 			while (ti < oldTickArray.length) {
-        // 				t = oldTickArray[ti][0];
-        // 				this.tickArray.push([t, oldTickArray[ti][1]]);
-        // 				ti++;
-        // 			}
-        // 		}
-        // 	});
-        // if(bars.data) {
-        // 	console.log("DEBUG: bars.data: " + bars.data + " :END_DEBUG")
-        // }
-        // Embed it in the options for eventual passing through flot and into the custom tick generator just below
-        this.graphOptions.xaxis.fullTickArray = this.tickArray;
+        console.log("rebuildXAxis");
     },
     tickGeneratorFunction: function (fullaxis) {
+        console.log("tickGeneratorFunction");
         var res = [];
         if (!fullaxis) {
             console.log("No first argument passed to the tick generator?  Something's wrong with flot.  Better investigate.");
