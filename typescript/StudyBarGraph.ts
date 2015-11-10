@@ -72,7 +72,8 @@ StudyBarGraph = {
 	},
 
 
-	Setup:function(graphdiv) {
+	Setup: function(graphdiv) {
+		console.log("Setup");
 		if (graphdiv) {
 			this.graphDiv = $("#" + graphdiv);
 		} else {
@@ -90,7 +91,8 @@ StudyBarGraph = {
 	},
 
 
-	clearAllSets:function() {
+	clearAllSets: function() {
+		console.log("clearAllSets");
 
 		this.graphOptions.yaxes = [];
 		this.axesSeen = {};
@@ -99,7 +101,8 @@ StudyBarGraph = {
 	},
 	
 
-	addNewSet:function(newSet) {
+	addNewSet: function(newSet) {
+		console.log("addNewSet");
 
 		if (!newSet.label) {
 			$('#debug').text('Failed to fetch series.');
@@ -161,7 +164,8 @@ StudyBarGraph = {
 	},
 
 
-	reassignGraphColors:function() {
+	reassignGraphColors: function() {
+		console.log("reassignGraphColors");
 		var setCount = 0;	// Damn, there has to be a better way to do this.
 		var activeSetCount = 0;
 		for (var i in this.setsFetched) {
@@ -198,7 +202,8 @@ StudyBarGraph = {
 	},
 
 
-	intAndRangeToLineColor:function(i,r) {
+	intAndRangeToLineColor: function(i, r) {
+		console.log("intAndRangeToLineColor");
 		// 17 intermediate spots on the color wheel, adjusted for visibility,
 		// with the 18th a clone of the 1st.
 		var lineColors = [
@@ -230,8 +235,10 @@ StudyBarGraph = {
 	},
 
 
-	redrawGraph:function() {
+	redrawGraph: function() {
+		console.log("redrawGraph");
 		this.dataSets = [];
+
 
 		for (var oneSet in this.setsFetched) {
 	   		this.dataSets.push(this.setsFetched[oneSet]);
@@ -262,49 +269,26 @@ StudyBarGraph = {
 		var findMaxValue = 0
 
 		this.dataSets.forEach((series) => {
-			var di = 0, ti = 0, oldTickArray = this.tickArray, d, t;
+			var ti = 0, oldTickArray = this.tickArray;
+			
+			// console.log("BEGIN: series.data");
+			// console.log(series.data);
+			// console.log("END: series.data");;
+			
 			if (series.data) {
 
-				if (findMaxValue < series.data[0][1]) {
-					// console.log("new max: " + series.data[0][1])
-					findMaxValue = series.data[0][1]
+				var value = parseFloat(series.data[0][1]);
+				this.tickArray
+
+				// Retain the maximum valued data item
+				if (findMaxValue < value) {
+					findMaxValue = value;
 				}
 
-
-				this.tickArray = [];
-				while ((di < series.data.length) && (ti < oldTickArray.length)) {
-					d = parseFloat(series.data[di][0]);
-					// t = oldTickArray[ti][0];
-					// if (d < t) {
-
-
-
-
-						//this.tickArray.push([d, ti]);
-						this.tickArray.push([15+ti, ti]);
-						
-
-						// di++;
-					// } else if (t < d) {
-						// this.tickArray.push([t, oldTickArray[ti][1]]);
-						// ti++;
-					// } else {
-						// this.tickArray.push([t, oldTickArray[ti][1]]);
-						di++;
-						ti++;
-					// }
-				}
-				// while (di < series.data.length) {
-				// 	d = parseFloat(series.data[di][0]);
-				// 	this.tickArray.push([d, d]);
-				// 	di++;
-				// }
-				// while (ti < oldTickArray.length) {
-				// 	t = oldTickArray[ti][0];
-				// 	this.tickArray.push([t, oldTickArray[ti][1]]);
-				// 	ti++;
-				// }
-			}			
+				// this.tickArray.push([ti, value]);
+				// this.tickArray.push([value, ti]);
+				ti++;
+			}
 		});
 
 		console.log("Max Value: " + findMaxValue);
@@ -415,11 +399,12 @@ StudyBarGraph = {
 
 		
 		// Embed it in the options for eventual passing through flot and into the custom tick generator just below
-		this.graphOptions.xaxis.fullTickArray = this.tickArray;
+		// this.graphOptions.xaxis.fullTickArray = this.tickArray;
 	},	
 
 
 	tickGeneratorFunction:function(fullaxis) {
+		console.log("tickGeneratorFunction");
 
 		var res = [];
 		if (!fullaxis) {
