@@ -14,6 +14,7 @@ from main.models import (
 # Data -> Measurements
 # ControlData -> Measurements-Control
 # create a Block class with .label and .values
+# TODO: add a row of letters on the left side of wellplate blocks
 
 logger = logging.getLogger(__name__)
 
@@ -217,14 +218,14 @@ def _process_read(read_label, raw_data_blocks):
     if not measurement_unit:
         raise Exception('measurement_unit not specified in read "%s"' % (read_label))
 
-    # TODO: ALL ENZYES
+    # TODO: ALL ENZYMES
     known_enzymes = {}
     for key in metadata_entries.keys():
         if key.startswith('Enzyme_'):
-            logger.debug('Adding \"%s\" to known_enzymes' % metadata_entries[key])
+            logger.debug('Adding "%s" to known_enzymes' % metadata_entries[key])
             strain = Strain.objects.get(registry_id=metadata_entries[key])
             if not strain:
-                raise Exception('The PartID for Enzyme \"%s\" was not recognized in read "%s"' %
+                raise Exception('The PartID for Enzyme "%s" was not recognized in read "%s"' %
                                 (key, read_label))
             # TODO: deal with multi case
             known_enzymes[key] = strain
