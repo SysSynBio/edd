@@ -383,7 +383,7 @@ This section contains directions for setting up a development environment on EDD
     * dependencies are already loaded into the git repo
     * `sudo npm install grunt-typescript`
 
-* Compile changes in `*.ts` to `*.js` by simply running `grunt` from the edd base directory
+* Compile changes in `*.ts` to `*.js` by running `grunt; yes yes | ./manage.py collectstatic` from the edd base directory
 
 ## Controlling EDD's Dependencies <a name="ControllingDependencies"/>
 EDD has a number of dependencies, all of which may need to be monitored/managed during development,
