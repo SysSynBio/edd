@@ -205,27 +205,15 @@ def link_ice_entry_to_study(self, edd_user_email, strain_pk, study_pk, study_url
         registry_url = strain.registry_url
         registry_id = strain.registry_id
 
-        # as a workaround for SYNBIO-1207, prefer the ICE id extracted from the URL, which is much
-        # more likely to be the locally-unique numeric ID visible from the ICE UI. Not certain
-        # what recent EDD changes have done to new strain creation, but at least some
-        # pre-existing strains will work better with this method.
-        # TODO: after removing the workaround, use, ice_strain_id = str(strain.registry_id.), or if
-        # using Python 3, maybe strain.registry_id.to_python()
-        workaround_strain_entry_id = parse_entry_id(strain.registry_url)
-
-        # finish early if we don't have enough information to find the ICE entry for this strain
-        # TODO: raise an exception here once strain data are more dependable (SYNBIO-1350)
-        if (not registry_url) or (not registry_id):
-            celery_logger.warning("Registry URL and registry ID must both be entered in order to "
-                                  "create push an EDD  study ID to ICE. Cannot create a link for "
-                                  "strain with id %s" % strain.name)
-            return ugettext('EDD strain contains insufficient data')
+        if not strain.is_linkable():
+            raise LookupError('EDD strain %d "(%s)" has insufficient data to support ICE link '
+                              'creation/maintenance.' % (strain.pk, strain.name))
 
         # make a request via ICE's REST API to link the ICE strain to the EDD study that references
         # it
         study = line.study
         ice = IceApi(user_email=edd_user_email)
-        ice.link_entry_to_study(str(workaround_strain_entry_id), study.pk, study_url, study.name,
+        ice.link_entry_to_study(str(strain.registry_id), study.pk, study_url, study.name,
                                 logger=celery_logger, old_study_name=old_study_name)
 
     # catch Exceptions that indicate the database relationships have changed

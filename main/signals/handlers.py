@@ -119,11 +119,12 @@ def handle_study_post_save(sender, instance, created, raw, using, **kwargs):
             # filter out strains that don't have enough information to link to ICE
             strains_to_link = []
             for strain in strains.all():
-                if not _is_linkable(strain):
+                if not strain.is_linkable():
                     logger.warning(
                         "Strain with id %d is no longer linked to study id %d, but doesn't have "
-                        "enough data to link to ICE. It's possible (though unlikely) that the EDD "
-                        "strain has been modified since an ICE link was created for it."
+                        "enough data to maintain related ICE links. It's possible (though "
+                        "unlikely) that the EDD strain has been modified since an ICE link was "
+                        "created for it."
                         % (strain.pk, study.pk))
                     continue
 
@@ -242,7 +243,7 @@ def _post_commit_unlink_ice_entry_from_study(user_email, study_pk, study_creatio
         for strain in removed_strains:
 
             # print a warning and skip any strains that didn't include enough data for a link to ICE
-            if not _is_linkable(strain):
+            if not strain.is_linkable():
                 logger.warning(
                     "Strain with id %d is no longer linked to study id %d, but EDD's "
                     "database entry for this strain doesn't have enough data to remove the "
@@ -253,23 +254,14 @@ def _post_commit_unlink_ice_entry_from_study(user_email, study_pk, study_creatio
                 index += 1
                 continue
 
-            # as a workaround for SYNBIO-1207, prefer the ICE id extracted from the URL,
-            # which is much more likely to be the locally-unique numeric ID visible from the ICE
-            # UI. Not certain  what recent EDD changes have done to new strain creation, but at
-            # least some pre-existing strains  will work better with this method
-            # TODO: after removing the workaround, use, ice_strain_id =
-            # strain.registry_id.__str__(), or if using Python 3,
-            # maybe strain.registry_id.to_python(). Note that the JSON lib has no  built-in support
-            # for UUIDs
-            workaround_strain_id = parse_entry_id(strain.registry_url)
-
+            registry_id_str = str(strain.registry_id)
             if settings.USE_CELERY:
                 async_result = unlink_ice_entry_from_study.delay(user_email, study_pk, study_url,
                                                                  strain.registry_url,
-                                                                 workaround_strain_id)
+                                                                 registry_id_str)
                 track_celery_task_submission(async_result)
             else:
-                ice.unlink_entry_from_study(workaround_strain_id, study_pk, study_url, logger)
+                ice.unlink_entry_from_study(registry_id_str, study_pk, study_url, logger)
             change_count += 1
             index += 1
 
@@ -316,15 +308,7 @@ def _post_commit_link_ice_entry_to_study(user_email, study, linked_strains):
                 logger.warning(
                     "Celery configuration not found. Attempting to push study links directly ("
                     "retries, admin notifications not supported)")
-                #  as a workaround for SYNBIO-1207, prefer the ICE id extracted from the URL,
-                # which is much more likely to be the locally-unique numeric ID visible from the
-                # ICE UI. Not certain what recent EDD changes have done to new strain creation,
-                # but at least some pre-existing strains will work better with this method.
-                # TODO: after removing the workaround, use, ice_strain_id =
-                # strain.registry_id.__str__(), or if using Python 3,
-                # maybe strain.registry_id.to_python()
-                workaround_strain_id = parse_entry_id(strain.registry_url)
-                ice.link_entry_to_study(workaround_strain_id, study.pk, study_url, study.name,
+                ice.link_entry_to_study(str(strain.registry_id), study.pk, study_url, study.name,
                                         logger)
 
             index += 1
@@ -337,18 +321,6 @@ def _post_commit_link_ice_entry_to_study(user_email, study, linked_strains):
         else:
             logger.exception("Error updating ICE links via direct HTTP request (index=%d)" % index)
         raise rte
-
-
-def _is_linkable(strain):
-    return _is_strain_linkable(strain.registry_url, strain.registry_id)
-
-
-def _is_strain_linkable(registry_url, registry_id):
-    #  as a workaround for SYNBIO-1207, we'll extract the ICE part ID from the URL to increase
-    # the odds that it'll be a numeric ID that won't cause 404 errors. otherwise, we could just
-    # construct the URL from the registry ID and our ICE configuration data
-    return registry_url and registry_id
-
 
 class ChangeFromFixture(Exception):
     """ Exception to use when change from fixture is detected. """
@@ -433,7 +405,7 @@ def handle_line_strain_changed(sender, instance, action, reverse, model, pk_set,
                 strain_pk = strain.pk
 
                 # skip any strains that aren't associated with an ICE entry
-                if not _is_linkable(strain):
+                if not strain.is_linkable():
                     logger.warning(
                         "Strain with id %d is now linked to study id %d, but EDD's "
                         "database entry for the strain doesn't contain enough data to create an "
@@ -501,7 +473,7 @@ def handle_line_strain_changed(sender, instance, action, reverse, model, pk_set,
             for strain in removed_strains:
                 strain_pk = strain.pk
                 # skip any strains that can't be associated with an ICE entry
-                if not _is_linkable(strain):
+                if not strain.is_linkable():
                     logger.warning(
                         "Strain with id %d is no longer linked to study id %d, but EDD's "
                         "database entry for the strain doesn't have enough data to facilitate "

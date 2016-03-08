@@ -967,6 +967,17 @@ class Strain(EDDObject, LineProperty):
             })
         return json_dict
 
+    def is_linkable(self):
+        """
+        Tests whether this strain has sufficient information to create/maintain related ICE links
+        for EDD studies it's associated with.
+        :return: True if the strain is linkable, false otherwise
+        """
+        #  we could technically reconstruct the ICE part URL from the registry ID and our ICE
+        # configuration data, but requiring an ICE URL here allows for having multiple linked ICE
+        # instances (though that would require improvements elsewhere as well).
+        return self.registry_url and self.registry_id
+
 
 @python_2_unicode_compatible
 class CarbonSource(EDDObject, LineProperty):
