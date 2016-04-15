@@ -1039,8 +1039,13 @@ def main():
             try:
                 print 'Logging into EDD at %s... ' % EDD_URL,
                 edd_login_start_time = arrow.utcnow()
+                workaround_request_timeout = 20  # workaround for lack of paging support in the
+                                                 # initial client-side REST API library. requests to
+                                                 # studies with an  existing large num of lines seem
+                                                 # to take too long to service since they're all
+                                                 # being included.
                 edd_session_auth = EddSessionAuth.login(base_url=EDD_URL, username=username,
-                                                        password=password)
+                                                        password=password, timeout=workaround_request_timeout)
                 performance.edd_login_delta += (edd_login_start_time - arrow.utcnow())
                 if(edd_session_auth):
                     print('success!')
