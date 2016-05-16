@@ -127,9 +127,10 @@ This section contains directions for setting up a development environment on EDD
                               docker exec -i temp_pg psql -U postgres template1
 
                 * To copy an existing database:
+                    * Need postgres password specific to database name. Ask for password from teammate.
                     * Dump from the existing database and pipe to the temporary postgres service
                       (replace `{remote_host}` e.g. with `postgres.jbei.org`, and `{remote_db}`
-                      with database name):
+                      with database name e.g. `eddprod`):
 
                           pg_dump -Fp -C -E UTF8 -h {remote_host} {remote_db} | \
                               docker exec -i temp_pg psql -U postgres
@@ -168,25 +169,41 @@ This section contains directions for setting up a development environment on EDD
             * Clean-up
                 * `docker stop temp_pg && docker rm -v temp_pg`
                 * `docker stop temp_solr && docker rm -v temp_solr`
+            * Startup in new shell sessions
+                * Load the Docker environment with:
+                  `eval "$(docker-machine env default)"`
+                * (Re)build the container images with current code:  `docker-compose build`
+                * Start EDD services:  `docker-compose up -d`
+                    * To run commands, use `docker-compose run $SERVICE $COMMAND`, e.g.:
+                      `docker-compose run edd python manage.py shell`
+                    * To access services, use the IP listed in `docker-machine ls`, e.g.
+                        * access EDD via https://192.168.99.100/
+                        * access Solr via http://192.168.99.100:8983/solr/
+                        * access RabbitMQ Management Plugin via http://192.168.99.100:15672/
+                    * Restart misbehaving services with:  `docker-compose restart $SERVICE`
     * `docker-compose` commands
         * Build all services:  `docker-compose build`
         * Startup all services: `docker-compose up -d`
         * View logs: `docker-compose logs`
         * Bringing down all services: `docker-compose down`
         * See more in the [Docker Compose documentation][32]
-    * Startup in new shell sessions
-        * Load the Docker environment with:
-          `eval "$(docker-machine env default)"`
-        * (Re)build the container images with current code:  `docker-compose build`
-        * Start EDD services:  `docker-compose up -d`
-            * To run commands, use `docker-compose run $SERVICE $COMMAND`, e.g.:
-              `docker-compose run edd python manage.py shell`
-            * To access services, use the IP listed in `docker-machine ls`, e.g.
-                * access EDD via https://192.168.99.100/
-                * access Solr via http://192.168.99.100:8983/solr/
-                * access RabbitMQ Management Plugin via http://192.168.99.100:15672/
-            * Restart misbehaving services with:  `docker-compose restart $SERVICE`
+    * Change Admin roles
+        * Start an interactive shell:
+                `docker-compose exec appserver python manage.py shell`
+            * Inside the interactive shell:
+                'from django.contrib.auth import get_user_model'
+                'User = get_user_model()'
+                'me = User.objects.get(username='username')'
+                'me.is_superuser = True'
+                'me.is_staff = True'
+                'me.save()'
 
+
+---------------------------------------------------------------------------------------------------
+
+### Testing EDD <a name="Testing EDD"/>
+
+    `docker-compose exec appserver python manage.py test`
 
 ---------------------------------------------------------------------------------------------------
 
