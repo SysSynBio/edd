@@ -172,7 +172,6 @@ This section contains directions for setting up a development environment on EDD
             * Startup in new shell sessions
                 * Load the Docker environment with:
                   `eval "$(docker-machine env default)"`
-                * (Re)build the container images with current code:  `docker-compose build`
                 * Start EDD services:  `docker-compose up -d`
                     * To run commands, use `docker-compose run $SERVICE $COMMAND`, e.g.:
                       `docker-compose exec appserver python manage.py shell`
@@ -182,6 +181,9 @@ This section contains directions for setting up a development environment on EDD
                         * access Flower via http://192.168.99.100/flower/
                         * access RabbitMQ Management Plugin via http://192.168.99.100/
                     * Restart misbehaving services with:  `docker-compose restart $SERVICE`
+                    * (Re)build the container images with current code (only required if there
+                      are changes to either the Dockerfile or the files in ADD or COPY directives in the Dockerfile):
+                        `docker-compose build`
     * `docker-compose` commands
         * Build all services:  `docker-compose build`
         * Startup all services: `docker-compose up -d`
