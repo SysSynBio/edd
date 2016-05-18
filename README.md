@@ -191,20 +191,23 @@ This section contains directions for setting up a development environment on EDD
         * Bringing down all services: `docker-compose down`
         * See more in the [Docker Compose documentation][32]
     * Create administrative user
-        * Create superuser
+        * Create superuser:
+
                     `python manage.py createsuperuser`
-                    prompts you for Username, email, and password
+
+          Prompts you for Username, email, and password
     * Update existing user's permissions
         * Start an interactive shell:
+
                 `docker-compose exec appserver python manage.py shell`
             * Inside the interactive shell:
 
-                        from django.contrib.auth import get_user_model
-                        User = get_user_model()
-                        me = User.objects.get(username='username')
-                        me.is_superuser = True
-                        me.is_staff = True
-                        me.save()
+                        >> from django.contrib.auth import get_user_model
+                        >> User = get_user_model()
+                        >> me = User.objects.get(username='username')
+                        >> me.is_superuser = True
+                        >> me.is_staff = True
+                        >> me.save()
 
 
 
