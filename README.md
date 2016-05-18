@@ -175,11 +175,12 @@ This section contains directions for setting up a development environment on EDD
                 * (Re)build the container images with current code:  `docker-compose build`
                 * Start EDD services:  `docker-compose up -d`
                     * To run commands, use `docker-compose run $SERVICE $COMMAND`, e.g.:
-                      `docker-compose run edd python manage.py shell`
+                      `docker-compose exec appserver python manage.py shell`
                     * To access services, use the IP listed in `docker-machine ls`, e.g.
-                        * access EDD via https://192.168.99.100/
-                        * access Solr via http://192.168.99.100:8983/solr/
-                        * access RabbitMQ Management Plugin via http://192.168.99.100:15672/
+                        * access EDD via http://192.168.99.100/
+                        * access Solr via http://192.168.99.100/solr/
+                        * access Flower via http://192.168.99.100/flower/
+                        * access RabbitMQ Management Plugin via http://192.168.99.100/
                     * Restart misbehaving services with:  `docker-compose restart $SERVICE`
     * `docker-compose` commands
         * Build all services:  `docker-compose build`
@@ -187,16 +188,22 @@ This section contains directions for setting up a development environment on EDD
         * View logs: `docker-compose logs`
         * Bringing down all services: `docker-compose down`
         * See more in the [Docker Compose documentation][32]
-    * Change Admin roles
+    * Create administrative user
+        * Create superuser
+                    `python manage.py createsuperuser`
+                    prompts you for Username, email, and password
+    * Update existing user's permissions
         * Start an interactive shell:
                 `docker-compose exec appserver python manage.py shell`
             * Inside the interactive shell:
-                'from django.contrib.auth import get_user_model'
-                'User = get_user_model()'
-                'me = User.objects.get(username='username')'
-                'me.is_superuser = True'
-                'me.is_staff = True'
-                'me.save()'
+
+                        from django.contrib.auth import get_user_model
+                        User = get_user_model()
+                        me = User.objects.get(username='username')
+                        me.is_superuser = True
+                        me.is_staff = True
+                        me.save()
+
 
 
 ---------------------------------------------------------------------------------------------------
