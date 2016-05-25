@@ -173,16 +173,18 @@ This section contains directions for setting up a development environment on EDD
                 * Load the Docker environment with:
                   `eval "$(docker-machine env default)"`
                 * Start EDD services:  `docker-compose up -d`
-                    * To run commands, use `docker-compose run $SERVICE $COMMAND`, e.g.:
+                  (remove the -d to see logs)
+                    * To run commands, use `docker-compose exec $SERVICE $COMMAND`, e.g.:
                       `docker-compose exec appserver python manage.py shell`
                     * To access services, use the IP listed in `docker-machine ls`, e.g.
                         * access EDD via http://192.168.99.100/
                         * access Solr via http://192.168.99.100/solr/
                         * access Flower via http://192.168.99.100/flower/
-                        * access RabbitMQ Management Plugin via http://192.168.99.100/
+                        * access RabbitMQ Management Plugin via http://192.168.99.100/rabbitmq/
                     * Restart misbehaving services with:  `docker-compose restart $SERVICE`
                     * (Re)build the container images with current code (only required if there
-                      are changes to either the Dockerfile or the files in ADD or COPY directives in the Dockerfile):
+                      are changes to either the Dockerfile or the files in ADD or COPY directives
+                      in the Dockerfile):
                         `docker-compose build`
     * `docker-compose` commands
         * Build all services:  `docker-compose build`
@@ -193,13 +195,13 @@ This section contains directions for setting up a development environment on EDD
     * Create administrative user
         * Create superuser:
 
-                    `python manage.py createsuperuser`
+                python manage.py createsuperuser
 
           Prompts you for Username, email, and password
     * Update existing user's permissions
         * Start an interactive shell:
 
-                `docker-compose exec appserver python manage.py shell`
+                docker-compose exec appserver python manage.py shell
             * Inside the interactive shell:
 
                         >> from django.contrib.auth import get_user_model
