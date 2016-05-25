@@ -172,8 +172,8 @@ This section contains directions for setting up a development environment on EDD
             * Startup in new shell sessions
                 * Load the Docker environment with:
                   `eval "$(docker-machine env default)"`
-                * Start EDD services:  `docker-compose up -d`
-                  (remove the -d to see logs)
+                * Start EDD services:  `docker-compose up`
+                        add `-d` for detached mode)
                     * To run commands, use `docker-compose exec $SERVICE $COMMAND`, e.g.:
                       `docker-compose exec appserver python manage.py shell`
                     * To access services, use the IP listed in `docker-machine ls`, e.g.
