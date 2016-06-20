@@ -5,10 +5,6 @@
   shape-rendering: crispEdges;
 }
 
-.bar {
-  fill: steelblue;
-}
-
 .bar:hover {
   fill: orangered ;
 }
@@ -81,7 +77,7 @@ div.tooltip {
 }
 
 .legend rect {
-  position: 'right';
+  cursor: pointer;
   fill:white;
   stroke:black;
   opacity:0.8;
@@ -105,6 +101,20 @@ div.tooltip {
   margin-top: 20px;
 }
 
+.svg-container {
+    display: inline-block;
+    position: relative;
+    width: 80%;
+    padding-bottom: 0%; /* aspect ratio */
+    vertical-align: top;
+    overflow: hidden;
+}
+.svg-content-responsive {
+    display: inline-block;
+    position: absolute;
+    top: 10px;
+    left: 0;
+}
 
 .tick text{
   font-size: 12px;
