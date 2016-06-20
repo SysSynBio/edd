@@ -2,16 +2,18 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e24ebf48-8290-4320-b8ca-547467176189" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/DataGrid.js" afterPath="$PROJECT_DIR$/main/static/main/js/DataGrid.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/CreateBarGraph.js" afterPath="$PROJECT_DIR$/main/static/main/js/CreateBarGraph.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/Study.js" afterPath="$PROJECT_DIR$/main/static/main/js/Study.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/StudyGraphing.js" afterPath="$PROJECT_DIR$/main/static/main/js/StudyGraphing.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/style.css" afterPath="$PROJECT_DIR$/main/static/main/style.css" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/templates/main/detail.html" afterPath="$PROJECT_DIR$/main/templates/main/detail.html" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/package.json" afterPath="$PROJECT_DIR$/package.json" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/django_extensions/js/jquery.bgiframe.min.js" afterPath="$PROJECT_DIR$/static/django_extensions/js/jquery.bgiframe.min.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/DataGrid.js" afterPath="$PROJECT_DIR$/static/main/js/DataGrid.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/CreateBarGraph.js" afterPath="$PROJECT_DIR$/static/main/js/CreateBarGraph.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/Study.js" afterPath="$PROJECT_DIR$/static/main/js/Study.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/StudyGraphing.js" afterPath="$PROJECT_DIR$/static/main/js/StudyGraphing.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/style.css" afterPath="$PROJECT_DIR$/static/main/style.css" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/typescript/src/Study.ts" afterPath="$PROJECT_DIR$/typescript/src/Study.ts" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/typescript/src/StudyGraphing.ts" afterPath="$PROJECT_DIR$/typescript/src/StudyGraphing.ts" />
     </list>
     <ignored path="edd.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -42,73 +44,17 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="tests.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/edd/tests.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Study.ts" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Study.ts" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/typescript/src/Study.ts">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="25">
-              <caret line="1524" column="0" selection-start-line="1524" selection-start-column="0" selection-end-line="1524" selection-end-column="0" />
-              <folding>
-                <element signature="n#!!doc" expanded="true" />
-                <marker date="1466125120000" expanded="true" signature="128537:129220" placeholder="..." />
-                <marker date="1466125120000" expanded="true" signature="128647:128980" placeholder="..." />
-                <marker date="1466125120000" expanded="true" signature="129030:129220" placeholder="..." />
-                <marker date="1466125120000" expanded="true" signature="129153:129170" placeholder="..." />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="package.json" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/package.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="380">
-              <caret line="20" column="4" selection-start-line="20" selection-start-column="4" selection-end-line="20" selection-end-column="4" />
-              <folding>
-                <marker date="1466124822000" expanded="true" signature="0:723" placeholder="{&quot;name&quot;: &quot;edd-django&quot;...}" />
-                <marker date="1466124822000" expanded="true" signature="160:210" placeholder="{&quot;grunt&quot;: &quot;^0.4.5&quot;...}" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="d3.d.ts" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/typescript/typings/d3/d3.d.ts">
-          <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="38">
-              <caret line="2" column="0" selection-start-line="2" selection-start-column="0" selection-end-line="2" selection-end-column="0" />
+              <caret line="6" column="0" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="41" />
               <folding>
-                <element signature="n#!!doc" expanded="true" />
+                <marker date="1466445104000" expanded="true" signature="128490:129173" placeholder="..." />
+                <marker date="1466445104000" expanded="true" signature="128600:128933" placeholder="..." />
+                <marker date="1466445104000" expanded="true" signature="128983:129173" placeholder="..." />
+                <marker date="1466445104000" expanded="true" signature="129106:129123" placeholder="..." />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="style.css" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/main/static/main/style.css">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="368">
-              <caret line="124" column="38" selection-start-line="124" selection-start-column="38" selection-end-line="124" selection-end-column="38" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Common.js" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/main/static/main/js/Common.js">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2375">
-              <caret line="125" column="0" selection-start-line="125" selection-start-column="0" selection-end-line="125" selection-end-column="0" />
-              <folding />
             </state>
           </provider>
         </entry>
@@ -116,18 +62,8 @@
       <file leaf-file-name="CreateBarGraph.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main/static/main/js/CreateBarGraph.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="532">
-              <caret line="28" column="27" selection-start-line="28" selection-start-column="27" selection-end-line="28" selection-end-column="27" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="detail.html" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/main/templates/main/detail.html">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="418">
-              <caret line="47" column="29" selection-start-line="47" selection-start-column="29" selection-end-line="47" selection-end-column="29" />
+            <state relative-caret-position="190">
+              <caret line="10" column="55" selection-start-line="10" selection-start-column="55" selection-end-line="10" selection-end-column="55" />
               <folding />
             </state>
           </provider>
@@ -136,11 +72,70 @@
       <file leaf-file-name="Study.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main/static/main/js/Study.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="443">
-              <caret line="985" column="35" selection-start-line="985" selection-start-column="35" selection-end-line="985" selection-end-column="35" />
+            <state relative-caret-position="-344">
+              <caret line="1121" column="39" selection-start-line="1121" selection-start-column="39" selection-end-line="1121" selection-end-column="39" />
               <folding>
-                <marker date="1466125123000" expanded="true" signature="0:43" placeholder="//..." />
+                <marker date="1466447659000" expanded="true" signature="0:26" placeholder="//..." />
+                <marker date="1466447659000" expanded="true" signature="0:43" placeholder="//..." />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Study.ts" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/typescript/build/Study.ts">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="245">
+              <caret line="1174" column="27" selection-start-line="1174" selection-start-column="26" selection-end-line="1174" selection-end-column="27" />
+              <folding>
+                <marker date="1466447657000" expanded="true" signature="0:395" placeholder="//..." />
+                <marker date="1466447657000" expanded="true" signature="128543:129226" placeholder="..." />
+                <marker date="1466447657000" expanded="true" signature="128653:128986" placeholder="..." />
+                <marker date="1466447657000" expanded="true" signature="129036:129226" placeholder="..." />
+                <marker date="1466447657000" expanded="false" signature="129159:129176" placeholder="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="detail.html" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/main/templates/main/detail.html">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="266">
+              <caret line="34" column="78" selection-start-line="34" selection-start-column="78" selection-end-line="34" selection-end-column="78" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="StudyGraphing.ts" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/typescript/src/StudyGraphing.ts">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="2736">
+              <caret line="144" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="555" selection-end-column="0" />
+              <folding>
+                <marker date="1466445104000" expanded="true" signature="13615:13665" placeholder="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="style.css" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/main/static/main/style.css">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="444">
+              <caret line="83" column="18" selection-start-line="83" selection-start-column="18" selection-end-line="83" selection-end-column="18" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="common.css" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/static/main/common.css">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="377">
+              <caret line="1000" column="1" selection-start-line="1000" selection-start-column="1" selection-end-line="1000" selection-end-column="1" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -179,17 +174,18 @@
         <option value="$PROJECT_DIR$/edd/profile/tests.py" />
         <option value="$PROJECT_DIR$/main/tests/models.py" />
         <option value="$PROJECT_DIR$/.gitignore" />
-        <option value="$PROJECT_DIR$/typescript/src/StudyGraphing.ts" />
         <option value="$PROJECT_DIR$/static/main/js/StudyGraphing.js" />
-        <option value="$PROJECT_DIR$/main/static/main/js/Study.js" />
         <option value="$PROJECT_DIR$/typescript/src/common-declarations.d.ts" />
         <option value="$PROJECT_DIR$/main/static/main/js/Common.js" />
-        <option value="$PROJECT_DIR$/main/templates/main/detail.html" />
-        <option value="$PROJECT_DIR$/main/static/main/js/CreateBarGraph.js" />
-        <option value="$PROJECT_DIR$/main/static/main/style.css" />
         <option value="$PROJECT_DIR$/package.json" />
         <option value="$PROJECT_DIR$/typescript/typings/d3/d3.d.ts" />
+        <option value="$PROJECT_DIR$/main/static/main/js/Study.js" />
+        <option value="$PROJECT_DIR$/typescript/build/Study.ts" />
+        <option value="$PROJECT_DIR$/typescript/src/StudyGraphing.ts" />
         <option value="$PROJECT_DIR$/typescript/src/Study.ts" />
+        <option value="$PROJECT_DIR$/main/static/main/js/CreateBarGraph.js" />
+        <option value="$PROJECT_DIR$/main/templates/main/detail.html" />
+        <option value="$PROJECT_DIR$/main/static/main/style.css" />
       </list>
     </option>
   </component>
@@ -841,7 +837,7 @@
     </history-entry>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="1440" height="797" extended-state="0" />
+    <frame x="0" y="23" width="1440" height="797" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25069445" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -915,20 +911,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/.virtualenvs/edd/lib/python2.7/site-packages/django/contrib/auth/models.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4986">
-          <caret line="352" column="32" selection-start-line="352" selection-start-column="32" selection-end-line="352" selection-end-column="32" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/edd_utils/tests.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2679">
-          <caret line="29" column="26" selection-start-line="29" selection-start-column="26" selection-end-line="29" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/edd_utils/net_smb.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-406">
@@ -1125,7 +1107,7 @@
         <state relative-caret-position="0">
           <caret line="2" column="31" selection-start-line="2" selection-start-column="31" selection-end-line="2" selection-end-column="31" />
           <folding>
-            <marker date="1466125124000" expanded="false" signature="0:26" placeholder="//..." />
+            <marker date="1466447660000" expanded="false" signature="0:26" placeholder="//..." />
           </folding>
         </state>
       </provider>
@@ -1141,12 +1123,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-3952">
           <caret line="42" column="40" selection-start-line="42" selection-start-column="40" selection-end-line="42" selection-end-column="40" />
-          <folding>
-            <marker date="1462821948000" expanded="true" signature="107648:107719" placeholder="..." />
-            <marker date="1462821948000" expanded="true" signature="107733:107804" placeholder="..." />
-            <marker date="1462821948000" expanded="true" signature="108105:108129" placeholder="..." />
-            <marker date="1462821948000" expanded="true" signature="109890:110003" placeholder="..." />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -1155,7 +1132,7 @@
         <state relative-caret-position="272">
           <caret line="128" column="7" selection-start-line="128" selection-start-column="6" selection-end-line="128" selection-end-column="7" />
           <folding>
-            <marker date="1466125124000" expanded="true" signature="16629:16679" placeholder="..." />
+            <marker date="1466447660000" expanded="true" signature="16629:16679" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -1165,16 +1142,6 @@
         <state relative-caret-position="494">
           <caret line="46" column="37" selection-start-line="46" selection-start-column="37" selection-end-line="46" selection-end-column="37" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/typescript/src/StudyGraphing.ts">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="263">
-          <caret line="506" column="10" selection-start-line="506" selection-start-column="9" selection-end-line="506" selection-end-column="10" />
-          <folding>
-            <marker date="1466119888000" expanded="true" signature="13613:13663" placeholder="..." />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -1201,16 +1168,8 @@
         <state relative-caret-position="0">
           <caret line="0" column="10" selection-start-line="0" selection-start-column="9" selection-end-line="0" selection-end-column="10" />
           <folding>
-            <marker date="1466125123000" expanded="true" signature="0:26" placeholder="//..." />
+            <marker date="1466447659000" expanded="true" signature="0:26" placeholder="//..." />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/edd/tests.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1240,22 +1199,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main/templates/main/detail.html">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="418">
-          <caret line="47" column="29" selection-start-line="47" selection-start-column="29" selection-end-line="47" selection-end-column="29" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/style.css">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="368">
-          <caret line="124" column="38" selection-start-line="124" selection-start-column="38" selection-end-line="124" selection-end-column="38" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/main/static/main/js/Common.js">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2375">
@@ -1264,21 +1207,21 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/js/CreateBarGraph.js">
+    <entry file="file://$PROJECT_DIR$/typescript/typings/d3/d3.d.ts">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="532">
-          <caret line="28" column="27" selection-start-line="28" selection-start-column="27" selection-end-line="28" selection-end-column="27" />
-          <folding />
+        <state relative-caret-position="38">
+          <caret line="2" column="0" selection-start-line="2" selection-start-column="0" selection-end-line="2" selection-end-column="0" />
+          <folding>
+            <element signature="n#!!doc" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/js/Study.js">
+    <entry file="file://$PROJECT_DIR$/edd/tests.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="443">
-          <caret line="985" column="35" selection-start-line="985" selection-start-column="35" selection-end-line="985" selection-end-column="35" />
-          <folding>
-            <marker date="1466125123000" expanded="true" signature="0:43" placeholder="//..." />
-          </folding>
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -1286,34 +1229,87 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="380">
           <caret line="20" column="4" selection-start-line="20" selection-start-column="4" selection-end-line="20" selection-end-column="4" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/static/main/common.css">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="377">
+          <caret line="1000" column="1" selection-start-line="1000" selection-start-column="1" selection-end-line="1000" selection-end-column="1" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/typescript/build/Study.ts">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="245">
+          <caret line="1174" column="27" selection-start-line="1174" selection-start-column="26" selection-end-line="1174" selection-end-column="27" />
           <folding>
-            <marker date="1466124822000" expanded="true" signature="0:723" placeholder="{&quot;name&quot;: &quot;edd-django&quot;...}" />
-            <marker date="1466124822000" expanded="true" signature="160:210" placeholder="{&quot;grunt&quot;: &quot;^0.4.5&quot;...}" />
+            <marker date="1466447657000" expanded="true" signature="0:395" placeholder="//..." />
+            <marker date="1466447657000" expanded="true" signature="128543:129226" placeholder="..." />
+            <marker date="1466447657000" expanded="true" signature="128653:128986" placeholder="..." />
+            <marker date="1466447657000" expanded="true" signature="129036:129226" placeholder="..." />
+            <marker date="1466447657000" expanded="false" signature="129159:129176" placeholder="..." />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/typescript/typings/d3/d3.d.ts">
+    <entry file="file://$PROJECT_DIR$/typescript/src/StudyGraphing.ts">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="38">
-          <caret line="2" column="0" selection-start-line="2" selection-start-column="0" selection-end-line="2" selection-end-column="0" />
+        <state relative-caret-position="2736">
+          <caret line="144" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="555" selection-end-column="0" />
           <folding>
-            <element signature="n#!!doc" expanded="true" />
+            <marker date="1466445104000" expanded="true" signature="13615:13665" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/Study.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-344">
+          <caret line="1121" column="39" selection-start-line="1121" selection-start-column="39" selection-end-line="1121" selection-end-column="39" />
+          <folding>
+            <marker date="1466447659000" expanded="true" signature="0:26" placeholder="//..." />
+            <marker date="1466447659000" expanded="true" signature="0:43" placeholder="//..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/typescript/src/Study.ts">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="25">
-          <caret line="1524" column="0" selection-start-line="1524" selection-start-column="0" selection-end-line="1524" selection-end-column="0" />
+        <state relative-caret-position="38">
+          <caret line="6" column="0" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="41" />
           <folding>
-            <element signature="n#!!doc" expanded="true" />
-            <marker date="1466125120000" expanded="true" signature="128537:129220" placeholder="..." />
-            <marker date="1466125120000" expanded="true" signature="128647:128980" placeholder="..." />
-            <marker date="1466125120000" expanded="true" signature="129030:129220" placeholder="..." />
-            <marker date="1466125120000" expanded="true" signature="129153:129170" placeholder="..." />
+            <marker date="1466445104000" expanded="true" signature="128490:129173" placeholder="..." />
+            <marker date="1466445104000" expanded="true" signature="128600:128933" placeholder="..." />
+            <marker date="1466445104000" expanded="true" signature="128983:129173" placeholder="..." />
+            <marker date="1466445104000" expanded="true" signature="129106:129123" placeholder="..." />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/CreateBarGraph.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="190">
+          <caret line="10" column="55" selection-start-line="10" selection-start-column="55" selection-end-line="10" selection-end-column="55" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/templates/main/detail.html">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="266">
+          <caret line="34" column="78" selection-start-line="34" selection-start-column="78" selection-end-line="34" selection-end-column="78" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/static/main/style.css">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="444">
+          <caret line="83" column="18" selection-start-line="83" selection-start-column="18" selection-end-line="83" selection-end-column="18" />
+          <folding />
         </state>
       </provider>
     </entry>

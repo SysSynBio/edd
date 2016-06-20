@@ -9,8 +9,8 @@ function createLineGraph(linedata, minValue, maxValue, labels, minXvalue, maxXva
     .style("opacity", 0);
 
   var margin = {top: 20, right: 20, bottom: 30, left: 40},
-      width = 960 - margin.left - margin.right,
-      height = 500 - margin.top - margin.bottom;
+      width = 1000 - margin.left - margin.right,
+      height = 270 - margin.top - margin.bottom;
 
   var color = d3.scale.category10();
 
@@ -28,6 +28,7 @@ function createLineGraph(linedata, minValue, maxValue, labels, minXvalue, maxXva
 
   //create svg graph object
   var svg = d3.select("#maingraph").append("svg")
+      .attr("class", "graphContainer")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
     .append("g")
@@ -76,6 +77,7 @@ function createLineGraph(linedata, minValue, maxValue, labels, minXvalue, maxXva
         .attr("class", "legend")    // style the legend
         .attr("dy", ".35em")
         .style("fill", color1)
+        .attr("transform", function(d) { return "translate(" + x.rangeBand() / 2 + "," + y((d.y0 + d.y1) / 2) + ")"; })
         .on("mouseover", function(d){  //console.log(d) returns last data point for clicked on color in legend 
           var self = this;
           var legends = d3.selectAll('.legend');
