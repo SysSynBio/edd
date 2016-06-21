@@ -11,23 +11,23 @@ function objectSize(obj) {
 };
 
 /**
-* this function creates the x axis tick marks for grid 
+* this function takes in the data object and returns the size of each assays'
+* data points
 **/
-function make_x_axis() {		
-    return d3.svg.axis()
-        .scale(x)
-        .orient("bottom")
-        .ticks(5)
-}
+function arrSize(data) {
 
-/**
-* this function creates the y axis tick marks for grid 
-**/
-function make_y_axis() {		
-    return d3.svg.axis()
-        .scale(y)
-        .orient("left")
-        .ticks(5)
+  var size = objectSize(data);
+  var maxArrSize = []
+  for (var i = 0; i < size; i++) {
+    //returns first object
+    var first = (data[Object.keys(data)[i]].values);
+    maxArrSize.push(first.length)
+
+  }
+  maxArrSize.sort(function(a, b) {
+          return a - b;
+        })
+  return maxArrSize
 }
 
 /**
@@ -43,33 +43,30 @@ function make_y_axis() {
 function transformBarData(data) {
   var linedata = [] 
   var size = objectSize(data);
+
   for (var i = 0; i < size; i++) {
-    //returns first object 
+    //returns first object
     var first = (data[Object.keys(data)[i]].values);
-    //data 
-    var n = [];
+
     for (var j = 0; j < first.length; j++ ) {
       dataset = {};
       if (first[j][0].length > 0 && first[j][1].length > 0) {
         dataset.x = parseInt(first[j][0].join());
         dataset.y = parseFloat(first[j][1].join());
         dataset.i = i
-        n.push(dataset);
+        linedata.push(dataset);
          }
        else {
         console.log("missing data for object " + i + " time " + first[j][0])
        }
     }
 
-    linedata.push(n);
   }
-      //sort data               
-     linedata.forEach(function(d) {
-        d.sort(function(a, b) {
-          return parseFloat(a.x) - parseFloat(b.x);
-        })
-      })
-    return(linedata);
+      //sort data
+     // linedata.sort(function(a, b) {
+     //      return parseFloat(a.x) - parseFloat(b.x);
+     //    })
+    return linedata;
 }
 
 function transformLineData(data) {

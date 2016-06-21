@@ -6,7 +6,6 @@
 **/
 function createAssayGraph(linedata, minValue, maxValue, labels, size, arraySize) {
 
-    arraySize = arraySize.pop();
     /**
     * this function creates the x axis tick marks for grid
     **/

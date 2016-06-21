@@ -5,6 +5,9 @@
   shape-rendering: crispEdges;
 }
 
+#bar {
+  display: none;
+}
 .bar:hover {
   fill: orangered ;
 }
@@ -75,9 +78,13 @@ div.tooltip {
 .grid path {
           stroke-width: 0;
 }
+.legend {
+      /*cursor: pointer;*/
+overflow: auto;
+}
 
 .legend rect {
-  cursor: pointer;
+
   fill:white;
   stroke:black;
   opacity:0.8;
@@ -104,15 +111,13 @@ div.tooltip {
 .svg-container {
     display: inline-block;
     position: relative;
-    width: 80%;
-    padding-bottom: 0%; /* aspect ratio */
+    width: 100%;
     vertical-align: top;
     overflow: hidden;
 }
 .svg-content-responsive {
     display: inline-block;
     position: absolute;
-    top: 10px;
     left: 0;
 }
 
@@ -140,8 +145,48 @@ div.tooltip {
     text-align: center;
 }
 
+
+.tooltip-left:before {
+	content: "";
+	position:absolute;
+	bottom: 11px;
+	right: -8px;
+	border-left: 8px solid #000;
+	border-top: 8px solid transparent;
+	border-bottom: 8px solid transparent;
+	border-right: 0;
+}
+
+.tooltip-right:before {
+	content: "";
+	position:absolute;
+	bottom: 11px;
+	left: -8px;
+	border-right: 8px solid #000;
+	border-top: 8px solid transparent;
+	border-bottom: 8px solid transparent;
+	border-left: 0;
+}
+
+
+.tooltip.hidden {
+	display: none;
+}
+
+.tooltip p {
+	margin: 0;
+	color: #fff;
+	font-family: sans-serif;
+	font-size: 16px;
+	line-height: 20px;
+}
+
 .x.axis path {
-  display: none;
+  opacity: .2;
+}
+
+.y.axis path {
+  opacity: .2;
 }
 
 
