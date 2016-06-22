@@ -2,24 +2,17 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e24ebf48-8290-4320-b8ca-547467176189" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/static/django_extensions/js/jquery-1.7.2.min.js" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/static/edd_utils/js/lib/handsontable.full.min.js" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/static/main/js/DataGridServerSide.js" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/static/main/js/EditableElement.js" afterPath="" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/main/static/main/js/IndividualBarCharts.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/Common.js" afterPath="$PROJECT_DIR$/main/static/main/js/Common.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js" afterPath="$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" afterPath="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/Study.js" afterPath="$PROJECT_DIR$/main/static/main/js/Study.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/edd_utils/js/lib/d3.v3.min.js" afterPath="$PROJECT_DIR$/static/edd_utils/js/lib/d3.v3.min.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/AdminMetabolicMaps.js" afterPath="$PROJECT_DIR$/static/main/js/AdminMetabolicMaps.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/style.css" afterPath="$PROJECT_DIR$/main/static/main/style.css" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/templates/main/detail.html" afterPath="$PROJECT_DIR$/main/templates/main/detail.html" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/Common.js" afterPath="$PROJECT_DIR$/static/main/js/Common.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/GroupedBarAssay.js" afterPath="$PROJECT_DIR$/static/main/js/GroupedBarAssay.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/GroupedBarTime.js" afterPath="$PROJECT_DIR$/static/main/js/GroupedBarTime.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/PermissionsDialog.js" afterPath="$PROJECT_DIR$/static/main/js/PermissionsDialog.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/Study.js" afterPath="$PROJECT_DIR$/static/main/js/Study.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/lib/jquery-ui/jquery-ui.min.js" afterPath="$PROJECT_DIR$/static/main/js/lib/jquery-ui/jquery-ui.min.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/lib/jquery/jquery.flot.dashes.js" afterPath="$PROJECT_DIR$/static/main/js/lib/jquery/jquery.flot.dashes.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/typescript/src/Study.ts" afterPath="$PROJECT_DIR$/typescript/src/Study.ts" />
     </list>
     <ignored path="edd.iws" />
@@ -54,18 +47,40 @@
       <file leaf-file-name="detail.html" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main/templates/main/detail.html">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="437">
-              <caret line="203" column="14" selection-start-line="203" selection-start-column="14" selection-end-line="203" selection-end-column="14" />
+            <state relative-caret-position="400">
+              <caret line="197" column="82" selection-start-line="197" selection-start-column="82" selection-end-line="197" selection-end-column="82" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="GroupedBarAssay.js" pinned="false" current-in-tab="true">
+      <file leaf-file-name="GroupedBarAssay.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="380">
-              <caret line="20" column="43" selection-start-line="20" selection-start-column="43" selection-end-line="20" selection-end-column="43" />
+            <state relative-caret-position="565">
+              <caret line="129" column="26" selection-start-line="129" selection-start-column="26" selection-end-line="129" selection-end-column="26" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="IndividualBarCharts.js" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/main/static/main/js/IndividualBarCharts.js">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="400">
+              <caret line="38" column="31" selection-start-line="38" selection-start-column="31" selection-end-line="38" selection-end-column="31" />
+              <folding>
+                <marker date="1466635180000" expanded="true" signature="1072:1081" placeholder="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="style.css" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/main/static/main/style.css">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="152">
+              <caret line="8" column="16" selection-start-line="8" selection-start-column="16" selection-end-line="8" selection-end-column="16" />
               <folding />
             </state>
           </provider>
@@ -74,8 +89,8 @@
       <file leaf-file-name="GroupedBarTime.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="38">
-              <caret line="113" column="0" selection-start-line="113" selection-start-column="0" selection-end-line="136" selection-end-column="43" />
+            <state relative-caret-position="323">
+              <caret line="17" column="41" selection-start-line="17" selection-start-column="41" selection-end-line="17" selection-end-column="41" />
               <folding />
             </state>
           </provider>
@@ -84,8 +99,8 @@
       <file leaf-file-name="Common.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main/static/main/js/Common.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="228">
-              <caret line="35" column="7" selection-start-line="35" selection-start-column="7" selection-end-line="35" selection-end-column="7" />
+            <state relative-caret-position="584">
+              <caret line="67" column="36" selection-start-line="67" selection-start-column="36" selection-end-line="67" selection-end-column="36" />
               <folding />
             </state>
           </provider>
@@ -94,14 +109,14 @@
       <file leaf-file-name="Study.ts" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/typescript/src/Study.ts">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="375">
-              <caret line="1580" column="86" selection-start-line="1580" selection-start-column="86" selection-end-line="1580" selection-end-column="86" />
+            <state relative-caret-position="132">
+              <caret line="1550" column="22" selection-start-line="1550" selection-start-column="22" selection-end-line="1550" selection-end-column="22" />
               <folding>
                 <element signature="n#!!doc" expanded="true" />
-                <marker date="1466576050000" expanded="true" signature="129858:130541" placeholder="..." />
-                <marker date="1466576050000" expanded="true" signature="129968:130301" placeholder="..." />
-                <marker date="1466576050000" expanded="true" signature="130351:130541" placeholder="..." />
-                <marker date="1466576050000" expanded="true" signature="130474:130491" placeholder="..." />
+                <marker date="1466635040000" expanded="true" signature="130505:131188" placeholder="..." />
+                <marker date="1466635040000" expanded="true" signature="130615:130948" placeholder="..." />
+                <marker date="1466635040000" expanded="true" signature="130998:131188" placeholder="..." />
+                <marker date="1466635040000" expanded="true" signature="131121:131138" placeholder="..." />
               </folding>
             </state>
           </provider>
@@ -151,12 +166,14 @@
         <option value="$PROJECT_DIR$/main/static/main/common.css" />
         <option value="$PROJECT_DIR$/static/main/common.css" />
         <option value="$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js" />
-        <option value="$PROJECT_DIR$/main/static/main/style.css" />
-        <option value="$PROJECT_DIR$/main/templates/main/detail.html" />
         <option value="$PROJECT_DIR$/main/static/main/js/Common.js" />
-        <option value="$PROJECT_DIR$/typescript/src/Study.ts" />
         <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" />
         <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js" />
+        <option value="$PROJECT_DIR$/main/static/main/js/Individual-bar-charts.js" />
+        <option value="$PROJECT_DIR$/main/templates/main/detail.html" />
+        <option value="$PROJECT_DIR$/typescript/src/Study.ts" />
+        <option value="$PROJECT_DIR$/main/static/main/js/IndividualBarCharts.js" />
+        <option value="$PROJECT_DIR$/main/static/main/style.css" />
       </list>
     </option>
   </component>
@@ -167,10 +184,10 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="-384" />
-    <option name="y" value="23" />
-    <option name="width" value="1265" />
-    <option name="height" value="797" />
+    <option name="x" value="-223" />
+    <option name="y" value="43" />
+    <option name="width" value="1339" />
+    <option name="height" value="890" />
   </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
     <entry key="Project Default">
@@ -408,6 +425,7 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="js-jscs-nodeInterpreter" value="/usr/local/bin/node" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/edd/settings/local.py" />
+    <property name="SearchEverywhereHistoryKey" value="&#9;FILE&#9;file:///Users/tlopez/code/edd/main/static/main/js/GroupedBarTime.js" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -787,15 +805,15 @@
     </history-entry>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-384" y="23" width="1265" height="797" extended-state="0" />
+    <frame x="-223" y="43" width="1339" height="890" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2853755" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.26960418" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Docker" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32951653" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3228022" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3227771" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32929516" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -861,14 +879,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/main/views.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="633">
-          <caret line="1335" column="28" selection-start-line="1335" selection-start-column="28" selection-end-line="1335" selection-end-column="28" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/edd/settings/local.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="435">
@@ -1074,7 +1084,7 @@
         <state relative-caret-position="0">
           <caret line="0" column="10" selection-start-line="0" selection-start-column="9" selection-end-line="0" selection-end-column="10" />
           <folding>
-            <marker date="1466621033000" expanded="true" signature="0:26" placeholder="//..." />
+            <marker date="1466635043000" expanded="true" signature="0:26" placeholder="//..." />
           </folding>
         </state>
       </provider>
@@ -1134,11 +1144,11 @@
         <state relative-caret-position="302">
           <caret line="1177" column="27" selection-start-line="1177" selection-start-column="27" selection-end-line="1177" selection-end-column="27" />
           <folding>
-            <marker date="1466621031000" expanded="true" signature="0:26" placeholder="//..." />
-            <marker date="1466621031000" expanded="true" signature="129911:130594" placeholder="..." />
-            <marker date="1466621031000" expanded="true" signature="130021:130354" placeholder="..." />
-            <marker date="1466621031000" expanded="true" signature="130404:130594" placeholder="..." />
-            <marker date="1466621031000" expanded="false" signature="130527:130544" placeholder="..." />
+            <marker date="1466635041000" expanded="true" signature="0:26" placeholder="//..." />
+            <marker date="1466635041000" expanded="true" signature="130558:131241" placeholder="..." />
+            <marker date="1466635041000" expanded="true" signature="130668:131001" placeholder="..." />
+            <marker date="1466635041000" expanded="true" signature="131051:131241" placeholder="..." />
+            <marker date="1466635041000" expanded="false" signature="131174:131191" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -1172,13 +1182,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/style.css">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="197">
-          <caret line="82" column="15" selection-start-line="82" selection-start-column="15" selection-end-line="82" selection-end-column="15" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="171">
@@ -1195,14 +1198,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main/templates/main/detail.html">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="437">
-          <caret line="203" column="14" selection-start-line="203" selection-start-column="14" selection-end-line="203" selection-end-column="14" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/typescript/src/StudyGraphing.ts">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="215">
@@ -1213,40 +1208,66 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/typescript/src/Study.ts">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="375">
-          <caret line="1580" column="86" selection-start-line="1580" selection-start-column="86" selection-end-line="1580" selection-end-column="86" />
-          <folding>
-            <element signature="n#!!doc" expanded="true" />
-            <marker date="1466576050000" expanded="true" signature="129858:130541" placeholder="..." />
-            <marker date="1466576050000" expanded="true" signature="129968:130301" placeholder="..." />
-            <marker date="1466576050000" expanded="true" signature="130351:130541" placeholder="..." />
-            <marker date="1466576050000" expanded="true" signature="130474:130491" placeholder="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/main/static/main/js/Common.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="228">
-          <caret line="35" column="7" selection-start-line="35" selection-start-column="7" selection-end-line="35" selection-end-column="7" />
+        <state relative-caret-position="584">
+          <caret line="67" column="36" selection-start-line="67" selection-start-column="36" selection-end-line="67" selection-end-column="36" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="38">
-          <caret line="113" column="0" selection-start-line="113" selection-start-column="0" selection-end-line="136" selection-end-column="43" />
+        <state relative-caret-position="323">
+          <caret line="17" column="41" selection-start-line="17" selection-start-column="41" selection-end-line="17" selection-end-column="41" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/templates/main/detail.html">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="400">
+          <caret line="197" column="82" selection-start-line="197" selection-start-column="82" selection-end-line="197" selection-end-column="82" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="380">
-          <caret line="20" column="43" selection-start-line="20" selection-start-column="43" selection-end-line="20" selection-end-column="43" />
+        <state relative-caret-position="565">
+          <caret line="129" column="26" selection-start-line="129" selection-start-column="26" selection-end-line="129" selection-end-column="26" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/typescript/src/Study.ts">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="132">
+          <caret line="1550" column="22" selection-start-line="1550" selection-start-column="22" selection-end-line="1550" selection-end-column="22" />
+          <folding>
+            <element signature="n#!!doc" expanded="true" />
+            <marker date="1466635040000" expanded="true" signature="130505:131188" placeholder="..." />
+            <marker date="1466635040000" expanded="true" signature="130615:130948" placeholder="..." />
+            <marker date="1466635040000" expanded="true" signature="130998:131188" placeholder="..." />
+            <marker date="1466635040000" expanded="true" signature="131121:131138" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/IndividualBarCharts.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="400">
+          <caret line="38" column="31" selection-start-line="38" selection-start-column="31" selection-end-line="38" selection-end-column="31" />
+          <folding>
+            <marker date="1466635180000" expanded="true" signature="1072:1081" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/static/main/style.css">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="152">
+          <caret line="8" column="16" selection-start-line="8" selection-start-column="16" selection-end-line="8" selection-end-column="16" />
           <folding />
         </state>
       </provider>

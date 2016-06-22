@@ -112,26 +112,29 @@ function createTimeGraph(linedata, minValue, maxValue, labels, size, arraySize) 
           });
 
      //legend
+    var legendSpace = 200 / labels.length;
+
     var legend = svg.selectAll(".legend")
           .data(labels.slice().reverse())
         .enter().append("g")
           .attr("class", "legend")
-          .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+          .attr("transform", function(d, i) { return "translate(0," + i + ")"; });
 
 
 
     legend.append("rect")
-          .attr("x", width + 38)
-          .attr("width", 18)
-          .attr("height", 18)
+          .attr("width", legendSpace)
+          .attr("height", legendSpace)
+          .attr("x", width + 25)
+          .attr("y", function(d, i) {return (legendSpace) + i * (legendSpace) - 5   ;})
           .style("fill", color);
 
     legend.append("text")
-          .attr("x", width + 35)
-          .attr("y", 9)
+          .attr("x", width + 20)
+          .attr("y", function(d, i) {return (legendSpace) + i * (legendSpace);})
           .attr("dy", ".35em")
           .style("text-anchor", "end")
-          .text(function(d) { return d; })
+          .text(function(d) { return d; });
 
 
     //tooltip
