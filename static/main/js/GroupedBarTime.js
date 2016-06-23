@@ -1,8 +1,7 @@
 ////// grouped bar chart based on time
 function createTimeGraph(linedata, minValue, maxValue, labels, size, arraySize) {
 
-    arraySize = arraySize.pop();
-
+    console.log(size)
     var margin = {top: 20, right: 40, bottom: 30, left: 40},
         width = 1000 - margin.left - margin.right,
         height = 270 - margin.top - margin.bottom;
@@ -32,12 +31,15 @@ function createTimeGraph(linedata, minValue, maxValue, labels, size, arraySize) 
         .tickFormat(d3.format(".2s"));
 
       //create svg graph object
-    var svg = d3.select("div#metrics")
-      .append("svg")
-      .attr("preserveAspectRatio", "xMinYMin meet")
-      .attr("viewBox", "-30 -40 1100 280")
-      .classed("svg-content", true);
-
+    var svg = d3.select("div#metrics").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .call(d3.behavior.zoom().on("zoom", function () {
+            svg.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+         }))
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    
     /**
     *  This method transforms our data object into the following 
     *  {
@@ -46,7 +48,6 @@ function createTimeGraph(linedata, minValue, maxValue, labels, size, arraySize) 
     *  }
     *  ...
     **/
- 
     var data = d3.nest()
       .key(function(d) { return d.x; })
       .entries(linedata);
@@ -59,6 +60,7 @@ function createTimeGraph(linedata, minValue, maxValue, labels, size, arraySize) 
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis)
+
       // Draw the x Grid lines
     svg.append("g")
         .attr("class", "grid")
@@ -108,7 +110,7 @@ function createTimeGraph(linedata, minValue, maxValue, labels, size, arraySize) 
             var xPosition = barPos + d3.mouse(this)[0] - 15;
             var yPosition = d3.mouse(this)[1] - 25;
             tooltip.attr("transform", "translate(" + xPosition + "," + yPosition + ")");
-            tooltip.select("text").text("x: " + d.x + " y: " + d.y);
+            tooltip.select("text").text(d.name + "x: " + d.x + " y: " + d.y);
           });
 
      //legend
@@ -155,6 +157,10 @@ function createTimeGraph(linedata, minValue, maxValue, labels, size, arraySize) 
       .attr("font-size", "12px")
       .attr("font-weight", "bold");
 
+
+    console.log(JSON.stringify(data));
+
+
     /**
     * this function creates the x axis tick marks for grid
     **/
@@ -174,7 +180,5 @@ function createTimeGraph(linedata, minValue, maxValue, labels, size, arraySize) 
             .orient("left")
             .ticks(5)
     }
-
-
 }
 

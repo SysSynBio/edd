@@ -2,7 +2,7 @@
 /**
 * this function takes in input min y value, max y value, and the transformed data. Outputs the graph 
 **/
-function createSideBySide(linedata, minValue, maxValue) {
+function createSideBySide(linedata, minValue, maxValue, labels) {
 
   //iterate through each assay
   for (var i = 0; i < linedata.length; i++) {
@@ -36,7 +36,7 @@ function createSideBySide(linedata, minValue, maxValue) {
       .attr('class', 'd3-tip')
       .offset([-10, 0])
       .html(function(d) {
-        return "<strong>Frequency:</strong> <span style='color:red'>" + d.y + "</span>";
+        return "<strong>y value</strong> <span style='color:red'>" + d.y + "</span>";
       })
 
     var svg = d3.select("#single").append("svg")
@@ -54,7 +54,12 @@ function createSideBySide(linedata, minValue, maxValue) {
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
+        .call(xAxis)
+        svg.append("text")      // text label for the x axis
+        .attr("x", width / 2 )
+        .attr("y",  height + 40)
+        .style("text-anchor", "middle")
+        .text(labels[i] + ", entry " + i);
 
     svg.append("g")
         .attr("class", "y axis")
@@ -80,14 +85,4 @@ function createSideBySide(linedata, minValue, maxValue) {
   }
 
 }
-
-   //init data
-   d3.json("bar/assay.json", function(data) {
-    transformedData = transformData(data);
-    yvals = yvalues(data)
-    sorted = sortValues(yvals) 
-    minValue = sorted[sorted.length - 1]
-    maxValue = sorted[0]
-    createGraph(transformedData, minValue, maxValue);
-  })
 

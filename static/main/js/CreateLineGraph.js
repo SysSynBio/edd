@@ -48,11 +48,14 @@ function make_y_axis() {
     .ticks(5);
 
   //create svg graph object
-    var svg = d3.select("div#container")
-      .append("svg")
-      .attr("preserveAspectRatio", "xMinYMin meet")
-      .attr("viewBox", "-30 -40 1100 280")
-      .classed("svg-content", true);
+    var svg = d3.select("div#container").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .call(d3.behavior.zoom().on("zoom", function () {
+            svg.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+         }))
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
   svg.append("g")
       .attr("class", "x axis")
@@ -167,7 +170,8 @@ function make_y_axis() {
          div.transition()        
                 .duration(200)      
                 .style("opacity", .9);      
-            div .html(circleLabel + ": (" + d.x + ", "  + d.y + ")")  
+            div .html('<span'> + circleLabel + '</span>' + '<br/>' + ": (" + d.x + " " + d.x_unit +
+                      ", "  + d.y + " " + d.y_unit ")")
                 .style("left", (d3.event.pageX) + "px")     
                 .style("top", (d3.event.pageY - 30) + "px");    
       })
