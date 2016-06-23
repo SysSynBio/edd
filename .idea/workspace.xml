@@ -2,25 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e24ebf48-8290-4320-b8ca-547467176189" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/Common.js" afterPath="$PROJECT_DIR$/main/static/main/js/Common.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js" afterPath="$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js" afterPath="$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" afterPath="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/IndividualBarCharts.js" afterPath="$PROJECT_DIR$/main/static/main/js/IndividualBarCharts.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/Study.js" afterPath="$PROJECT_DIR$/main/static/main/js/Study.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/StudyGraphing.js" afterPath="$PROJECT_DIR$/main/static/main/js/StudyGraphing.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/style.css" afterPath="$PROJECT_DIR$/main/static/main/style.css" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/Common.js" afterPath="$PROJECT_DIR$/static/main/js/Common.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/CreateLineGraph.js" afterPath="$PROJECT_DIR$/static/main/js/CreateLineGraph.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/GroupedBarAssay.js" afterPath="$PROJECT_DIR$/static/main/js/GroupedBarAssay.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/GroupedBarTime.js" afterPath="$PROJECT_DIR$/static/main/js/GroupedBarTime.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/IndividualBarCharts.js" afterPath="$PROJECT_DIR$/static/main/js/IndividualBarCharts.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/Study.js" afterPath="$PROJECT_DIR$/static/main/js/Study.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/StudyGraphing.js" afterPath="$PROJECT_DIR$/static/main/js/StudyGraphing.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/style.css" afterPath="$PROJECT_DIR$/static/main/style.css" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/typescript/src/Study.ts" afterPath="$PROJECT_DIR$/typescript/src/Study.ts" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/typescript/src/StudyGraphing.ts" afterPath="$PROJECT_DIR$/typescript/src/StudyGraphing.ts" />
     </list>
     <ignored path="edd.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -64,8 +49,8 @@
       <file leaf-file-name="GroupedBarAssay.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="456">
-              <caret line="130" column="13" selection-start-line="130" selection-start-column="13" selection-end-line="130" selection-end-column="13" />
+            <state relative-caret-position="449">
+              <caret line="52" column="0" selection-start-line="52" selection-start-column="0" selection-end-line="57" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -83,11 +68,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="style.css" pinned="false" current-in-tab="true">
+      <file leaf-file-name="style.css" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main/static/main/style.css">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="399">
-              <caret line="66" column="12" selection-start-line="66" selection-start-column="12" selection-end-line="66" selection-end-column="12" />
+            <state relative-caret-position="2413">
+              <caret line="127" column="19" selection-start-line="127" selection-start-column="19" selection-end-line="127" selection-end-column="19" />
               <folding />
             </state>
           </provider>
@@ -108,18 +93,18 @@
       <file leaf-file-name="GroupedBarTime.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="346">
-              <caret line="116" column="82" selection-start-line="116" selection-start-column="82" selection-end-line="116" selection-end-column="82" />
+            <state relative-caret-position="232">
+              <caret line="33" column="4" selection-start-line="33" selection-start-column="4" selection-end-line="36" selection-end-column="37" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="CreateLineGraph.js" pinned="false" current-in-tab="false">
+      <file leaf-file-name="CreateLineGraph.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="430">
-              <caret line="172" column="21" selection-start-line="172" selection-start-column="16" selection-end-line="172" selection-end-column="21" />
+            <state relative-caret-position="316">
+              <caret line="105" column="42" selection-start-line="105" selection-start-column="41" selection-end-line="105" selection-end-column="42" />
               <folding />
             </state>
           </provider>
@@ -199,10 +184,10 @@
         <option value="$PROJECT_DIR$/main/static/main/js/Common.js" />
         <option value="$PROJECT_DIR$/typescript/src/Study.ts" />
         <option value="$PROJECT_DIR$/main/static/main/js/IndividualBarCharts.js" />
-        <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" />
-        <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js" />
-        <option value="$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js" />
         <option value="$PROJECT_DIR$/main/static/main/style.css" />
+        <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js" />
+        <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" />
+        <option value="$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js" />
       </list>
     </option>
   </component>
@@ -1205,14 +1190,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/js/Common.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="259">
-          <caret line="72" column="26" selection-start-line="72" selection-start-column="26" selection-end-line="72" selection-end-column="26" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/typescript/src/StudyGraphing.ts">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="247">
@@ -1247,34 +1224,42 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js">
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/Common.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="346">
-          <caret line="116" column="82" selection-start-line="116" selection-start-column="82" selection-end-line="116" selection-end-column="82" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="456">
-          <caret line="130" column="13" selection-start-line="130" selection-start-column="13" selection-end-line="130" selection-end-column="13" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="430">
-          <caret line="172" column="21" selection-start-line="172" selection-start-column="16" selection-end-line="172" selection-end-column="21" />
+        <state relative-caret-position="259">
+          <caret line="72" column="26" selection-start-line="72" selection-start-column="26" selection-end-line="72" selection-end-column="26" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/main/static/main/style.css">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="399">
-          <caret line="66" column="12" selection-start-line="66" selection-start-column="12" selection-end-line="66" selection-end-column="12" />
+        <state relative-caret-position="2413">
+          <caret line="127" column="19" selection-start-line="127" selection-start-column="19" selection-end-line="127" selection-end-column="19" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="449">
+          <caret line="52" column="0" selection-start-line="52" selection-start-column="0" selection-end-line="57" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="232">
+          <caret line="33" column="4" selection-start-line="33" selection-start-column="4" selection-end-line="36" selection-end-column="37" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="316">
+          <caret line="105" column="42" selection-start-line="105" selection-start-column="41" selection-end-line="105" selection-end-column="42" />
           <folding />
         </state>
       </provider>
