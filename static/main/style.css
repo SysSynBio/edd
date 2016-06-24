@@ -19,6 +19,7 @@
 body {
   font: 10px sans-serif;
   padding-left: 20px;
+    overflow: scroll
 }
 
 .d3-tip {
@@ -64,7 +65,7 @@ body {
 div.tooltip {
   position: absolute;
   text-align: center;
-  width: 75px;
+  width: 100px;
 
   padding: 2px;
   font: 12px sans-serif;
@@ -83,16 +84,23 @@ div.tooltip {
 .grid path {
           stroke-width: 0;
 }
+
+#groupedAssay {
+  display: none;
+}
+
 .legend {
       /*cursor: pointer;*/
-    overflow: auto;
+    overflow: scroll;
+    position: fixed;
 }
 
 .legend1 {
     width:45px;
+    position: fixed;
     height: 5px;
     padding: 0px;
-    overflow: auto;
+    overflow: scroll;
     font: 10px sans-serif;
     background: yellow;
     border: 1px solid #bbb;
@@ -113,6 +121,7 @@ div.tooltip {
 
 #metrics {
   display: none;
+    overflow: scroll
 }
 
 .metrics-container {
@@ -126,6 +135,7 @@ div.tooltip {
 
 #single {
     display: none;
+    overflow: scroll
 
 }
 
