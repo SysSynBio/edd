@@ -3,13 +3,44 @@
 
 /**
 * this function takes in input min y value, max y value, and the sorted json object.
-* the graph
+*  outputs a grouped bar graph with values grouped by assay name
 **/
 function createAssayGraph(linedata, minValue, maxValue, labels, size, arraySize) {
+     //nest data by name. returns [name: 'glucose", values: [{x, y, z}, ..]]
 
-     arraySize = arraySize.pop();
+    var time = d3.keys(linedata[0]).filter(function(key) { return key !== "State"; });
 
-     var margin = {top: 20, right: 40, bottom: 30, left: 40},
+    var data = d3.nest()
+        .key(function(d) { return d.name; })
+        // .key(function(d) { return d.i; })
+        .entries(linedata);
+
+     function maxSize(data) {
+        var max = 0
+        data.forEach(function(d) {
+            if (d.values.length > max) {
+              max = d.values.length
+            }
+         })
+        return max;
+      }
+
+     maxArrSize = maxSize(data);
+     maxGroupSize = data.length;
+
+    // function iValues(data) {
+    //     for (var i = 0; i < data.length; i++) {
+    //         var data2 = data[i].values;
+    //         console.log(data2[i].values.length)
+    //         // for (var j = 0; j < data2.length; j++) {
+    //         //     console.log(data2[i].values.length)
+    //         // }
+    //     }
+    // }
+    // debugger
+    // iValues(data);
+
+     var margin = {top: 20, right: 40, bottom: 100, left: 40},
         width = 1000 - margin.left - margin.right,
         height = 270 - margin.top - margin.bottom;
 
@@ -32,11 +63,9 @@ function createAssayGraph(linedata, minValue, maxValue, labels, size, arraySize)
         .range(thisColorRange);
 
       var x0 = d3.scale.ordinal()
-        .domain(d3.range(size))
         .rangeBands([0, width], .3, .3);
 
-      var x1 = d3.scale.ordinal().domain(d3.range(arraySize))
-          .rangeBands([0, x0.rangeBand()]);
+      var x1 = d3.scale.ordinal()
 
       var y = d3.scale.linear()
         .range([height, 0]);
@@ -56,16 +85,17 @@ function createAssayGraph(linedata, minValue, maxValue, labels, size, arraySize)
         .attr("viewBox", "-30 -40 1100 280")
         .classed("svg-content", true)
 
-      //nest data
-    var data = d3.nest()
-        .key(function(d) { return d.i; })
-        .entries(linedata);
+    // color.domain(data.filter(function(key) { // Set the domain of the color ordinal
+    //     // scale to be all the csv headers except "i", matching a color to an issue
+    //     return (key == "values");
+    // }));
+    // function xValues(data) {
+    //
+    // }
+    var assays = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 16, 16, 16, 16, 16, 16]
 
-    color.domain(data.filter(function(key) { // Set the domain of the color ordinal
-        // scale to be all the csv headers except "i", matching a color to an issue
-        return (key == "i");
-    }));
-
+    x0.domain(data.map(function(d) { return d.key; }));
+    x1.domain(assays).rangeRoundBands([0, x0.rangeBand()]);
     y.domain([0, d3.max(data, function(d) { return d3.max(d.values, function(d) { return d.y; }); })]);
 
 
@@ -73,6 +103,13 @@ function createAssayGraph(linedata, minValue, maxValue, labels, size, arraySize)
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis)
+        .selectAll("text")
+        .style("text-anchor", "end")
+        .attr("dx", "-.8em")
+        .attr("dy", ".15em")
+        .attr("transform", function(d) {
+            return "rotate(-35)"
+            });
 
     // Draw the x Grid lines
     svg.append("g")
@@ -115,6 +152,7 @@ function createAssayGraph(linedata, minValue, maxValue, labels, size, arraySize)
           .attr("y", function(d) { return y(d.y); })
           .attr("height", function(d) { return height - y(d.y); })
           .style("fill", function(d) { return color(d.i); })
+          .style("opacity", .2)
           .on("mouseover", function() { tooltip.style("display", null); })
           .on("mouseout", function() { tooltip.style("display", "none"); })
           .on("mousemove", function(d) {
@@ -122,13 +160,13 @@ function createAssayGraph(linedata, minValue, maxValue, labels, size, arraySize)
             var xPosition = barPos + d3.mouse(this)[0] - 15;
             var yPosition = d3.mouse(this)[1] - 25;
             tooltip.attr("transform", "translate(" + xPosition + "," + yPosition + ")");
-            tooltip.select("text").text(labels[d.i] + ": " + d.y + " " + d.y_unit);
+            tooltip.select("text").text(d.x + " , " + d.y + " " + d.y_unit);
           });
 
 
      //legend
      var legend = svg.selectAll(".legend")
-          .data(labels.slice().reverse())
+          .data(data.map(function(d) { return d.key; }))
         .enter().append("g")
           .attr("class", "legend")
           .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
