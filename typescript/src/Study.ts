@@ -1550,6 +1550,7 @@ module StudyD {
         //remove SVG.
         this.mainGraphObject.clearAllSets();
         //Gives ids of lines to show.
+        var dataSets = [];
         postFilteringMeasurements = this.progressiveFilteringWidget.buildFilteredMeasurements();
         $.each(postFilteringMeasurements, (i, measurementId) => {
             var measure:AssayMeasurementRecord = EDDData.AssayMeasurements[measurementId],
@@ -1584,11 +1585,12 @@ module StudyD {
                     newSet.yaxisByMeasurementTypeID = mtype.family;
                 }
             }
-            this.mainGraphObject.addNewSet(singleAssayObj);
+            dataSets.push(singleAssayObj);
             //draw 1 line.
             //this.mainGraphObject.addNewSet(newSet);
         });
-
+        console.log(sortBarData(dataSets));
+        this.mainGraphObject.addNewSet(sortBarData(dataSets));
         //toggle between view
          d3.select('#chart')
               .on('click', function() {
