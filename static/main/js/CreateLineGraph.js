@@ -2,7 +2,6 @@
 * this function creates the line graph 
 **/
 function createLineGraph(linedata, minValue, maxValue, labels, minXvalue, maxXvalue) {
-
     /**
      * this function creates the x axis tick marks for grid
      **/
@@ -22,7 +21,6 @@ function createLineGraph(linedata, minValue, maxValue, labels, minXvalue, maxXva
             .orient("left")
             .ticks(5)
     }
-
 
     var div = d3.select("body").append("div")
         .attr("class", "tooltip")
@@ -103,10 +101,6 @@ function createLineGraph(linedata, minValue, maxValue, labels, minXvalue, maxXva
         })
         .entries(linedata);
 
-    var legendSpace = width / data.length;
-
-   // data.forEach(function (d, i) {
-
     for (var k = 0; k < data.length; k++) {
         var color1 = color(data[k].key)
         //label name coincides with same color
@@ -115,154 +109,79 @@ function createLineGraph(linedata, minValue, maxValue, labels, minXvalue, maxXva
         //lines
         for (var j = 0; j < data[k].values.length; j++) {
             var line = svg.append('path')
-                .attr("class", data[k].key)
-
+                //.attr("id", data[k].key + "-" + data[k].values[j].i)
+                .attr("id", data[k].key.split(' ').join('_'))
+                .attr('d', lineGen(data[k].values[j].values))
                 .attr('stroke', color1)
                 .attr('stroke-width', 2)
-                .attr("class", "line")
-                .attr('fill', 'none')
+                .attr("class", "experiment")
+                .attr('fill', 'none');
 
-            // line.on("click", function(d) {
-            //     d3.selectAll("." + d.name).style("fill", "red");
-            // });
-
-            var legend = svg.append("text")
-                .attr('d', lineGen(data[k].values[j].values))
-                .attr("x", width + 30)// spacing
-                .attr("y", 9 + (k * 15))
-                .attr("class", "legend")    // style the legend
-                .style("fill", function () { // Add the colours dynamically
-                    return data[k].color = color(data[k].key);
-                })
-                .on("click", function (d) {
-                    // Determine if current line is visible
-                    var self = this;
-                     // d3.selectAll(color1).style("fill", "red");
-
-                    // for (var c = 0; c < data.leng th; c++) {
-                    //     var active = "#tag" + (data[c]).replace(/\s+/g, '') ? false : true,
-                    //         newOpacity = active ? 1 : 0;
-                    // // Hide or show the elements based on the ID
-                    // d3.select("#tag" + d.key.replace(/\s+/g, ''))
-                    //     .transition().duration(100)
-                    //     .style("opacity", newOpacity);
-                    // // Update whether or  not the elements are active
-                    // data[c].active = active;
-                    // }
-                    var lines = d3.selectAll('.path');
-                    var legends = d3.selectAll('.legend');
-
-                    lines.filter(function(x) {
-                        return self != this;
-                    }).style("opacity", .1);
-                    // All other elements transition opacity.
-                    legends.filter(function (x) {
-                        return self != this;
-                    })
-                        .style("opacity", .1);
-                })
-                .on('mouseout', function (d) {
-                    d3.selectAll('.legend').style("opacity", 1);
-                })
-                .text(data[k].key);
-
-            var dataCirclesGroup = svg.append('svg:g');
-            var circles = dataCirclesGroup.selectAll('.data-point')
-                .data(data[k].values[j].values);
-            circles
-                .enter()
-                .append('svg:circle')
-                .attr('class', 'dot')
-                .attr('fill', 'grey')
-                .attr('cx', function (d) {
-                    return x(d["x"]);
-                })
-                .attr('cy', function (d) {
-                    return y(d["y"]);
-                })
-                .attr('r', function () {
-                    return 3;
-                })
-                .on("mouseover", function (d) {
-                    circleLabel = label
-                    div.transition()
-                        .duration(200)
-                        .style("opacity", .9);
-                    div.html('<strong>' + circleLabel + '</strong>' + ": " + d.y + " " + d.y_unit)
-                        .style("left", (d3.event.pageX) + "px")
-                        .style("top", (d3.event.pageY - 30) + "px");
-                })
-                .on("mouseout", function (d) {
-                    div.transition()
-                        .duration(500)
-                        .style("opacity", 0);
-                });
-            // .on("mouseover", function () {
-            //     //highlight path mouse overed
-            //     d3.select(this).style("stroke-width", '6px')
-            //     var self = this;
-            //     var paths = d3.selectAll('.line');
-            //     // All other elements transition opacity.
-            //     paths.filter(function (x) {
-            //         return self != this;
-            //     })
-            //         .style("opacity", .1);
-            // })
-            // .on("mouseout", function (d) {
-            //     d3.select(this)                          //on mouseover of each line, give it a nice thick stroke
-            //         .style("stroke-width", 2)
-            //     d3.selectAll('path').style("opacity", 1);
-            // })
-
+        var dataCirclesGroup = svg.append('svg:g');
+        var circles = dataCirclesGroup.selectAll('.data-point')
+            .data(data[k].values[j].values);
+        circles
+            .enter()
+            .append('svg:circle')
+            .attr('class', 'experiment')
+            .attr('fill', 'grey')
+            .attr('cx', function (d) {
+                return x(d["x"]);
+            })
+            .attr('cy', function (d) {
+                return y(d["y"]);
+            })
+            .attr('r', function () {
+                return 3;
+            })
+            .on("mouseover", function (d) {
+                circleLabel = label
+                div.transition()
+                    .duration(200)
+                    .style("opacity", .9);
+                div.html('<strong>' + circleLabel + '</strong>' + ": " + d.y + " " + d.y_unit)
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY - 30) + "px");
+            })
+            .on("mousemove", function (d) {
+                div.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            });
         }
-        //data circles
-    function findName(data, name) {
-        return data.filter(function(d) { return d.key == name})
+                 var legend = svg.selectAll(".legend")
+                  .data(data)
+                  .enter().append("g")
+                  .attr("class", "legend")
+                  .attr("transform", function(d, i) {
+                    return "translate(0," + i * 20 + ")";
+                  });
+
+                legend.append("rect")
+                  .attr("x", width - 18)
+                  .attr("width", 18)
+                  .attr("height", 18)
+                  .style("fill", function (d) { // Add the colours dynamically
+                    return data.color = color(d.key);
+                 })
+
+                legend.append("text")
+                  .attr("x", width - 24)
+                  .attr("y", 9)
+                  .attr("dy", ".35em")
+                  .style("text-anchor", "end")
+                  .text(function(d) {
+                    return d.key;
+                  })
+                  .on("click", function(d, i) {
+                    var id = d.key.split(' ').join('_')
+                    d3.selectAll('.experiment').style("opacity", function() {
+                        return this.id == id ? 1 : 0
+                    });
+                  })
+                  // .on("mouseout", function(d, i) {
+                  //   d3.selectAll("#"+d.key.split(' ').join('_')).style("stroke", "white");
+                  // });
+
     }
-
-        //color for specific path and name
-
-    }
-
-     function fade(opacity) {
-        return function(d) {
-            node.style("stroke-opacity", function(o) {
-                thisOpacity = isConnected(d, o) ? 1 : opacity;
-                this.setAttribute('fill-opacity', thisOpacity);
-                return thisOpacity;
-            });
-
-            link.style("stroke-opacity", function(o) {
-                return o.source === d || o.target === d ? 1 : opacity;
-            });
-        };
-    }
-
-
-
 }
-
-
- //
-        //         var legendGroup = svg.append('svg:g');
-        // var legend = legendGroup.selectAll('.line').data(d.values[j].values);
-        // legend
-        //   .enter()
-        //   .append("text")
-        //     .attr("x", width + 30)// spacing
-        //     .attr("y", 9 + (i * 15) )
-        //     .attr("class", "legend")    // style the legend
-        //     .attr("dy", ".35em")
-        //     .style("fill", color1)
-        //     .on("mouseover", function(d){
-        //       var self = this;
-        //       var legends = d3.selectAll('.legend');
-        //
-        //       // All other elements transition opacity.
-        //       legends.filter(function (x) { return self != this; })
-        //           .style("opacity", .1);
-        //       })
-        //       .on('mouseout', function(d) {
-        //           d3.selectAll('.legend').style("opacity", 1);
-        //       })
-        //     .text(label);
