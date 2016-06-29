@@ -1,7 +1,6 @@
 ////// grouped bar chart based on time
-function createTimeGraph(linedata, minValue, maxValue, minXvalue, maxXvalue, labels, size, arraySize) {
-
-
+function createTimeGraph(linedata, labels, size) {
+    
     var margin = {top: 20, right: 40, bottom: 30, left: 40},
         width = 1000 - margin.left - margin.right,
         height = 270 - margin.top - margin.bottom;
@@ -61,12 +60,16 @@ function createTimeGraph(linedata, minValue, maxValue, minXvalue, maxXvalue, lab
     *  }
     *  ...
     **/
+    var proteinNames = d3.nest()
+      .key(function(d) { return d.name; })
+      .entries(linedata);
+
     var data = d3.nest()
       .key(function(d) { return d.x; })
       .entries(linedata);
 
     x0.domain(data.map(function(d) { return d.key; }));
-    x1.domain(labels).rangeRoundBands([0, x0.rangeBand()]);
+    x1.domain(proteinNames.map(function(d) { return d.key; })).rangeRoundBands([0, x0.rangeBand()]);
     y.domain([0, d3.max(data, function(d) { return d3.max(d.values, function(d) { return d.y; }); })]);
 
     innerSpace.append("g")
@@ -147,8 +150,7 @@ function createTimeGraph(linedata, minValue, maxValue, minXvalue, maxXvalue, lab
           .attr("dy", ".35em")
           .style("text-anchor", "end")
           .text(function(d) { return d; })
-
-
+    
     //tooltip
     var tooltip = innerSpace.append("g")
       .attr("class", "tooltip")
