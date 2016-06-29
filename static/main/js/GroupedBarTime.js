@@ -39,19 +39,11 @@ function createTimeGraph(linedata, labels, size) {
         .orient("left")
         .tickFormat(d3.format(".2s"));
 
-    var svgViewport = d3.select("div#metrics").append("svg")
+    var svg = d3.select("div#metrics").append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
-    .style("border", "2px solid")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var zoom = d3.behavior.zoom()
-        .scaleExtent([1, 10])
-        .on("zoom", zoomed);
-
-    var innerSpace = svgViewport.append("g")
-        .attr("class", "inner_space")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-        .call(zoom);
     /**
     *  This method transforms our data object into the following
     *  {
@@ -72,12 +64,12 @@ function createTimeGraph(linedata, labels, size) {
     x1.domain(proteinNames.map(function(d) { return d.key; })).rangeRoundBands([0, x0.rangeBand()]);
     y.domain([0, d3.max(data, function(d) { return d3.max(d.values, function(d) { return d.y; }); })]);
 
-    innerSpace.append("g")
+    svg.append("g")
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis)
       // Draw the x Grid lines
-    innerSpace.append("g")
+    svg.append("g")
         .attr("class", "grid")
         .attr("transform", "translate(0," + height + ")")
         .call(make_x_axis()
@@ -85,7 +77,7 @@ function createTimeGraph(linedata, labels, size) {
             .tickFormat("")
         )
         // Draw the y Grid lines
-    innerSpace.append("g")
+    svg.append("g")
         .attr("class", "grid")
         .call(make_y_axis()
             .tickSize(-width, 0, 0)
@@ -93,7 +85,7 @@ function createTimeGraph(linedata, labels, size) {
         )
 
 
-    innerSpace.append("g")
+    svg.append("g")
       .attr("class", "y axis")
       .call(yAxis)
     .append("text")
@@ -103,7 +95,7 @@ function createTimeGraph(linedata, labels, size) {
       .style("text-anchor", "end")
       .text("Frequency");
 
-    var bar = innerSpace.selectAll(".bar")
+    var bar = svg.selectAll(".bar")
         .data(data)
         .enter().append('g')
         .attr("class", "bar")
@@ -132,7 +124,7 @@ function createTimeGraph(linedata, labels, size) {
     d3.select("body").append("div").attr("id", "v_scale").text("D3 Zoom Scale: ");
     d3.select("#v_scale").append("span").attr("id", "v_scale_val");
      //legend
-     var legend = innerSpace.selectAll(".legend")
+     var legend = svg.selectAll(".legend")
           .data(labels)
         .enter().append("g")
           .attr("class", "legend")
@@ -152,7 +144,7 @@ function createTimeGraph(linedata, labels, size) {
           .text(function(d) { return d; })
     
     //tooltip
-    var tooltip = innerSpace.append("g")
+    var tooltip = svg.append("g")
       .attr("class", "tooltip")
       .style("display", "none");
 
@@ -187,9 +179,5 @@ function createTimeGraph(linedata, labels, size) {
             .scale(y)
             .orient("left")
             .ticks(5)
-    }
-
-    function zoomed() {
-        innerSpace.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
     }
 }
