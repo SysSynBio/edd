@@ -2,19 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e24ebf48-8290-4320-b8ca-547467176189" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/Common.js" afterPath="$PROJECT_DIR$/main/static/main/js/Common.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js" afterPath="$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/Study.js" afterPath="$PROJECT_DIR$/main/static/main/js/Study.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/StudyGraphing.js" afterPath="$PROJECT_DIR$/main/static/main/js/StudyGraphing.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/templates/main/detail.html" afterPath="$PROJECT_DIR$/main/templates/main/detail.html" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/Common.js" afterPath="$PROJECT_DIR$/static/main/js/Common.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/GroupedBarAssay.js" afterPath="$PROJECT_DIR$/static/main/js/GroupedBarAssay.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/GroupedBarTime.js" afterPath="$PROJECT_DIR$/static/main/js/GroupedBarTime.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/Study.js" afterPath="$PROJECT_DIR$/static/main/js/Study.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/static/main/js/StudyGraphing.js" afterPath="$PROJECT_DIR$/static/main/js/StudyGraphing.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/typescript/src/Study.ts" afterPath="$PROJECT_DIR$/typescript/src/Study.ts" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/typescript/src/StudyGraphing.ts" afterPath="$PROJECT_DIR$/typescript/src/StudyGraphing.ts" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js" afterPath="$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/GroupedBarLines.js" afterPath="$PROJECT_DIR$/main/static/main/js/GroupedBarLines.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" afterPath="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" />
     </list>
     <ignored path="edd.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -44,7 +34,7 @@
     <favorites_list name="edd" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.5870647">
+    <splitter split-orientation="horizontal" split-proportion="0.44730812">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file leaf-file-name="detail.html" pinned="false" current-in-tab="false">
@@ -57,11 +47,11 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="GroupedBarAssay.js" pinned="false" current-in-tab="true">
+          <file leaf-file-name="GroupedBarAssay.js" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="421">
-                  <caret line="195" column="0" selection-start-line="195" selection-start-column="0" selection-end-line="198" selection-end-column="91" />
+                <state relative-caret-position="456">
+                  <caret line="24" column="0" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
                   <folding />
                 </state>
               </provider>
@@ -70,8 +60,8 @@
           <file leaf-file-name="Study.ts" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/typescript/src/Study.ts">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="564">
-                  <caret line="1567" column="0" selection-start-line="1567" selection-start-column="0" selection-end-line="1567" selection-end-column="0" />
+                <state relative-caret-position="621">
+                  <caret line="1570" column="49" selection-start-line="1570" selection-start-column="49" selection-end-line="1570" selection-end-column="49" />
                   <folding>
                     <element signature="n#!!doc" expanded="true" />
                     <marker date="1467242800000" expanded="true" signature="129486:130169" placeholder="..." />
@@ -86,18 +76,8 @@
           <file leaf-file-name="StudyGraphing.ts" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/typescript/src/StudyGraphing.ts">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="551">
-                  <caret line="95" column="37" selection-start-line="95" selection-start-column="37" selection-end-line="95" selection-end-column="37" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="Common.js" pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/main/static/main/js/Common.js">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="456">
-                  <caret line="166" column="10" selection-start-line="166" selection-start-column="10" selection-end-line="166" selection-end-column="10" />
+                <state relative-caret-position="589">
+                  <caret line="97" column="36" selection-start-line="97" selection-start-column="36" selection-end-line="97" selection-end-column="36" />
                   <folding />
                 </state>
               </provider>
@@ -106,18 +86,18 @@
           <file leaf-file-name="CreateLineGraph.js" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="1150">
-                  <caret line="150" column="0" selection-start-line="150" selection-start-column="0" selection-end-line="173" selection-end-column="20" />
+                <state relative-caret-position="0">
+                  <caret line="0" column="3" selection-start-line="0" selection-start-column="3" selection-end-line="0" selection-end-column="3" />
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="GroupedBarLines.js" pinned="false" current-in-tab="false">
+          <file leaf-file-name="GroupedBarLines.js" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarLines.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="-1177">
-                  <caret line="42" column="0" selection-start-line="42" selection-start-column="0" selection-end-line="42" selection-end-column="0" />
+                <state relative-caret-position="247">
+                  <caret line="62" column="27" selection-start-line="62" selection-start-column="27" selection-end-line="62" selection-end-column="27" />
                   <folding />
                 </state>
               </provider>
@@ -130,8 +110,8 @@
           <file leaf-file-name="GroupedBarTime.js" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="1501">
-                  <caret line="107" column="40" selection-start-line="107" selection-start-column="40" selection-end-line="107" selection-end-column="40" />
+                <state relative-caret-position="57">
+                  <caret line="3" column="4" selection-start-line="3" selection-start-column="4" selection-end-line="3" selection-end-column="38" />
                   <folding />
                 </state>
               </provider>
@@ -196,14 +176,14 @@
         <option value="$PROJECT_DIR$/typescript/build/Study.ts" />
         <option value="$PROJECT_DIR$/main/static/main/style.css" />
         <option value="$PROJECT_DIR$/main/static/main/js/IndividualBarCharts.js" />
-        <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarLines.js" />
-        <option value="$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js" />
-        <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" />
         <option value="$PROJECT_DIR$/main/templates/main/detail.html" />
         <option value="$PROJECT_DIR$/main/static/main/js/Common.js" />
         <option value="$PROJECT_DIR$/typescript/src/StudyGraphing.ts" />
         <option value="$PROJECT_DIR$/typescript/src/Study.ts" />
         <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js" />
+        <option value="$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js" />
+        <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js" />
+        <option value="$PROJECT_DIR$/main/static/main/js/GroupedBarLines.js" />
       </list>
     </option>
   </component>
@@ -820,7 +800,7 @@
     <frame x="176" y="49" width="1746" height="925" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.17102967" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.17067583" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Docker" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32951653" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32929516" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
@@ -842,29 +822,6 @@
       <window_info id="Concurrent Activities Diagram" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32920793" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3994911" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
     </layout>
-    <layout-to-restore>
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32929516" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" x="680" y="189" width="1240" height="597" />
-      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32929516" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.5890585" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.17102967" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Docker" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32951653" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
-      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.20814978" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Concurrent Activities Diagram" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32920793" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3994911" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-    </layout-to-restore>
   </component>
   <component name="Vcs.Log.UiProperties">
     <option name="RECENTLY_FILTERED_USER_GROUPS">
@@ -1217,10 +1174,48 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarLines.js">
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1177">
-          <caret line="42" column="0" selection-start-line="42" selection-start-column="0" selection-end-line="42" selection-end-column="0" />
+        <state relative-caret-position="0">
+          <caret line="0" column="3" selection-start-line="0" selection-start-column="3" selection-end-line="0" selection-end-column="3" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/Common.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="608">
+          <caret line="32" column="4" selection-start-line="32" selection-start-column="4" selection-end-line="32" selection-end-column="4" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="456">
+          <caret line="24" column="0" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/typescript/src/Study.ts">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="621">
+          <caret line="1570" column="49" selection-start-line="1570" selection-start-column="49" selection-end-line="1570" selection-end-column="49" />
+          <folding>
+            <element signature="n#!!doc" expanded="true" />
+            <marker date="1467242800000" expanded="true" signature="129486:130169" placeholder="..." />
+            <marker date="1467242800000" expanded="true" signature="129596:129929" placeholder="..." />
+            <marker date="1467242800000" expanded="true" signature="129979:130169" placeholder="..." />
+            <marker date="1467242800000" expanded="true" signature="130102:130119" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/typescript/src/StudyGraphing.ts">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="589">
+          <caret line="97" column="36" selection-start-line="97" selection-start-column="36" selection-end-line="97" selection-end-column="36" />
           <folding />
         </state>
       </provider>
@@ -1233,56 +1228,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/js/Common.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="456">
-          <caret line="166" column="10" selection-start-line="166" selection-start-column="10" selection-end-line="166" selection-end-column="10" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/typescript/src/StudyGraphing.ts">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="551">
-          <caret line="95" column="37" selection-start-line="95" selection-start-column="37" selection-end-line="95" selection-end-column="37" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/typescript/src/Study.ts">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="564">
-          <caret line="1567" column="0" selection-start-line="1567" selection-start-column="0" selection-end-line="1567" selection-end-column="0" />
-          <folding>
-            <element signature="n#!!doc" expanded="true" />
-            <marker date="1467242800000" expanded="true" signature="129486:130169" placeholder="..." />
-            <marker date="1467242800000" expanded="true" signature="129596:129929" placeholder="..." />
-            <marker date="1467242800000" expanded="true" signature="129979:130169" placeholder="..." />
-            <marker date="1467242800000" expanded="true" signature="130102:130119" placeholder="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarTime.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1501">
-          <caret line="107" column="40" selection-start-line="107" selection-start-column="40" selection-end-line="107" selection-end-column="40" />
+        <state relative-caret-position="57">
+          <caret line="3" column="4" selection-start-line="3" selection-start-column="4" selection-end-line="3" selection-end-column="38" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/js/CreateLineGraph.js">
+    <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarLines.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1150">
-          <caret line="150" column="0" selection-start-line="150" selection-start-column="0" selection-end-line="173" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main/static/main/js/GroupedBarAssay.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="421">
-          <caret line="195" column="0" selection-start-line="195" selection-start-column="0" selection-end-line="198" selection-end-column="91" />
+        <state relative-caret-position="247">
+          <caret line="62" column="27" selection-start-line="62" selection-start-column="27" selection-end-line="62" selection-end-column="27" />
           <folding />
         </state>
       </provider>
