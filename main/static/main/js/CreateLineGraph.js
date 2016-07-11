@@ -2,6 +2,8 @@
 * this function creates the line graph 
 **/
 function createLineGraph(graphSet, selector) {
+
+    var that = {};
     
     var assayMeasurements = graphSet.assayMeasurements;
 
@@ -37,7 +39,7 @@ function createLineGraph(graphSet, selector) {
             return d.y;
         });
     })]);
-    
+
     var yAxis = d3.svg.axis()
         .scale(y)
         .orient("left")
@@ -47,57 +49,9 @@ function createLineGraph(graphSet, selector) {
         .scale(x)
         .orient("bottom");
 
-    //create svg graph object
-    var svg = d3.select(selector).append("svg")
-        .attr("preserveAspectRatio", "xMinYMin meet")
-        .attr("viewBox", "-30 -40 1100 280")
-        .classed("svg-content", true);
+    that.setData = function(assayMeasurements) {
 
-
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis)
-        .append('text')
-        .attr("y", 20)
-        .attr("x", width)
-        .text(graphSet.x_unit);
-    // Draw the x Grid lines
-    svg.append("g")
-        .attr("class", "grid")
-        .attr("transform", "translate(0," + height + ")")
-        .call(graphSet.x_axis(x)
-            .tickSize(-height, 0, 0)
-            .tickFormat("")
-        );
-    // Draw the y Grid lines
-    svg.append("g")
-        .attr("class", "grid")
-        .call(graphSet.y_axis(y)
-            .tickSize(-width, 0, 0)
-            .tickFormat("")
-        );
-
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-        .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6)
-        .attr("dy", ".71em")
-        .style("text-anchor", "end")
-        .text(graphSet.y_unit);
-
-    var lineGen = d3.svg.line()
-        .x(function (d) {
-            return x(d.x);
-        })
-        .y(function (d) {
-            return y(d.y)
-        });
-
-    //iterate through different arrays. right now i is undefined.. not sure what is happening. 
-    var data = d3.nest()
+        data = d3.nest()
         .key(function (d) {
             return d.name;
         })
@@ -105,61 +59,130 @@ function createLineGraph(graphSet, selector) {
             return d.i;
         })
         .entries(assayMeasurements);
-    
-    var proteinNames = d3.nest()
+    };
+
+    that.getData = function() {
+        return data;
+    }
+
+    //create svg graph object
+    that.render = function() {
+        data = d3.nest()
         .key(function (d) {
             return d.name;
         })
+        .key(function (d) {
+            return d.i;
+        })
         .entries(assayMeasurements);
-    
-    var names = proteinNames.map(function (d) {return d.key;});
+        var svg = d3.select(selector).append("svg")
+        .attr("preserveAspectRatio", "xMinYMin meet")
+        .attr("viewBox", "-30 -40 1100 280")
+        .classed("svg-content", true);
 
+        svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+        .append('text')
+        .attr("y", 20)
+        .attr("x", width)
+        .text(graphSet.x_unit);
+        // Draw the x Grid lines
+        svg.append("g")
+            .attr("class", "grid")
+            .attr("transform", "translate(0," + height + ")")
+            .call(graphSet.x_axis(x)
+                .tickSize(-height, 0, 0)
+                .tickFormat("")
+            );
+        // Draw the y Grid lines
+        svg.append("g")
+            .attr("class", "grid")
+            .call(graphSet.y_axis(y)
+                .tickSize(-width, 0, 0)
+                .tickFormat("")
+            );
 
-    for (var k = 0; k < data.length; k++) {
-        var color1 = color(data[k].key)
-        //label name coincides with same color
-        //lines
-        for (var j = 0; j < data[k].values.length; j++) {
-            var line = svg.append('path')
-                .attr("id", data[k].key.split(' ').join('_'))
-                .attr('d', lineGen(data[k].values[j].values))
-                .attr('stroke', color1)
-                .attr('stroke-width', 2)
-                .attr("class", "experiment")
-                .attr('fill', 'none');
-        var dataCirclesGroup = svg.append('svg:g');
-        var circles = dataCirclesGroup.selectAll('.data-point')
-            .data(data[k].values[j].values);
-        circles
-            .enter()
-            .append('svg:circle')
-            .attr('class', 'dot')
-            //.attr('id', ("circle" + data[k].key).split(' ').join('_') )
-            .attr('fill', 'grey')
-            .attr('cx', function (d) {
-                return x(d["x"]);
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text(graphSet.y_unit);
+
+        var lineGen = d3.svg.line()
+            .x(function (d) {
+                return x(d.x);
             })
-            .attr('cy', function (d) {
-                return y(d["y"]);
-            })
-            .attr('r', function () {
-                return 3;
-            })
-            .style("fill", color1)
-            .on("mouseover", function (d) {
-                div.transition()
-                    .duration(200)
-                    .style("opacity", .9);
-                div.html('<strong>' + d.name + '</strong>' + ": " + d.y + " " + d.y_unit)
-                    .style("left", (d3.event.pageX) + "px")
-                    .style("top", (d3.event.pageY - 30) + "px");
-            })
-            .on("mouseout", function (d) {
-                div.transition()
-                    .duration(500)
-                    .style("opacity", 0);
+            .y(function (d) {
+                return y(d.y)
             });
+
+        //iterate through different arrays. right now i is undefined.. not sure what is happening.
+
+        var proteinNames = d3.nest()
+            .key(function (d) {
+                return d.name;
+            })
+            .entries(assayMeasurements);
+
+        var names = proteinNames.map(function (d) {return d.key;});
+
+
+        for (var k = 0; k < data.length; k++) {
+            var color1 = color(data[k].key)
+            //label name coincides with same color
+            //lines
+            for (var j = 0; j < data[k].values.length; j++) {
+                var line = svg.append('path')
+                    .attr("id", data[k].key.split(' ').join('_'))
+                    .attr('d', lineGen(data[k].values[j].values))
+                    .attr('stroke', color1)
+                    .attr('stroke-width', 2)
+                    .attr("class", "experiment")
+                    .attr('fill', 'none');
+            var dataCirclesGroup = svg.append('svg:g');
+            var circles = dataCirclesGroup.selectAll('.data-point')
+                .data(data[k].values[j].values);
+            circles
+                .enter()
+                .append('svg:circle')
+                .attr('class', 'dot')
+                //.attr('id', ("circle" + data[k].key).split(' ').join('_') )
+                .attr('fill', 'grey')
+                .attr('cx', function (d) {
+                    return x(d["x"]);
+                })
+                .attr('cy', function (d) {
+                    return y(d["y"]);
+                })
+                .attr('r', function () {
+                    return 3;
+                })
+                .style("fill", color1)
+                .on("mouseover", function (d) {
+                    div.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    div.html('<strong>' + d.name + '</strong>' + ": " + d.y + " " + d.y_unit)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 30) + "px");
+                })
+                .on("mouseout", function (d) {
+                    div.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+            }
         }
-    }
+
+    };
+
+    return that;
+
     graphSet.legend(data, color, svg, width, names);
 }
