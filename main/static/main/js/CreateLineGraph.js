@@ -80,39 +80,6 @@ function createLineGraph(graphSet, selector) {
         .attr("viewBox", "-30 -40 1100 280")
         .classed("svg-content", true);
 
-        svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis)
-        .append('text')
-        .attr("y", 20)
-        .attr("x", width)
-        .text(graphSet.x_unit);
-        // Draw the x Grid lines
-        svg.append("g")
-            .attr("class", "grid")
-            .attr("transform", "translate(0," + height + ")")
-            .call(graphSet.x_axis(x)
-                .tickSize(-height, 0, 0)
-                .tickFormat("")
-            );
-        // Draw the y Grid lines
-        svg.append("g")
-            .attr("class", "grid")
-            .call(graphSet.y_axis(y)
-                .tickSize(-width, 0, 0)
-                .tickFormat("")
-            );
-
-        svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
-            .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", ".71em")
-            .style("text-anchor", "end")
-            .text(graphSet.y_unit);
 
         var lineGen = d3.svg.line()
             .x(function (d) {
@@ -131,7 +98,7 @@ function createLineGraph(graphSet, selector) {
             .entries(assayMeasurements);
 
         var names = proteinNames.map(function (d) {return d.key;});
-
+        graphSet.legend(data, color, svg, width, names);
 
         for (var k = 0; k < data.length; k++) {
             var color1 = color(data[k].key)
@@ -182,7 +149,48 @@ function createLineGraph(graphSet, selector) {
 
     };
 
-    return that;
 
-    graphSet.legend(data, color, svg, width, names);
+    that.addAxis = function() {
+
+        svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+        .append('text')
+        .attr("y", 20)
+        .attr("x", width)
+        .text(graphSet.x_unit);
+        // Draw the x Grid lines
+        svg.append("g")
+            .attr("class", "grid")
+            .attr("transform", "translate(0," + height + ")")
+            .call(graphSet.x_axis(x)
+                .tickSize(-height, 0, 0)
+                .tickFormat("")
+            );
+        // Draw the y Grid lines
+        svg.append("g")
+            .attr("class", "grid")
+            .call(graphSet.y_axis(y)
+                .tickSize(-width, 0, 0)
+                .tickFormat("")
+            );
+
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text(graphSet.y_unit);
+    }
+
+    return that;
 }
+
+    c = createLineGraph(graphSet, selector)
+    c.render();
+
+

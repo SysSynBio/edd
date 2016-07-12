@@ -52,6 +52,18 @@ describe('Test create line graph with jasmine ', function() {
     });
 });
 
+  describe('test Axis creation', function() {
+    it('should create a xAxis', function() {
+         var axis = getXAxis();
+         expect(axis.length).toBe(1);
+    });
+
+    it('should create a yAxis', function() {
+       var axis = getYAxis();
+       expect(axis.length).toBe(1);
+    });
+});
+
 
   function getSvg() {
     return d3.select('svg');
@@ -60,5 +72,13 @@ describe('Test create line graph with jasmine ', function() {
   function getBars() {
     return d3.selectAll('.bar')[0];
 }
+
+  function getXAxis() {
+      return d3.selectAll('g.x.axis')[0];
+  }
+
+  function getYAxis() {
+      return d3.selectAll('g.y.axis')[0];
+  }
 
 });
