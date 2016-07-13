@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create lines for study</title>
+    <!-- TODO: template-ize script / stylesheet references -->
+    <link rel="stylesheet" type="text/css" href="common.css"/>
+    <link rel="stylesheet" type="text/css" href="create_lines_bulk.css"/>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+  <script src="/resources/demos/external/jquery-mousewheel/jquery.mousewheel.js"></script>
+  <!--link rel="stylesheet" href="/resources/demos/style.css"-->
+    <!-- TODO: extract this code into thestylesheet, or remove / replace -- initial experimental
+    version copied verbatim from https://jqueryui.com/sortable/#connect-lists -->
+    <style>
+  #line_name_elts, #unused_line_name_elts {
+    border: 1px solid #eee;
+    width: 200px;
+    height: 100%;
+    list-style-type: none;
+    margin: 0;
+    padding: 5px 0 0 0;
+    float: left;
+    margin-right: 10px;
+  }
+  #line_name_elts li, #unused_line_name_elts li {
+    margin: 0 5px 5px 5px;
+    padding: 5px;
+    /**font-size: 1.2em; */
+    width: 170px;
+  }
+  #line_name_elts li span, #unused_line_name_elts li span {
+      float: right;
+      margin-left: 1.3em;
+   }
+  </style>
+  <script>
+  $(function() {
+    $( "#line_name_elts, #unused_line_name_elts" ).sortable({
+      connectWith: ".connectedSortable"
+    }).disableSelection();
+  });
+  </script>
+    <!-- end of copied JQueryUI code -->
+    <!-- TODO: extract this code to the stylesheet. -- initial experimental version copied from
+    https://jqueryui.com/spinner/
+    -->
+    <script>
+    $(function() {
+    var spinner = $( "#spinner" ).spinner();
+
+    $( "#disable" ).click(function() {
+      if ( spinner.spinner( "option", "disabled" ) ) {
+        spinner.spinner( "enable" );
+      } else {
+        spinner.spinner( "disable" );
+      }
+    });
+    $( "#destroy" ).click(function() {
+      if ( spinner.spinner( "instance" ) ) {
+        spinner.spinner( "destroy" );
+      } else {
+        spinner.spinner();
+      }
+    });
+    $( "#getvalue" ).click(function() {
+      alert( spinner.spinner( "value" ) );
+    });
+
+    // $( "button" ).button(); //TODO: figure this out -- hilariously enlarges all the other buttons
+        // too
+  });
+  </script>
+    <script>
+        // custom work-in-progress JavaScript to make the page thingy work
+        $("#clear_form".click(function(){
+            alert("Are you sure you want to clear the form?")
+            spinner.spinner("value", 3)
+        }));
+    </script>
+    <!-- end of copied JQueryUI spinner sample code-->
+</head>
+<body>
+<h1>Create lines for <a href="/study/{{ study.id }}">{{ study.name }}</a></h1>
+<form>
+    <!-- Step 1 -->
+    <div class="pageSection" id="select_input_source_step">
+        <div class="sectionHead">Step 1: Choose the source(s) for line definitions:</div>
+            <div class="sectionContent">
+                <ul id="step1_list">
+                    <li>
+                        <input type="radio" name="input_source" id="manual_input_btn"
+                       class="property_radio" checked="checked" />
+                <label for="manual_input_btn">Manual input only (see Step 2)</label>
+                    </li>
+                    <li>
+                        <input type="radio" name="input_source" id="spreadsheet_btn"
+                       class="property_radio" disabled="disabled"/>
+                <label for="spreadsheet_btn">Spreadsheet</label>
+                    </li>
+                    <li>
+                         <input type="radio" name="input_source" id="ice_collection_btn"
+                                class="property_radio" disabled="disabled"/>
+                <label for="ice_collection_btn" >ICE collection</label>
+                        <input type="text" name="ice_collection" class="autocomplete" disabled="disabled">
+                    </li>
+                </ul>
+            </div>
+    </div>
+    <!-- Step 2 -->
+    <div class="pageSection id="select_line_properties_step">
+        <div class="sectionHead">Step 2: Choose properties to apply to each new line:</div>
+    <div class="sectionContent">
+        <div class="heading">
+            <div class="cell">
+                <label>Property</label>
+            </div>
+            <div class="cell"><!--empty for property user input--></div>
+            <div class="cell"><!--empty for add button column--></div>
+            <div class="cell">
+                <label>Apply to All Lines</label>
+            </div>
+            <div class="cell">
+                <label>Make Combinations</label>
+            </div>
+        </div>
+    <!-- TODO: template-ize this for only a selected subset of metadata based on runtime data.
+    See naiive draft code in CreateLines.ts-->
+        <!-- contact -->
+        <div class="row">
+            <div class="cell"><label for="contact_input">Contact:</label></div>
+            <div class="cell"><input type="text" class="autocomplete single_meta_value_input" id="contact"/></div>
+            <div class="cell">
+                <button type="button" name="add_contact_btn"
+                        id="add_contact_btn">+</button></div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="contact_destivation_btn"
+                                      class="property_radio"
+                                     value="apply_to_all"/></div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="contact_destivation_btn"
+                                     value="make_combinations" class="property_radio"/></div>
+         </div>
+        <!-- experimenter -->
+        <div class="row">
+            <div class="cell"><label for="experimentor_input">Experimenter:</label></div>
+                <div class="cell"><input type="text" class="autocomplete single_meta_value_input" id="experimentor"/></div>
+            <div class="cell">
+                <button type="button" name="add_experimentor_btn"
+                        id="add_experimentor_btn">+</button></div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="experimentor_destination_btn"
+                                     value="apply_to_all" class="property_radio"/></div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="experimentor_destination_btn"
+                                     value="make_combinations" class="property_radio"/></div>
+        </div>
+        <!-- carbon source 1 -->
+        <div class="row">
+            <div class="cell">
+                <label for="carbon_source_input">Carbon Source:</label></div>
+            <div class="cell">
+                <input type="text" class="autocomplete single_meta_value_input" id="carbon_source_input"/>
+                <button type="button" name="remove_carbon_source_btn"
+                        id="add_carbon_source_btn">-</button>
+
+            </div>
+            <div class="cell">
+                <button type="button" name="add_carbon_source_btn"
+                        id="add_carbon_source_btn">+</button>
+            </div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="carbon_source_destivation_btn"
+                                     value="apply_to_all" class="property_radio"/></div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="carbon_source_destivation_btn"
+                                     value="make_combinations" class="property_radio"/></div>
+        </div>
+        <!-- carbon source 2-->
+        <div class="row">
+            <div class="cell"></div>
+            <div class="cell">
+                <input type="text" class="autocomplete single_meta_value_input" id="carbon_source_input"/>
+                <button type="button" name="remove_carbon_source_btn"
+                        id="add_carbon_source_btn">-</button>
+
+            </div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+        </div>
+        <!-- strain 1 -->
+        <div class="row">
+            <div class="cell">
+                <label for="strain_input">Strain:</label></div>
+            <div class="cell">
+                <input type="text" class="autocomplete single_meta_value_input" id="strain_input"/>
+                <button type="button" name="remove_strain1_btn"
+                        id="remove_strain_btn">-</button>
+
+            </div>
+            <div class="cell">
+                <button type="button" name="add_strain_btn"
+                        id="add_strain_btn">+</button>
+            </div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="strain_destination_btn"
+                                     value="apply_to_all" class="property_radio"/></div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="strain_destination_btn"
+                                     value="make_combinations" class="property_radio"/></div>
+        </div>
+        <!--  strain 2-->
+        <div class="row">
+            <div class="cell"></div>
+            <div class="cell">
+                <input type="text" class="autocomplete single_meta_value_input" id="strain_input"/>
+                <button type="button" name="remove_strain2_btn"
+                        id="remove_strain2_btn">-</button>
+
+            </div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+        </div>
+        <!-- meta-data 1 -->
+        <div class="row">
+            <div class="cell">
+                <label for="metadata_input">Meta-data:</label></div>
+            <div class="cell">
+                <input type="text" class="autocomplete single_meta_value_input" id="metadata_type1_input"/>
+                <input type="text" class="autocomplete single_meta_value_input" id="metadata_value1_input"/>
+                <button type="button" name="remove_metadata1_btn"
+                        id="remove_metadata1_btn">-</button>
+
+            </div>
+            <div class="cell">
+                <button type="button" name="add_metadata_btn"
+                        id="add_metadata_btn">+</button>
+            </div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="metadata_destination_btn"
+                                     value="apply_to_all" class="property_radio"/></div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="metadata_destination_btn"
+                                     value="make_combinations" class="property_radio"/></div>
+        </div>
+         <!-- meta-data 2 -->
+            <div class="row">
+            <div class="cell"></div>
+            <div class="cell">
+                <input type="text" class="autocomplete single_meta_value_input" id="metadata_type2_input"/>
+                <input type="text" class="autocomplete single_meta_value_input" id="metadata_value2_input"/>
+                <button type="button" name="remove_metadata2_btn"
+                        id="remove_metadata2_btn">-</button>
+
+            </div>
+            <div class="cell">
+                <button type="button" name="add_metadata_btn"
+                        id="add_metadata_btn">+</button>
+            </div>
+            <div class="cell"></div>
+            <div class="cell"></div>
+        </div>
+        <!-- control -->
+        <div class="row">
+            <div class="cell"><label>Is Control?:</label></div>
+            <div class="cell single_meta_value_input">
+                <span><input type="checkbox" id="is_control"/><label
+                        for="is_control">Yes</label></span>
+                <span><input type="checkbox" id="is_not_control"/>
+                    <label for="is_control">No</label></span></div>
+            <div class="cell"></div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="is_control_destination_btn"
+                                     class="property_radio"
+                                     value="apply_to_all"/></div>
+            <div class="cell centered_radio_btn_parent"><input type="radio" name="is_control_destination_btn"
+                                     value="make_combinations" class="property_radio"/></div>
+         </div>
+        <!-- Description-->
+        <div class="row">
+            <div class="cell"><label>Description:</label></div>
+            <div class="cell single_meta_value_input">
+                <input type="text" class="description_value_input"
+                             id="description"/><button type="button" name="remove_description_btn"
+                        id="remove_description_btn">-</button></div>
+            <div class="cell"><button type="button" name="add_description_btn"
+                        id="add_description_btn">+</button></div>
+            <div class="cell centered_radio_btn_parent" centered_radio_btn_parent><input type="radio"
+                                                                name="description_destination_btn"
+                                     class="property_radio"
+                                     value="apply_to_all"/></div>
+            <div class="cell centered_radio_btn_parent" centered_radio_btn_parent><input type="radio"
+                                                                name="description_destination_btn"
+                                     value="make_combinations" class="property_radio"/></div>
+         </div>
+        <!-- Replicates -->
+        <div class="row">
+            <div class="cell"><label for="spinner">Replicates:</label></div>
+            <div class="cell single_meta_value_input">
+                <input id="spinner" value="3"/>
+                </div>
+            <div class="cell"></div>
+            <div class="cell centered_radio_btn_parent" centered_radio_btn_parent><input type="radio"
+                                                                name="replicates_destination_btn"
+                                     class="property_radio"
+                                     value="apply_to_all" disabled="disabled" checked="checked"/>
+            </div>
+            <div class="cell"></div>
+         </div>
+        <!-- Sample Position -->
+         <div class="row">
+            <div class="cell"><label class="disabled-label">Sample Position:</label></div>
+            <div class="cell single_meta_value_input"">
+                <ul id="step2_sample_position_list">
+                    <li><input type="checkbox" name="copy_from_ice_btn" class="property_radio"
+                                     value="apply_to_all" disabled="disabled"/><label
+                    for="copy_from_ice_btn"> Copy plate name & sample position from ICE</label></li>
+                    <li><label for="plate_name_pattern" class="disabled-label">Plate Name Pattern:</label>
+                    <input type="text" id="plate_name_pattern" disabled="disabled"></li>
+                </ul>
+            </div>
+            <div class="cell"></div>
+             <div class="cell centered_radio_btn_parent" centered_radio_btn_parent>
+                 <input type="radio" name="sample_pos_destination_btn"
+                                     class="property_radio"
+                                     value="apply_to_all" checked="checked" disabled="disabled"/></div>
+             <div class="cell"></div>
+         </div>
+            </div>
+        <!-- Step 3 -->
+        <div class="pageSection" id="choose_line_names_step">
+            <div class="sectionHead">Step 3: Choose the order of identifying data in line
+                names:</div>
+            <div class="sectionContent">
+                <div id="line_naming_summary"> <label>Sample Line Name: </label></div>
+
+                <div class="table" id="name_ordering_table">
+                    <div class="heading">
+                        <div class="cell"><label>Ordering:</label></div>
+                        <div class="cell"></div>
+                    </div>
+                    <div class="row">
+                        <div class="cell"><label>Line Name Elements</label></div>
+                        <div class="cell"><label>Unused Elements</label></div>
+                    </div>
+                    <div class="row">
+                        <!-- Line Name Elements List -->
+                        <div class="cell">
+                            <ul id="line_name_elts" class="connectedSortable">
+                                <li class="ui-state-default">Strain Name<span class="ui-icon
+                                ui-icon-arrowthick-2-n-s"></span></li>
+                                <li class="ui-state-default">Media<span class="ui-icon
+                                ui-icon-arrowthick-2-n-s"></span></li>
+                                <li class="ui-state-default">Carbon Source<span class="ui-icon
+                                ui-icon-arrowthick-2-n-s"></span></li>
+                                <li class="ui-state-default">Replicate #<span class="ui-icon
+                                ui-icon-arrowthick-2-n-s"></span></li>
+                            </ul>
+                        </div>
+                        <!-- Unused Elements List -->
+                        <div class="cell">
+                            <ul id="unused_line_name_elts" class="connectedSortable">
+                                <li class="ui-state-default">Growth Temperature<span
+                                        class="ui-icon
+                                ui-icon-arrowthick-2-n-s"></span></li>
+                                <li class="ui-state-default">Experimenter<span
+                                        class="ui-icon ui-icon-arrowthick-2-n-s"></span></li>
+                                <li class="ui-state-default">Is Control?
+                                    <span class="ui-icon ui-icon-arrowthick-2-n-s"></span></li>
+                                <li class="ui-state-default">Experimental Platform
+                                    <span class="ui-icon ui-icon-arrowthick-2-n-s"></span></li>
+                                <li class="ui-state-default">Strain Part ID
+                                    <span class="ui-icon ui-icon-arrowthick-2-n-s"></span></li>
+                                <li class="ui-state-default">Strain Alias
+                                    <span class="ui-icon ui-icon-arrowthick-2-n-s"></span></li>
+                                <li class="ui-state-default">Spreadsheet name column
+                                    <span class="ui-icon ui-icon-arrowthick-2-n-s"></span></li>
+                            </ul>
+                        </div>
+                        </div>
+                </div>
+                <div class="table" id="name_customization_table">
+                    <div class="heading">
+                        <div class="cell"><label>Custom Name Elements:</label></div>
+                        <div class="cell"><button name="add_custom_label">+</button></div>
+                        <div class="cell"><label>Abbreviations:</label></div>
+                        <div class="cell"><button name="add_abbreviation">+</button></div>
+                    </div>
+                    <div class="row">
+                        <div class="cell"><label>Label</label></div>
+                        <div class="cell"><label>Value</label></div>
+                        <div class="cell"><label>Element</label></div>
+                        <div class="cell"><label>Value</label></div>
+                        <div class="cell"><label>Abbreviation</label></div>
+                    </div>
+                        <div class="cell"><input type="text" name="lbl_descriptor_1"
+                                                 value="Experimental
+                                                 Platform"/></div>
+                        <div class="cell">
+                            <input type="text" name="lbl_value_1" value="BioHector">
+                            <button name="delete_lbl_1">-</button></div>
+                        <div class="cell"><input type="text" name="abbrev_elt_1" value="Strain Name"/></div>
+                        <div class="cell"><input type="text" name="abbrev_value_1"
+                                                 value="JW1058"/></div>
+                        <div class="cell"><input type="text" name="abbrev_text_1"
+                                                 value="58"/><button
+                                name="remove_abbreviation">-</button></div>
+                    </div>
+                </div>
+                 </div>
+    </div>
+
+</form>
+
+</body>
+</html>

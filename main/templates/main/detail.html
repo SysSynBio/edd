@@ -195,7 +195,8 @@
 
     {% if writable %}
     <div class="bare-header">
-        <a href="/study/{{ study.id }}/import">Import tabular data...</a>
+        <form action = "/study/{{ study.id }}/import"><button type="submit">Import
+            a data file...</button></form>
     </div>
     <div class="pageSection minor disclose{% if not new_line.is_editing %} discloseHide{% endif %}" id="lineMain">
         <div class="sectionHead">
@@ -216,6 +217,12 @@
                 </p>
                 <button type="submit" name="action" value="line">{% if new_line.is_editing %}Edit Line{% else %}Add Line{% endif %}</button>
             </form>
+            {% if not new_line.is_editing %}
+            <form action="create_lines_bulk">
+                <div style="text-align: right"><button type="submit">Create lines in bulk...
+            </button></div>
+            </form>
+            {% endif %}
         </div>
     </div>
     {% endif %}

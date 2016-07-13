@@ -830,7 +830,7 @@ class IceApi(RestApiClient):
         occurred but suppress_errors was true.
         """
 
-        rest_url = '%s/rest/parts/%s' % (self.base_url, entry_id)
+        rest_url = get_entry_uri(entry_id)
         try:
             response = self.request_generator.get(url=rest_url)
         except requests.exceptions.Timeout as e:
@@ -862,6 +862,16 @@ class IceApi(RestApiClient):
                                 })
 
             return None
+
+    def get_entry_uri(self, entry_id):
+        """
+        Constructs an entry's URI based on the provided identifier and the base URL for this ICE
+        deployment.
+        :param entry_id: the ICE ID for this entry (either the local numeric primary key, or a UUID)
+        :return: the URI
+        """
+        return '%s/rest/parts/%s' % (self.base_url, entry_id)
+
 
     # TODO: doesn't support field filters yet, though ICE's API does
     def search_entries(self, search_terms=None, entry_types=None, blast_program=None,

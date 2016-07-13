@@ -7,8 +7,11 @@ but are not making use of DRF.
 """
 import re
 
+from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from requests import HTTPError
 
 from edd.rest.serializers import (LineSerializer, MetadataGroupSerializer, MetadataTypeSerializer,
                                   StrainSerializer, StudySerializer, UserSerializer)
@@ -20,10 +23,12 @@ from jbei.edd.rest.constants import (QUERY_ACTIVE_OBJECTS_ONLY, QUERY_ALL_OBJECT
                                      METADATA_TYPE_NAME_REGEX,
                                      STRAIN_CASE_SENSITIVE, STRAIN_NAME, STRAIN_NAME_REGEX,
                                      STRAIN_REGISTRY_ID, STRAIN_REGISTRY_URL_REGEX)
+from jbei.ice.rest.ice import IceApi
+from jbei.rest.auth import HmacAuth
 from jbei.rest.utils import is_numeric_pk
 from main.models import Line, MetadataType, Strain, Study, StudyPermission, User, MetadataGroup
 from rest_framework import (status, viewsets)
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, ParseError, ValidationError
 from rest_framework.relations import StringRelatedField
 from rest_framework.response import Response
 
@@ -557,6 +562,11 @@ class StudyLineView(viewsets.ModelViewSet):  # LineView(APIView):
         if error_response:
             return error_response
 
+        # if the input is a dictionary that contains the right data for bulk creation,
+        # do a bulk creation
+        if 'bulk_creation_source' in request.data.keys():
+            self.create_lines_bulk(request)
+
         ##############################################################
         # if user has write privileges for the study, use parent implementation
         ##############################################################
@@ -593,6 +603,213 @@ class StudyLineView(viewsets.ModelViewSet):  # LineView(APIView):
         return super(StudyLineView, self).destroy(request, *args, **kwargs)
 
 
+    def create_lines_bulk(self, request):
+        """
+        Creates a set of study lines in bulk based on a set of combinatorial parameters
+        :param request:
+        :return:
+        """
+        # TODO: following initial draft / test, refactor as a Celery task. Client should get a quick
+        # reply from server to avoid timeouts during long processing times. Celery task's last
+        # job should be to reply to the client re: the results of batch processing.
+        data = request.data
+
+        # define constants for required input sections
+        bulk_creation_src_section_property = 'bulk_creation_source'
+        line_properies_section_property = 'line_properties'
+        line_name_ordering_section_property = 'line_name_ordering'
+
+        creation_src_manual = 'manual_input_only'
+        creation_src_spreadsheet = 'spreadsheet'
+        creation_src_ice_collection = 'ice_collection'
+        valid_creation_sources = (creation_src_manual, creation_src_spreadsheet,
+                                  creation_src_ice_collection)
+
+        missing_section_headers = \
+            [section_header for section_header in (bulk_creation_src_section_property,
+                                                   line_properies_section_property,
+                                                   line_name_ordering_section_property
+                                                   ) if section_header not in data]
+        if missing_section_headers:
+            raise ParseError("Request payload was missing required properties %s"
+                             % str(missing_section_headers))
+
+        src_param = 'source'
+
+        # keep track of the current section / search parameter so we can provide helpful error
+        # messages if a required item isn't found
+        section_name = bulk_creation_src_section_property
+        param_name = src_param
+
+        creation_src = data.get(src_param)
+
+        if creation_src not in valid_creation_sources:
+            raise ParseError("Value %(value)s isn't a valid value for parameter %(param)s" % {
+                'value': creation_src, 'param': src_param
+            })
+
+        if creation_src != creation_src_manual:
+            raise NotImplementedException(
+                """Bulk creation source "%s" isn't supported yet""" % creation_src)
+            # TODO: consider checking for / enforcing line name uniqueness within the study once
+            # we've given users the option to create their own line names from other sources
+
+        logger.info('Start bulk line creation for user %(username)s: input=%(inputs)s' % {
+            'username': self.request.user.username,
+            'input': str(self.request.data)
+        })
+
+        try:
+
+
+            # TODO: consider checking uniqueness for line names in input / within the study.
+            # 1) requiring that every combinatorial input also be present in the line name
+            # format
+            # 2) testing all line names against names already in the study *before* creating any
+            # lines
+            # 3) Maybe allow flexibility in creating non-unique names by having a separate
+            # flag that turns of consistency checks. On the other hand, can just require this in the
+            # GUI and assume that anyone using the API had better know what they're doing.
+
+            # construct a Line object to save to the database. We can't use Django's bulk_create()
+            # to improve efficiency since Line/Strain have a many-to-many relationship.
+            line_properties_section = data.get(line_properies_section_property)
+            line_name_section = data.get(line_name_ordering_section_property)
+
+
+            # if the user requested that we set strains for some of the lines, figure out which
+            # have already been cached in EDD's database, then get the rest from ICE and cache them
+            strain_property_pattern = re.compile(r'$strain_(\w)^')
+
+            strain_section_param = 'strain'
+            requested_strain_uuids = line_properties_section.get('strain_section_param')
+
+            if not requested_strain_uuids:
+                logger.info('No strains requested for bulk creation. Skipping EDD / ICE strain '
+                            'lookup.')
+            else:
+
+                # TODO: resume work here(ish). Probably best to revisit the HTML / figure out how
+                # to structure elt names / JSON input before implementing too many deets of line
+                # name creation
+
+                # build a list of line name elements that will be applied combinatorially
+                combinatorial_name_elts = []
+                for name_elt in line_name_section:
+
+                    line_property = line_properties_section[name_elt]
+
+                    if 'make_combinations' == line_property['outcome']:  # TODO: resolve w/ elt name
+
+                        if line_property in line_name_section:
+                            combinatorial_name_elts.append(line_property)
+
+                # create any strains that weren't already in EDD's database. Do this AFTER checking
+                # consistency in line name creation inputs. Strain creation could take some time /
+                # create race conditions if the first failed submission due to other errors
+                # launches a time-consuming strain creation process.
+                cached_strains = self.bulk_create_strains(requested_strain_uuids)
+
+
+                #with transaction.atomic():
+                    # bulk create lines in EDD
+                    # follow up by setting the creation / update data for all of the lines since
+                    # this can't be done during bulk creation
+
+
+
+        except KeyError as key_err:
+            logger.log_exception("Exception parsing bulk line creation inputs for user %s" %
+                                 self.user)
+            raise ParseError("""Required property "%(property)s" wasn't found in data section """
+                             '"%(section)s" ' % {
+                                'property': param_name,
+                                'section': section_name, })
+
+
+
+    def bulk_create_strains(self, requested_strain_uuids):
+        """
+        Performs bulk creation of strains with the provided UUIDs from ICE. If any of the UUIDs are
+        already linked to entries in EDD's database, they're ignored. Strains are created in bulk within
+        the context of a database transaction, so the creation either completely succeeds or fails.
+        :param self:
+        :param requested_strain_uuids:
+        :return: a dictionary that maps UUID -> EDD Strain instance for each strain (now
+        guaranteed to be located / created)
+        :raise ValidationError if any value in requested_strain_uuids isn't a valid UUID
+        :raise requests.HttpError of any error occurred in contacting ICE
+        """
+        # TODO: consider doing this externally to a transaction.
+        # TODO: also expose as part of /rest/strain (for users with the appropriate access level)
+        try:
+
+
+            # start a transaction so bulk strain creation in EDD's database fails consistently
+            # with update history for each strain that must be inserted in a separate query
+            with transaction.atomic():
+                try:
+                    cached_strains = {strain.registry_id: strain for strain in
+                                      Strain.objects.filter(registry_id__in=requested_strain_uuids)}
+                except TypeError:
+                    raise ValidationError('Incorrect UUID format for one or more strains')
+
+                uncached_strains = [uuid for uuid in requested_strain_uuids if
+                                   uuid not in cached_strains.keys()]
+
+                if uncached_strains:
+                    logger.info("User requested %d strains that weren't found in EDD's "
+                                "database. Searching ICE for valid strains that aren't "
+                                "cached by EDD.")
+
+                    auth = HmacAuth(key_id=settings.ICE_KEY_ID, username=self.request.user.username)
+                    ice = IceApi(auth)
+
+                    entries_to_cache = []
+                    for index, uncached_uuid in enumerate(uncached_strains):
+                        entry = ice.get_entry(entry_id=uncached_uuid)
+                        if not entry:
+                            raise ParseError("Requested strain wasn't found in ICE %s")
+                        if not isinstance(entry, Strain):
+                            raise ValidationError('ICE entry %s is not a Strain. '
+                                                           'Only strains are supported as '
+                                                           'the basis for EDD line '
+                                                           'creation' % uncached_uuid)
+                        # TODO: SYNBIO-1350 use uuid to construct URL instead of local pk
+                        entries_to_cache.append(Strain(name=entry.name, registry_id=entry.uuid,
+                                                       registry_url=ice.get_entry_uri(entry.id),
+                                                       description=entry.short_description))
+
+                    logger.info('Found ICE entries for all requested strains. Creating '
+                                'EDD strain entries in bulk...')
+
+                    # efficiently cache the entries EDD's database in bulk
+                    Strain.objects.create_bulk(entries_to_cache)
+
+                    logger.info('Done with bulk Strain creation. Storing associated '
+                                'update history...')
+
+                    # TODO: need to insert update / creation rows following bulk update,
+                    # which won't execute the strain save() method or save-related hooks
+
+                    # cache newly-created strain data in this process to use as input for
+                    # line creation
+                    for cached_entry in entries_to_cache:
+                        cached_strains[cached_entry.registry_id] = cached_entry
+                else:
+                    logger.info("All %d requested strains already cached in EDD's "
+                                "database. " % len(requested_strain_uuids))
+
+                return cached_strains
+
+        except HTTPError as err:
+            logger.exception('Error getting uncached strain information from ICE '
+                                 'during bulk line creation. Failed on strain %(index)d '
+                                 'uuid=%(uuid)s' % {
+                                     'index': index, 'uuid': uncached_uuid
+                                 })
+            raise err
+
     @staticmethod
     def _test_user_write_access(user, study_pk):
         # return a 403 error if user doesn't have write access
@@ -607,7 +824,6 @@ class StudyLineView(viewsets.ModelViewSet):  # LineView(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         return None
-
 
 class NotImplementedException(APIException):
     status_code = 500

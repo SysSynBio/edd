@@ -17,6 +17,7 @@ urlpatterns = [
         name='detail'
         ),
     url(r'^study/(?P<study>\d+)/lines/$', login_required(views.study_lines)),
+    url(r'^study/(?P<study>\d+)/create_lines_bulk$', login_required(views.bulk_create_lines)),
     url(r'^study/(?P<study>\d+)/assaydata/$', login_required(views.study_assay_table_data)),
     url(r'^study/(?P<study>\d+)/edddata/$', login_required(views.study_edddata)),
     url(r'^study/(?P<study>\d+)/measurements/(?P<protocol>\d+)/$',

@@ -110,6 +110,8 @@ class StudyCreateView(generic.edit.CreateView):
     def get_success_url(self):
         return reverse('main:detail', kwargs={'pk': self.object.pk})
 
+class StudyCreateLinesView(generic.DetailView):
+    template_name = 'main/'
 
 class StudyDetailView(generic.DetailView):
     """ Study details page, displays line/assay data. """
@@ -670,6 +672,12 @@ def study_lines(request, study):
     """ Request information on lines in a study. """
     obj = load_study(request, study)
     return JsonResponse(Line.objects.filter(study=obj), encoder=JSONDecimalEncoder)
+
+
+@ensure_csrf_cookie
+def bulk_create_lines(request, study):
+    model = load_study(request, study, permission_type=['W', ])
+    return render(request, 'main/create_lines_bulk.html', context={'study': model})
 
 
 # /study/<study_id>/measurements/<protocol_id>/

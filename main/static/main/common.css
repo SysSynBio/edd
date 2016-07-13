@@ -49,6 +49,11 @@ a:hover {
     text-decoration:underline;
 }
 
+input:disabled+label{color:#ccc;}
+
+.disabled-label {
+    color:#ccc
+}
 
 /* Functional classes */
 .clear {
@@ -310,7 +315,7 @@ div.pageSection div.sectionChapter {
 }
 div.pageSection div.sectionContent {
     margin:0px;
-    padding:4px 8px 4px 8px;
+    padding:4px 8px 4px 25px;
 }
 div.pageSection div.sectionContent.sectionRight {
     text-align: right;

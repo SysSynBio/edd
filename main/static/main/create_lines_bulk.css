@@ -1,0 +1,122 @@
+/* <!-- http://www.dummies.com/how-to/content/using-the-div-tag-to-create-tables.html */
+
+/**
+
+    General stylistic TODO's:
+    1. Test tweaked insets in common.css in other forms once master is fixed
+    2. Improve styling for step 2 form -- see some initial attempts below
+    3. Experiment with nested table / alternate row coloring type styles to help differentiate
+       sub-sections of step 2 that apple to different meta-data types. Don't make it too complex!
+    4. Center the radio buttons in their columns
+*/
+.table
+{
+    display: table;
+}
+.title
+{
+    display: table-caption;
+    text-align: center;
+    font-weight: bold;
+    font-size: larger;
+}
+.heading
+{
+    display: table-row;
+    /* font-weight: bold; */
+    text-decoration:underline;
+    text-align: left;
+}
+
+.property_radio
+{
+    margin: auto;
+}
+.row
+{
+    display: table-row;
+}
+
+.cell
+{
+    display: table-cell;
+    /*border: solid;
+    border-width: thin; */
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 8px;
+}
+
+/* TODO: unused! fix and use! */
+.odd_row
+{
+    background: linear-gradient(top, rgba(183,253,25,0.5) 100%, rgba(200,200,200,0.1) 100%);
+    background: -o-linear-gradient(top, rgba(183,253,25,0.5) 100%, rgba(200,200,200,0.1) 100%);
+    background: -moz-linear-gradient(top, rgba(183,253,25,0.5) 100%, rgba(200,200,200,0.1) 100%);
+    background: -webkit-linear-gradient(top, rgba(183,253,25,0.5) 100%, rgba(200,200,200,0.1) 100%);
+    background: -ms-linear-gradient(top, rgba(183,253,25,0.5) 100%, rgba(200,200,200,0.1) 100%);
+}
+
+/* TODO: unused! fix and use! */
+.even_row
+{
+    background: linear-gradient(top, rgba(200,200,200,0.5) 0%, rgba(200,200,200,0.1) 100%);
+    background: -o-linear-gradient(top, rgba(200,200,200,0.5) 0%, rgba(200,200,200,0.1) 100%);
+    background: -moz-linear-gradient(top, rgba(200,200,200,0.5) 0%, rgba(200,200,200,0.1) 100%);
+    background: -webkit-linear-gradient(top, rgba(200,200,200,0.5) 0%, rgba(200,200,200,0.1) 100%);
+    background: -ms-linear-gradient(top, rgba(200,200,200,0.5) 0%, rgba(200,200,200,0.1) 100%);
+}
+
+#step1_list,#step2_sample_position_list{
+    padding-top: 8px;
+    list-style-type: none;
+}
+
+#step1_list li,#step2_sample_position_list li {
+    padding-bottom: 8px;
+}
+
+.centered_radio_btn_parent {
+    text-align: center;
+}
+
+/* */
+input[type="radio"] {
+    margin: auto;
+}
+
+#name_ordering_table,#name_customization_table {
+    /* margin-left: 10px; */
+    margin-top: 25px;
+}
+
+#name_ordering_table {
+}
+
+#name_customization_table {
+
+}
+
+
+/*
+TODO: doesn't resolve growing inputs to fill the column in an easily-parsable way! try tweaking nested spans next
+
+TODO: an unused / speculative / last-resort solution. try spans first!
+
+.single_meta_value_input {
+    width:100%;
+}
+
+.single_meta_value_input span {
+    display: inline-block;
+}
+
+
+.meta_type_input {
+    width: 50%;
+}
+
+.meta_value_input {
+    width: 50%;
+}
+*/
