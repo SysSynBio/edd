@@ -854,7 +854,8 @@ def permissions(request, study):
                     lookup = {'user_id': user.get('id', 0), 'study_id': study}
                     manager = obj.userpermission_set.filter(**lookup)
                 elif everyone is not None:
-                    manager = obj.everyonepermission_set.filter(study_id=study)
+                    lookup = {'study_id': study}
+                    manager = obj.everyonepermission_set.filter(**lookup)
                 if manager is None:
                     logger.warning('Invalid permission type for add')
                 elif ptype == StudyPermission.NONE:
@@ -863,17 +864,18 @@ def permissions(request, study):
                     lookup['permission_type'] = ptype
                     manager.update_or_create(**lookup)
         except Exception as e:
-            logger.error('Error modifying study (%s) permissions: %s' % (study, str(e)))
+            logger.exception('Error modifying study (%s) permissions: %s', study, e)
             return HttpResponse(status=500)
         return HttpResponse(status=204)
     elif request.method == 'DELETE':
         if not obj.user_can_write(request.user):
             return HttpResponseForbidden("You do not have permission to modify this study.")
         try:
+            obj.everyonepermission_set.all().delete()
             obj.grouppermission_set.all().delete()
             obj.userpermission_set.all().delete()
         except Exception as e:
-            logger.error('Error deleting study (%s) permissions: %s' % (study, str(e)))
+            logger.exception('Error deleting study (%s) permissions: %s', study, str(e))
             return HttpResponse(status=500)
         return HttpResponse(status=204)
     else:
