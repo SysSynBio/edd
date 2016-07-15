@@ -72,6 +72,70 @@ def main(argv):
         print(line_id)
         pprint.pprint(rows)
 
+# Approximate steps to parse histograms into study
+# -----------------------------------------------------------------------------
+# study = Study.objects.get(…)
+# lines = defaultdict(list)
+# media_type = MetadataType.objects.get(type_name='Media')
+# promoter_type = MetadataType.objects.get(type_name='Promoter')
+# plate_type = MetadataType.objects.get(type_name='Plate ID')
+# well_type = MetadataType.objects.get(type_name='Well Location')
+# protocol = Protocol.objects.get(…)
+# gfp = MeasurementType.objects.get(…)
+# mefl = MeasurementUnit.objects.get(…)
+# hist = MeasurementUnit.objects.get(…)
+# hours = MeasurementUnit.objects.get(…)
+# for row in process_file(…):
+#     line_id = '%(media)s_%(promoter)s_%(plate)s%(well)s' % row.info._asdict()
+#     lines[line_id].append(row)
+# for line_id in sorted(lines.keys()):
+#     rows = lines[line_id]
+#     info = rows[0].info
+#     line, created = study.line_set.update_or_create(name=line_id)
+#     line.metadata_add(media_type, info.media)
+#     line.metadata_add(promoter_type, info.promoter)
+#     line.metadata_add(plate_type, info.plate)
+#     line.metadata_add(well_type, info.well)
+#     line.save()
+#     assay, created = line.assay_set.update_or_create(
+#         protocol=protocol,
+#         name='%(plate)s%(well)s' % row.info._asdict(),
+#     )
+#     scalar, created = assay.measurement_set.update_or_create(
+#         measurement_type=gfp,
+#         measurement_format='1',
+#         compartment='1',
+#         x_units=hours,
+#         y_units=mefl,
+#     )
+#     sigma, created = assay.measurement_set.update_or_create(
+#         measurement_type=gfp,
+#         measurement_format='3',
+#         compartment='1',
+#         x_units=hours,
+#         y_units=mefl,
+#     )
+#     histogram, created = assay.measurement_set.update_or_create(
+#         measurement_type=gfp,
+#         measurement_format='3',
+#         compartment='1',
+#         x_units=hours,
+#         y_units=hist,
+#     )
+#     for row in rows:
+#         scalar.measurementvalue_set.update_or_create(
+#             x=[Decimal(row.info.time)],
+#             y=[row.mean],
+#         )
+#         sigma.measurementvalue_set.update_or_create(
+#             x=[Decimal(row.info.time)],
+#             y=[row.mean, row.variance, row.count, ],
+#         )
+#         histogram.measurementvalue_set.update_or_create(
+#             x=[Decimal(row.info.time)],
+#             y=row.values,
+#         )
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
