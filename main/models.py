@@ -834,7 +834,7 @@ class GroupPermission(StudyPermission):
 
     def to_json(self):
         return {
-            'user': {
+            'group': {
                 'id': self.group.pk,
                 'name': self.group.name,
             },
@@ -843,6 +843,26 @@ class GroupPermission(StudyPermission):
 
     def __str__(self):
         return 'g:%(group)s' % {'group': self.group.name}
+
+
+@python_2_unicode_compatible
+class EveryonePermission(StudyPermission):
+    class Meta:
+        db_table = 'study_public_permission'
+
+    def applies_to_user(self, user):
+        return True
+
+    def get_who_label(self):
+        return _('Everyone')
+
+    def to_json(self):
+        return {
+            'type': self.permission_type
+        }
+
+    def __str__(self):
+        return 'g:__Everyone__'
 
 
 @python_2_unicode_compatible

@@ -843,6 +843,7 @@ def permissions(request, study):
             for perm in perms:
                 user = perm.get('user', None)
                 group = perm.get('group', None)
+                everyone = perm.get('public', None)
                 ptype = perm.get('type', StudyPermission.NONE)
                 manager = None
                 lookup = {}
@@ -852,6 +853,8 @@ def permissions(request, study):
                 elif user is not None:
                     lookup = {'user_id': user.get('id', 0), 'study_id': study}
                     manager = obj.userpermission_set.filter(**lookup)
+                elif everyone is not None:
+                    manager = obj.everyonepermission_set.filter(study_id=study)
                 if manager is None:
                     logger.warning('Invalid permission type for add')
                 elif ptype == StudyPermission.NONE:
