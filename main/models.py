@@ -684,7 +684,7 @@ class Study(EDDObject):
                 '%s__permission_type__in' % group_perm: perm,
             }) |
             Q(**{
-                '%s__permission_type' % all_perm: perm,
+                '%s__permission_type__in' % all_perm: perm,
             })
         )
 
