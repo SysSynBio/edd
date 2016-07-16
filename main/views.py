@@ -143,11 +143,9 @@ class StudyDetailView(generic.DetailView):
         qs = super(StudyDetailView, self).get_queryset()
         if self.request.user.is_superuser:
             return qs
-        return qs.filter(
-            Q(userpermission__user=self.request.user,
-              userpermission__permission_type__in=['R', 'W', ]) |
-            Q(grouppermission__group__user=self.request.user,
-              grouppermission__permission_type__in=['R', 'W', ])).distinct()
+        return qs.filter(Study.user_permission_q(
+            self.request.user, (StudyPermission.READ, StudyPermission.WRITE, )
+        )).distinct()
 
     def handle_assay(self, request, context, *args, **kwargs):
         assay_id = request.POST.get('assay-assay_id', None)

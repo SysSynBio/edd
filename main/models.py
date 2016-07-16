@@ -659,7 +659,8 @@ class Study(EDDObject):
         permissions granted on the Study, not whether the user's role (e.g. 'staff', 'admin')
         gives him/her access to it.  See user_role_has_read_access(user), user_can_read(self, user).
         :param user: the user
-        :param permission: the study permission type to test (e.g. StudyPermission.READ)
+        :param permission: the study permission type to test (e.g. StudyPermission.READ); can be
+            any iterable of permissions or a single permission
         :param keyword_prefix: an optional keyword prefix to prepend to the query keyword arguments.
         For example when querying Study, the default value of '' should be used, or when querying
         for Lines, whose permissions depend on the related Study, use 'study__' similar to other
@@ -667,20 +668,23 @@ class Study(EDDObject):
         :return: true if the user has the specified permission to the study
         """
         prefix = keyword_prefix
+        perm = permission
+        if isinstance(permission, string_types):
+            perm = (permission, )
         user_perm = '%suserpermission' % prefix
         group_perm = '%sgrouppermission' % prefix
         all_perm = '%severyonepermission' % prefix
         return (
             Q(**{
                 '%s__user' % user_perm: user,
-                '%s__permission_type' % user_perm: permission,
+                '%s__permission_type__in' % user_perm: perm,
             }) |
             Q(**{
                 '%s__group__user' % group_perm: user,
-                '%s__permission_type' % group_perm: permission
+                '%s__permission_type__in' % group_perm: perm,
             }) |
             Q(**{
-                '%s__permission_type' % all_perm: permission
+                '%s__permission_type' % all_perm: perm,
             })
         )
 
