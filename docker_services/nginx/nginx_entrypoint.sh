@@ -39,7 +39,8 @@ elif [ ! -r /etc/ssl/edd/trustchain.crt ]; then
 fi
 
 # Potentially do some variable replacement of nginx config
-envsubst < /code/docker_services/nginx/nginx.conf > /etc/nginx/nginx.conf
+# Uncomment and replace $VAR1 with the $FOO to only replace $FOO variables
+#envsubst '$VAR1 $VAR2' < /code/docker_services/nginx/nginx.conf > /etc/nginx/nginx.conf
 
 # start nginx
 nginx -g 'daemon off;'
