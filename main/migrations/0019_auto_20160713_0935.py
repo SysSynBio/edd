@@ -9,6 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('main', '0018_normalize_vector_measurements'),
+        ('main', '0018_everyonepermission'),
     ]
 
     operations = [

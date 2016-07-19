@@ -30,6 +30,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('main', '0017_parse-sbml-for-reactions'),
+        ('main', '0018_everyonepermission'),
     ]
 
     operations = [
