@@ -103,7 +103,7 @@ def main(argv):
 #     )
 #     scalar, created = assay.measurement_set.update_or_create(
 #         measurement_type=gfp,
-#         measurement_format='1',
+#         measurement_format='0',
 #         compartment='1',
 #         x_units=hours,
 #         y_units=mefl,
@@ -117,7 +117,7 @@ def main(argv):
 #     )
 #     histogram, created = assay.measurement_set.update_or_create(
 #         measurement_type=gfp,
-#         measurement_format='3',
+#         measurement_format='2',
 #         compartment='1',
 #         x_units=hours,
 #         y_units=hist,
