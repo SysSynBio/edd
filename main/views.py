@@ -674,29 +674,29 @@ def study_measurements(request, study, protocol):
     measure_types = MeasurementType.objects.filter(
         measurement__assay__line__study=obj,
         measurement__assay__protocol_id=protocol,
-        ).distinct()
+    ).distinct()
+    # setting filter query outside so repeated values can be re-used
+    m_query = {
+        'assay__line__study': obj,
+        'assay__protocol_id': protocol,
+        'active': True,
+        'measurement_format': Measurement.Format.SCALAR,
+        'assay__active': True,
+        'assay__line__active': True,
+    }
     # stash QuerySet to use in both measurements and total_measures below
-    qmeasurements = Measurement.objects.filter(
-        assay__line__study=obj,
-        assay__protocol_id=protocol,
-        active=True,
-        assay__active=True,
-        assay__line__active=True,
-        )
+    qmeasurements = Measurement.objects.filter(**m_query)
     # Limit the measurements returned to keep browser performant
     measurements = qmeasurements.order_by('id')[:5000]
     total_measures = qmeasurements.values('assay_id').annotate(count=Count('assay_id'))
     measure_list = list(measurements)
     if len(measure_list):
         # only try to pull values when we have measurement objects
-        values = MeasurementValue.objects.filter(
-            measurement__assay__line__study=obj,
-            measurement__assay__protocol_id=protocol,
-            measurement__active=True,
-            measurement__assay__active=True,
-            measurement__assay__line__active=True,
-            measurement__pk__range=(measure_list[0].id, measure_list[-1].id),
-        )
+        # filter query is mostly same as Measurement filter, only with 'measurement__' prepended
+        mv_query = dict(map(lambda i: ('measurement__' + i[0], i[1]), m_query.iteritems()))
+        # also only get values within range of the selected Measurement objs
+        mv_query['measurement__pk__range'] = (measure_list[0].id, measure_list[-1].id)
+        values = MeasurementValue.objects.filter(**mv_query)
     else:
         values = []
     value_dict = collections.defaultdict(list)
@@ -721,29 +721,32 @@ def study_assay_measurements(request, study, protocol, assay):
         measurement__assay__line__study=obj,
         measurement__assay__protocol_id=protocol,
         measurement__assay=assay,
-        ).distinct()
+    ).distinct()
+    # setting filter query outside so repeated values can be re-used
+    m_query = {
+        'assay__line__study': obj,
+        'assay__protocol_id': protocol,
+        'assay': assay,
+        'active': True,
+        'measurement_format': Measurement.Format.SCALAR,
+        'assay__active': True,
+        'assay__line__active': True,
+    }
     # stash QuerySet to use in both measurements and total_measures below
-    qmeasurements = Measurement.objects.filter(
-        assay__line__study_id=study,
-        assay__protocol_id=protocol,
-        assay=assay,
-        active=True,
-        assay__active=True,
-        assay__line__active=True,
-        )
+    qmeasurements = Measurement.objects.filter(**m_query)
     # Limit the measurements returned to keep browser performant
     measurements = qmeasurements.order_by('id')[:5000]
     total_measures = qmeasurements.values('assay_id').annotate(count=Count('assay_id'))
     measure_list = list(measurements)
-    values = MeasurementValue.objects.filter(
-        measurement__assay__line__study_id=study,
-        measurement__assay__protocol_id=protocol,
-        measurement__assay=assay,
-        measurement__active=True,
-        measurement__assay__active=True,
-        measurement__assay__line__active=True,
-        measurement__id__range=(measure_list[0].id, measure_list[-1].id),
-        )
+    if len(measure_list):
+        # only try to pull values when we have measurement objects
+        # filter query is mostly same as Measurement filter, only with 'measurement__' prepended
+        mv_query = dict(map(lambda i: ('measurement__' + i[0], i[1]), m_query.iteritems()))
+        # also only get values within range of the selected Measurement objs
+        mv_query['measurement__pk__range'] = (measure_list[0].id, measure_list[-1].id)
+        values = MeasurementValue.objects.filter(**mv_query)
+    else:
+        values = []
     value_dict = collections.defaultdict(list)
     for v in values:
         value_dict[v.measurement_id].append((v.x, v.y))
