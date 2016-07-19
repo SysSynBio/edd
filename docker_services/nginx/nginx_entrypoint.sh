@@ -41,6 +41,7 @@ fi
 # Potentially do some variable replacement of nginx config
 # Uncomment and replace $VAR1 with the $FOO to only replace $FOO variables
 #envsubst '$VAR1 $VAR2' < /code/docker_services/nginx/nginx.conf > /etc/nginx/nginx.conf
+envsubst '' < /code/docker_services/nginx/nginx.conf > /etc/nginx/nginx.conf
 
 # start nginx
 nginx -g 'daemon off;'
