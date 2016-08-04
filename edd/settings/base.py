@@ -92,6 +92,7 @@ INSTALLED_APPS = (
     'django_extensions',  # django-extensions in pip
     'rest_framework',  # djangorestframework in pip
     'form_utils',  # django-form-utils in pip
+    'haystack',  # django-haystack in pip
     # django-allauth in pip; separate apps for each provider
     'allauth',
     'allauth.account',
@@ -151,9 +152,10 @@ TEMPLATES = [
 ###################################################################################################
 # Solr/Haystack Configuration
 ###################################################################################################
-EDD_MAIN_SOLR = {
+HAYSTACK_CONNECTIONS = {
     'default': env.search_url(default='solr://solr:8983/solr/'),
 }
+EDD_MAIN_SOLR = HAYSTACK_CONNECTIONS
 
 
 ###################################################################################################
