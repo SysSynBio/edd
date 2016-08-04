@@ -41,6 +41,7 @@ pyasn1==0.1.9
 pycparser==2.14
 pyOpenSSL==0.15.1
 pysmb==1.1.17
+pysolr==3.5.0
 python-dateutil==2.5.1
 python-ldap==2.4.25
 python-libsbml==5.12.1
