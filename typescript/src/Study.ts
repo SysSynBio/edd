@@ -1184,7 +1184,7 @@ module StudyD {
             addrow.find(':input').not(':checkbox, :radio').val('');
             addrow.find(':checkbox, :radio').prop('checked', false);
             if (EDDData.MetaDataTypes[type]) {
-                insertLineMetadataRow(addrow, type, value).find(':input').trigger('change');
+                insertLineMetadataRow(addrow, type, value, '0').find(':input').trigger('change');
             }
             return false;
         }).on('click', '.meta-remove', (ev:JQueryMouseEventObject) => {
@@ -1192,11 +1192,13 @@ module StudyD {
             var form = $(ev.target).closest('form'),
                 metaRow = $(ev.target).closest('.line-meta'),
                 metaIn = form.find('[name=line-meta_store]'),
-                meta = JSON.parse(metaIn.val() || '{}'),
-                key = metaRow.attr('id').match(/-(\d+)$/)[1];
-            meta[key] = null;
-            metaIn.val(JSON.stringify(meta));
-            metaRow.remove();
+                meta = JSON.parse(metaIn.val() || '{}');
+            form.find('.line-meta').each((i, input) => {
+                var key = metaRow.attr('id').match(/-(\d+)$/)[1];
+                meta[key] = null;
+                metaIn.val(JSON.stringify(meta));
+                metaRow.remove();
+            })
         });
         $(window).load(preparePermissions);
     }
@@ -1315,7 +1317,7 @@ module StudyD {
                 });
                 metaRow = form.find('.line-edit-meta');
                 // Run through the collection of metadata, and add a form element entry for each
-                $.each(allMeta, (key) => insertLineMetadataRow(metaRow, key, ''));
+                $.each(allMeta, (key) => insertLineMetadataRow(metaRow, key, '', data.count>1));
             }
             updateUILineForm(form, data.count > 1);
             scrollToForm(form);
@@ -1617,7 +1619,7 @@ module StudyD {
         metaRow = form.find('.line-edit-meta');
         // Run through the collection of metadata, and add a form element entry for each
         $.each(record.meta, (key, value) => {
-            insertLineMetadataRow(metaRow, key, value);
+            insertLineMetadataRow(metaRow, key, value, '0');
         });
         // store original metadata in initial- field
         form.find('[name=line-meta_store]').val(JSON.stringify(record.meta));
@@ -1666,11 +1668,16 @@ module StudyD {
         }).insertAfter(button);
     }
 
-    function insertLineMetadataRow(refRow, key, value) {
+    function insertLineMetadataRow(refRow, key, value, plural) {
         var row, type, label, input, id = 'line-meta-' + key;
         row = $('<p>').attr('id', 'row_' + id).addClass('line-meta').insertBefore(refRow);
         type = EDDData.MetaDataTypes[key];
         label = $('<label>').attr('for', 'id_' + id).text(type.name).appendTo(row);
+        if (plural) {
+            var bulk = $(label).before( '<input type="checkbox" type="hidden" class="bulk"' +
+                ' value=""/>')
+            $(bulk).attr('name', id).appendTo(row)
+        }
         // bulk checkbox?
         input = $('<input type="text">').attr('id', 'id_' + id).val(value).appendTo(row);
         if (type.pre) {
