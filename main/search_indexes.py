@@ -29,7 +29,7 @@ class MetaboliteIndex(indexes.SearchIndex, indexes.Indexable):
     # ./main/templates/search/indexes/main/Metabolite_auto.txt
     auto = indexes.NgramField(use_template=True)
 
-    def getModel(self):
+    def get_model(self):
         return models.Metabolite
 
     def index_queryset(self, using=None):
