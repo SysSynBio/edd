@@ -1170,7 +1170,7 @@ module StudyD {
             var form = $(ev.target).closest('form'),
                 metaIn = form.find('[name=line-meta_store]'),
                 meta = JSON.parse(metaIn.val() || '{}');
-            form.find('.line-meta > :input').each((i, input) => {
+            form.find('.line-meta > :text').each((i, input) => {
                 var key = $(input).attr('id').match(/-(\d+)$/)[1];
                 meta[key] = $(input).val();
             });
@@ -1184,7 +1184,7 @@ module StudyD {
             addrow.find(':input').not(':checkbox, :radio').val('');
             addrow.find(':checkbox, :radio').prop('checked', false);
             if (EDDData.MetaDataTypes[type]) {
-                insertLineMetadataRow(addrow, type, value, '0').find(':input').trigger('change');
+                insertLineMetadataRow(addrow, type, value, false).find(':input').trigger('change');
             }
             return false;
         }).on('click', '.meta-remove', (ev:JQueryMouseEventObject) => {
@@ -1619,7 +1619,7 @@ module StudyD {
         metaRow = form.find('.line-edit-meta');
         // Run through the collection of metadata, and add a form element entry for each
         $.each(record.meta, (key, value) => {
-            insertLineMetadataRow(metaRow, key, value, '0');
+            insertLineMetadataRow(metaRow, key, value, false);
         });
         // store original metadata in initial- field
         form.find('[name=line-meta_store]').val(JSON.stringify(record.meta));
@@ -1676,7 +1676,6 @@ module StudyD {
         if (plural) {
             var bulk = $(label).before( '<input type="checkbox" type="hidden" class="bulk"' +
                 ' value=""/>')
-            $(bulk).attr('name', id).appendTo(row)
         }
         // bulk checkbox?
         input = $('<input type="text">').attr('id', 'id_' + id).val(value).appendTo(row);
