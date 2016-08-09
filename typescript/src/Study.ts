@@ -1673,16 +1673,19 @@ module StudyD {
         row = $('<p>').attr('id', 'row_' + id).addClass('line-meta').insertBefore(refRow);
         type = EDDData.MetaDataTypes[key];
         label = $('<label>').attr('for', 'id_' + id).text(type.name).appendTo(row);
+        input = $('<input type="text">').attr('id', 'id_' + id).val(value).appendTo(row);
         if (plural) {
             var bulk = $(label).before( '<input type="checkbox" type="hidden" class="bulk"' +
                 ' value=""/>')
+            $('<span>').addClass('bulk-meta-postfix').text('  click to remove field').insertAfter(input);
         }
         // bulk checkbox?
-        input = $('<input type="text">').attr('id', 'id_' + id).val(value).appendTo(row);
         if (type.pre) {
             $('<span>').addClass('meta-prefix').text(type.pre).insertBefore(input);
         }
-        $('<span>').addClass('meta-remove').text('Remove').insertAfter(input);
+        if (!plural){
+            $('<span>').addClass('meta-remove').text('Remove').insertAfter(input);
+        }
         if (type.postfix) {
             $('<span>').addClass('meta-postfix').text(type.postfix).insertAfter(input);
         }
