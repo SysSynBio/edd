@@ -876,11 +876,11 @@ module StudyD {
         post:string;
 
         constructor(metaDataID:string) {
+            super();
             var MDT = EDDData.MetaDataTypes[metaDataID];
             this.metaDataID = metaDataID;
             this.pre = MDT.pre || '';
             this.post = MDT.post || '';
-            super();
         }
 
 
@@ -1785,9 +1785,10 @@ class DataGridSpecLines extends DataGridSpecBase {
 
 
     constructor() {
+        super();
         this.findMetaDataIDsUsedInLines();
         this.findGroupIDsAndNames();
-        super();
+
     }
 
 
@@ -2471,9 +2472,9 @@ class DataGridAssays extends DataGrid {
 
 
     constructor(dataGridSpec:DataGridSpecBase) {
+        super(dataGridSpec);
         this.recordsCurrentlyInvalidated = [];
         this.sectionCurrentlyDisclosed = false;
-        super(dataGridSpec);
     }
 
 
@@ -2614,6 +2615,7 @@ class DataGridSpecAssays extends DataGridSpecBase {
 
 
     constructor(protocolID) {
+        super();
         this.protocolID = protocolID;
         this.protocolName = EDDData.Protocols[protocolID].name;
         this.graphObject = null;
@@ -2622,7 +2624,6 @@ class DataGridSpecAssays extends DataGridSpecBase {
         this.refreshIDList();
         this.findMaximumXValueInData();
         this.findMetaDataIDsUsedInAssays();
-        super();
     }
 
 

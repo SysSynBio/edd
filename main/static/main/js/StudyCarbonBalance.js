@@ -9,7 +9,7 @@ var CarbonBalance;
             this.normalizedError = normalizedError;
         }
         return ImbalancedTimeSample;
-    })();
+    }());
     CarbonBalance.ImbalancedTimeSample = ImbalancedTimeSample;
     var Display = (function () {
         function Display() {
@@ -38,7 +38,8 @@ var CarbonBalance;
         };
         Display.prototype.getNumberOfImbalances = function () {
             var numImbalances = 0;
-            for (var lineID in this.carbonSum.lineDataByID) {
+            var lineID;
+            for (lineID in this.carbonSum.lineDataByID) {
                 var imbalances = this._getTimeSamplesForLine(lineID, true);
                 numImbalances += imbalances.length;
             }
@@ -434,7 +435,7 @@ var CarbonBalance;
         };
         Display.graphDiv = null;
         return Display;
-    })();
+    }());
     CarbonBalance.Display = Display;
     ;
     var LineSampleBalance = (function () {
@@ -445,5 +446,5 @@ var CarbonBalance;
             this.measurements = measurements;
         }
         return LineSampleBalance;
-    })();
+    }());
 })(CarbonBalance || (CarbonBalance = {})); // end CarbonBalance module

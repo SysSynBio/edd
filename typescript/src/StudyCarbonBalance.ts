@@ -36,9 +36,10 @@ module CarbonBalance {
 
 		getNumberOfImbalances() {
 			var numImbalances = 0;
+			var lineID;
+			for (lineID in this.carbonSum.lineDataByID) {
 
-			for (var lineID in this.carbonSum.lineDataByID) {
-		    	var imbalances:ImbalancedTimeSample[] = this._getTimeSamplesForLine(lineID, true);
+		    	var imbalances = this._getTimeSamplesForLine(lineID, true);
 		    	numImbalances += imbalances.length;
 			}
 
