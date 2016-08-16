@@ -657,14 +657,16 @@ class Study(EDDObject):
         gives the user access to the study, so clients will often want to use distinct() to limit
         the returned results. Note that this only tests whether the user or group has specific
         permissions granted on the Study, not whether the user's role (e.g. 'staff', 'admin')
-        gives him/her access to it.  See user_role_has_read_access(user), user_can_read(self, user).
+        gives him/her access to it.  See:
+            » user_role_has_read_access(user)
+            » user_can_read(self, user)
         :param user: the user
         :param permission: the study permission type to test (e.g. StudyPermission.READ); can be
             any iterable of permissions or a single permission
-        :param keyword_prefix: an optional keyword prefix to prepend to the query keyword arguments.
-        For example when querying Study, the default value of '' should be used, or when querying
-        for Lines, whose permissions depend on the related Study, use 'study__' similar to other
-        queryset keyword arguments.
+        :param keyword_prefix: an optional keyword prefix to prepend to the query keyword
+            arguments. For example when querying Study, the default value of '' should be used,
+            or when querying for Lines -- whose permissions depend on the related Study -- use
+            'study__' similar to other queryset keyword arguments.
         :return: true if the user has the specified permission to the study
         """
         prefix = keyword_prefix
@@ -1195,7 +1197,7 @@ class Line(EDDObject):
             into integers, and return the next highest integer for creating a new assay.  (This
             will result in duplication of names for Assays of different protocols under the same
             Line, but the frontend displays Assay.long_name, which should be unique.) """
-        if isinstance(protocol, str):  # assume Protocol.name
+        if isinstance(protocol, string_types):  # assume Protocol.name
             protocol = Protocol.objects.get(name=protocol)
         assays = self.assay_set.filter(protocol=protocol)
         existing_assay_numbers = []
@@ -1270,24 +1272,6 @@ class MeasurementType(models.Model, EDDSerialize):
 
     def is_phosphor(self):
         return self.type_group == MeasurementType.Group.PHOSPHOR
-
-    @classmethod
-    def proteins(cls):
-        """ Return all instances of protein measurements. """
-        return cls.objects.filter(type_group=MeasurementType.Group.PROTEINID)
-
-    @classmethod
-    def proteins_by_name(cls):
-        """ Generate a dictionary of proteins keyed by name. """
-        return {p.type_name: p for p in cls.proteins().order_by("type_name")}
-
-    @classmethod
-    def create_protein(cls, type_name, short_name=None):
-        return cls.objects.create(
-            type_name=type_name,
-            short_name=short_name,
-            type_group=MeasurementType.Group.PROTEINID
-        )
 
 
 @python_2_unicode_compatible
@@ -1495,15 +1479,18 @@ class Assay(EDDObject):
 
     def get_metabolite_measurements(self):
         return self.measurement_set.filter(
-            measurement_type__type_group=MeasurementType.Group.METABOLITE)
+            measurement_type__type_group=MeasurementType.Group.METABOLITE,
+        )
 
     def get_protein_measurements(self):
         return self.measurement_set.filter(
-            measurement_type__type_group=MeasurementType.Group.PROTEINID)
+            measurement_type__type_group=MeasurementType.Group.PROTEINID,
+        )
 
     def get_gene_measurements(self):
         return self.measurement_set.filter(
-            measurement_type__type_group=MeasurementType.Group.GENEID)
+            measurement_type__type_group=MeasurementType.Group.GENEID,
+        )
 
     @property
     def long_name(self):
