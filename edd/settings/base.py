@@ -28,7 +28,7 @@ if env('SECRET_KEY', default=DOCKER_SENTINEL) is DOCKER_SENTINEL:
 
 
 # override to allow arbitrary text instead of requiring protein ID's to fit the pattern of Uniprot
-# accession id's (though at present validity isn't confirmed)
+# accession id's (though at present validity isn't confirmed, only format)
 REQUIRE_UNIPROT_ACCESSION_IDS = True
 
 ###################################################################################################
