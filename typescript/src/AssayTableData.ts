@@ -1,6 +1,7 @@
 /// <reference path="typescript-declarations.d.ts" />
 /// <reference path="../typings/d3/d3.d.ts"/>
 /// <reference path="AssayTableDataGraphing.ts" />
+/// <reference path="EDDAutocomplete.ts" />
 /// <reference path="Utl.ts" />
 
 
@@ -2855,20 +2856,20 @@ module EDDTableImport {
                     this.measurementObjSets[name] = disam;
                 }
                 // TODO sizing should be handled in CSS
-                disam.compObj.data('visibleIndex', i);
-                disam.typeObj.data('visibleIndex', i);
-                disam.unitsObj.data('visibleIndex', i);
+                disam.compAuto.inputElement.data('visibleIndex', i);
+                disam.typeAuto.inputElement.data('visibleIndex', i);
+                disam.unitsAuto.inputElement.data('visibleIndex', i);
 
                 // If we're in MDV mode, the units pulldowns are irrelevant. Toggling
                 // the hidden unit input controls whether it's treated as required.
                 isMdv = mode === 'mdv';
-                disam.unitsObj.toggleClass('off', isMdv);
-                disam.unitsHiddenObj.toggleClass('off', isMdv);
+                disam.unitsAuto.inputElement.toggleClass('off', isMdv);
+                disam.unitsAuto.hiddenElement.toggleClass('off', isMdv);
 
                 // Set required inputs as required
-                disam.compHiddenObj.addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
-                disam.typeHiddenObj.addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
-                disam.unitsHiddenObj.toggleClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS, !isMdv);
+                disam.compAuto.hiddenElement.addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
+                disam.typeAuto.hiddenElement.addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
+                disam.unitsAuto.hiddenElement.toggleClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS, !isMdv);
 
                 this.currentlyVisibleMeasurementObjSets.push(disam);
             });
@@ -2920,10 +2921,10 @@ module EDDTableImport {
                 } else {
                     disam = new MetadataDisambiguationRow(body, name, i);
                     this.metadataObjSets[name] = disam;
-
                 }
-                disam.metaObj.attr('name', 'disamMeta' + i).addClass('autocomp_altype')
-                    .next().attr('name', 'disamMetaHidden' + i);
+                disam.metaAuto.inputElement.attr('name', 'disamMeta' + i)
+                    .addClass('autocomp_altype');
+                disam.metaAuto.hiddenElement.attr('name', 'disamMetaHidden' + i);
             });
 
             if (uniqueMetadataNames.length > this.DUPLICATE_CONTROLS_THRESHOLD) {
@@ -2995,15 +2996,17 @@ module EDDTableImport {
 
 
         userChangedMeasurementDisam(element: Element):void {
-            var hiddenInput: JQuery,
+            var auto:EDDAuto.BaseAuto,
+                hiddenInput: JQuery,
                 textInput: JQuery,
                 type: string,
                 rowIndex: number,
                 nextSets: any[];
             hiddenInput = $(element);
-            textInput = hiddenInput.prev();
-            type = textInput.data('type');
-            if (type === 'compObj' || type === 'unitsObj') {
+            auto = hiddenInput.data('EDDAutoObj');
+            textInput = auto.inputElement;
+            type = auto.modelName;
+            if (type === 'MeasurementCompartment' || type === 'MeasurementUnit') {
                 rowIndex = textInput.data('setByUser', true).data('visibleIndex') || 0;
 
                 if (rowIndex < this.currentlyVisibleMeasurementObjSets.length - 1) {
@@ -3020,7 +3023,7 @@ module EDDTableImport {
                     });
                 }
             }
-            // not checking typeObj; form submit sends selected types
+            // not checking typeAuto; form submit sends selected types
             this.checkAllMeasurementCompartmentDisam();
         }
 
@@ -3034,8 +3037,8 @@ module EDDTableImport {
             mode = this.selectMajorKindStep.interpretationMode;
 
             allSet = this.currentlyVisibleMeasurementObjSets.every((obj: any): boolean => {
-                var hidden: JQuery = obj.compHiddenObj;
-                if (obj.compObj.data('setByUser') || (hidden.val() && hidden.val() !== '0')) {
+                var compAuto: EDDAuto.MeasurementCompartment = obj.compAuto;
+                if (compAuto.inputElement.data('setByUser') || (compAuto.inputElement.val() && compAuto.val() !== '0')) {
                     return true;
                 }
                 return false;
@@ -3171,12 +3174,12 @@ module EDDTableImport {
                     if (set.measurement_name !== null) {
                         measDisam = this.measurementObjSets[set.measurement_name];
                         if (measDisam) {
-                            measurementTypeId = measDisam.typeHiddenObj.val();
-                            compartmentId = measDisam.compHiddenObj.val() || "0";
-                            unitsId = measDisam.unitsHiddenObj.val() || "1";
+                            measurementTypeId = measDisam.typeAuto.val();
+                            compartmentId = measDisam.compAuto.val() || "0";
+                            unitsId = measDisam.unitsAuto.val() || "1";
                             // If we've disabled import for measurements of this type, skip adding
                             // this measurement to the list
-                            if (measDisam.typeHiddenObj.is(':disabled')) {
+                            if (measDisam.typeAuto.hiddenElement.is(':disabled')) {
                                 return;  // continue to the next loop iteration parsedSets.forEach
                             }
                         }
@@ -3192,8 +3195,8 @@ module EDDTableImport {
                 Object.keys(set.metadata_by_name).forEach((name):void => {
                     metaDisam = this.metadataObjSets[name];
                     if (metaDisam) {
-                        metaId = metaDisam.metaHiddenObj.val();
-                        if (metaId && (!metaDisam.metaHiddenObj.is(':disabled'))) {
+                        metaId = metaDisam.metaAuto.hiddenElement.val();
+                        if (metaId && (!metaDisam.metaAuto.hiddenElement.is(':disabled'))) {
                             metaDataById[metaId] = set.metadata_by_name[name];
                             metaDataByName[name] = set.metadata_by_name[name];
                             metaDataPresent = true;
@@ -3410,8 +3413,7 @@ module EDDTableImport {
 
     export class MetadataDisambiguationRow extends DisambiguationRow {
 
-        metaObj:JQuery;
-        metaHiddenObj:JQuery;
+        metaAuto:EDDAuto.AssayLineMetadataType;
 
         // Cache for re-use of autocomplete objects
         static autoCache:any = {};
@@ -3419,15 +3421,16 @@ module EDDTableImport {
 
         build(body:HTMLTableElement, name, i) {
 
-            this.metaObj = EDD_auto.create_autocomplete(this.row.insertCell())
-                .val(name)
-                .addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
-            this.metaHiddenObj = this.metaObj
-                .next()
-                .addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
-            this.metaObj.attr('name', 'disamMeta' + i).addClass('autocomp_altype')
-                .next().attr('name', 'disamMetaHidden' + i);
-            EDDAuto.BaseAuto.createFromElements(this.metaObj, 'AssayLineMetadataType', MetadataDisambiguationRow.autoCache);
+            this.metaAuto = new EDDAuto.AssayLineMetadataType({
+                container: $(this.row.insertCell()),
+                displayValue: name,
+                cache: MetadataDisambiguationRow.autoCache
+            });
+            this.metaAuto.inputElement.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
+                .attr('name', 'disamMeta' + i)
+                .addClass('autocomp_altype');
+            this.metaAuto.hiddenElement.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
+                .attr('name', 'disamMetaHidden' + i);
         }
     }
 
@@ -3435,13 +3438,9 @@ module EDDTableImport {
 
     export class MeasurementDisambiguationRow extends DisambiguationRow {
 
-        compObj:JQuery;
-        typeObj:JQuery;
-        unitsObj:JQuery;
-
-        typeHiddenObj:JQuery;
-        compHiddenObj:JQuery;
-        unitsHiddenObj:JQuery;
+        compAuto:EDDAuto.AssayLineMetadataType;
+        typeAuto:EDDAuto.GenericOrMetabolite;
+        unitsAuto:EDDAuto.MeasurementUnit;
 
         // Caches for re-use of autocomplete fields
         static compAutoCache:any = {};
@@ -3451,35 +3450,32 @@ module EDDTableImport {
 
         build(body:HTMLTableElement, name, i) {
 
-            // create autocompletes
-            ['compObj', 'typeObj', 'unitsObj'].forEach((auto: string): void => {
-                var cell: JQuery = $(this.row.insertCell()).addClass('disamDataCell');
-                this[auto] = EDD_auto.create_autocomplete(cell)
-                    .data('type', auto)
-                    .addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
+            this.compAuto = new EDDAuto.MeasurementCompartment({
+                container:$(this.row.insertCell()),
+                cache:MeasurementDisambiguationRow.compAutoCache
             });
-            // TODO: These size attributes should be handled in CSS, possibly by create_autocomplete.
-            this.typeHiddenObj = this.typeObj
-                .attr('size', 45)
-                .next()
-                .addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
-            this.compHiddenObj = this.compObj
-                .attr('size', 20)
-                .next()
-                .addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
-            this.unitsHiddenObj = this.unitsObj
-                .attr('size', 10)
-                .next()
-                .addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
+            this.typeAuto = new EDDAuto.GenericOrMetabolite({
+                container:$(this.row.insertCell()),
+                cache:MeasurementDisambiguationRow.metaboliteAutoCache
+            });
+            this.unitsAuto = new EDDAuto.MeasurementUnit({
+                container:$(this.row.insertCell()),
+                cache:MeasurementDisambiguationRow.unitAutoCache
+            });
+
+            // create autocompletes
+            [this.compAuto, this.typeAuto, this.unitsAuto].forEach((auto: EDDAuto.BaseAuto): void => {
+                var cell: JQuery = $(this.row.insertCell()).addClass('disamDataCell');
+                auto.container.addClass('disamDataCell');
+                auto.inputElement.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
+                auto.hiddenElement.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
+            });
 
             $(this.row).on('change', 'input[type=hidden]', (ev: JQueryInputEventObject): void => {
                 // only watch for changes on the hidden portion, let autocomplete work
                 EDDTableImport.typeDisambiguationStep.userChangedMeasurementDisam(ev.target);
             });
-            EDDAuto.BaseAuto.createFromElements(this.compObj, 'MeasurementCompartment', MeasurementDisambiguationRow.compAutoCache);
-            EDDAuto.BaseAuto.createFromElements(this.typeObj, 'GenericOrMetabolite', MeasurementDisambiguationRow.metaboliteAutoCache);
-            EDD_auto.initial_search(this.typeObj, name);
-            EDDAuto.BaseAuto.createFromElements(this.unitsObj, 'MeasurementUnit', MeasurementDisambiguationRow.unitAutoCache);
+            EDD_auto.initial_search(this.typeAuto, name);
         }
     }
 

@@ -21,6 +21,12 @@ module EDDAuto {
         // container element.
         inputElement?:JQuery,
         hiddenElement?:JQuery,
+        // The string to show initially in the input element.
+        // This may or may not be equivalent to a valid hiddenElement value.
+        displayValue?:string,
+        // A starting value for hiddenElement.  This value is a unique identifier of some
+        // back-end data structure - like a database record Id.
+        hiddenValue?:string,
         // an optional dictionary to use / maintain as a cache of query results for this
         // autocomplete. Maps search term -> results.
         cache?:any,
@@ -74,7 +80,7 @@ module EDDAuto {
 
         static initPreexisting() {
             // Using 'for' instead of '$.each()' because TypeScript likes to monkey with 'this'. 
-            var autcompletes = $('input.autocomplete').get();
+            var autcompletes = $('input.autocomp').get();
             for ( var i = 0; i < autcompletes.length; i++ ) {
                 var a = autcompletes[i];
                 var autocompleteType = $(a).data('autocompletetype');
@@ -102,25 +108,34 @@ module EDDAuto {
             var id = EDDAuto.BaseAuto._uniqueIndex;
             EDDAuto.BaseAuto._uniqueIndex += 1;
             this.uid = id;
+            this.modelName = 'Generic';
 
             this.opt = $.extend({}, opt);
             this.search_opt = $.extend({}, search_options);
 
-            if (!this.opt['container']) {
+            if (!this.opt.container) {
                 throw Error("autocomplete options must specify a container");
             }
-            this.container = this.opt['container'];
+            this.container = this.opt.container;
 
-            this.inputElement = this.opt['inputElement'] ||
+            this.inputElement = this.opt.inputElement ||
                 $('<input type="text"/>').addClass('autocomp').appendTo(this.container);
-            this.hiddenElement = this.opt['hiddenElement'] ||
+            this.hiddenElement = this.opt.hiddenElement ||
                 $('<input type="hidden"/>').appendTo(this.container);
+            if ("displayValue" in this.opt) {
+                this.inputElement.val(this.opt.displayValue);
+            }
+            if ("hiddenValue" in this.opt) {
+                this.hiddenElement.val(this.opt.hiddenValue);
+            }
+            this.inputElement.data('EDDAutoObj', this);
+            this.hiddenElement.data('EDDAutoObj', this);
 
-            this.prependResults = this.opt['prependResults'] || [];
+            this.prependResults = this.opt.prependResults || [];
 
             this.display_key = 'name';
             this.value_key = 'id';
-            this.search_uri = this.opt['search_uri'] || "/search";
+            this.search_uri = this.opt.search_uri || "/search";
 
             // Static specification of column layout for each model in EDD that we want to
             // make searchable.  (This might be better done as a static JSON file
@@ -244,6 +259,11 @@ module EDDAuto {
                 }
             });
         };
+
+
+        val() {
+            return this.hiddenElement.val();
+        }
     }
 
 
@@ -259,6 +279,7 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'User';
             this.columns = EDDAuto.User.columns;
             this.display_key = 'fullname';
             this.cacheId = 'Users';
@@ -279,6 +300,7 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'Strain';
             this.columns = EDDAuto.Strain.columns;
             this.value_key = 'recordId';
             this.cacheId = 'Strains';
@@ -301,6 +323,7 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'CarbonSource';
             this.columns = EDDAuto.CarbonSource.columns;
             this.cacheId = 'CSources';
             this.init();
@@ -323,6 +346,7 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'MetadataType';
             this.columns = EDDAuto.MetadataType.columns;
             this.cacheId = 'MetaDataTypes';
             this.init();
@@ -338,6 +362,7 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'AssayMetadataType';
             this.columns = EDDAuto.AssayMetadataType.columns;
             this.cacheId = 'MetaDataTypes';
             this.init();
@@ -351,6 +376,7 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'AssayLineMetadataType';
             this.columns = EDDAuto.MetadataType.columns;
             this.cacheId = 'MetaDataTypes';
             this.init();
@@ -365,6 +391,7 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'LineMetadataType';
             this.columns = EDDAuto.LineMetadataType.columns;
             this.cacheId = 'MetaDataTypes';
             this.init();
@@ -379,6 +406,7 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'StudyMetadataType';
             this.columns = EDDAuto.StudyMetadataType.columns;
             this.cacheId = 'MetaDataTypes';
             this.init();
@@ -394,8 +422,25 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'Metabolite';
             this.columns = EDDAuto.Metabolite.columns;
             this.cacheId = 'MetaboliteTypes';
+            this.inputElement.attr('size', 45)
+            this.init();
+        }
+    }
+
+
+
+    export class GenericOrMetabolite extends BaseAuto {
+        static columns = [ new AutoColumn('Name', '300px', 'name') ];
+
+        constructor(opt:AutocompleteOptions, search_options?) {
+            super(opt, search_options);
+            this.modelName = 'GenericOrMetabolite';
+            this.columns = EDDAuto.GenericOrMetabolite.columns;
+            this.cacheId = 'GenericOrMetaboliteTypes';    // TODO: Is this correct?
+            this.inputElement.attr('size', 45)
             this.init();
         }
     }
@@ -408,11 +453,44 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'MeasurementType';
             this.columns = EDDAuto.MeasurementType.columns;
             this.cacheId = 'MeasurementTypes';
+            this.inputElement.attr('size', 45)
             this.init();
         }
     }
+
+
+
+    export class MeasurementCompartment extends BaseAuto {
+        static columns = [ new AutoColumn('Name', '200px', 'name') ];
+
+        constructor(opt:AutocompleteOptions, search_options?) {
+            super(opt, search_options);
+            this.modelName = 'MeasurementCompartment';
+            this.columns = EDDAuto.MeasurementCompartment.columns;
+            this.cacheId = 'MeasurementTypeCompartments';
+            this.inputElement.attr('size', 20)
+            this.init();
+        }
+    }
+
+
+
+    export class MeasurementUnit extends BaseAuto {
+        static columns = [ new AutoColumn('Name', '150px', 'name') ];
+
+        constructor(opt:AutocompleteOptions, search_options?) {
+            super(opt, search_options);
+            this.modelName = 'MeasurementUnit';
+            this.columns = EDDAuto.MeasurementUnit.columns;
+            this.cacheId = 'UnitTypes';
+            this.inputElement.attr('size', 10)
+            this.init();
+        }
+    }
+
 
 
     // .autocomp_sbml_r
@@ -425,6 +503,7 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'MetaboliteExchange';
             this.columns = EDDAuto.MetaboliteExchange.columns;
             this.cacheId = 'Exchange';
             this.opt['search_extra'] = { 'template': $(this.inputElement).data('template') };
@@ -440,6 +519,7 @@ module EDDAuto {
 
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
+            this.modelName = 'MetaboliteSpecies';
             this.columns = EDDAuto.MetaboliteSpecies.columns;
             this.cacheId = 'Species';
             this.opt['search_extra'] = { 'template': $(this.inputElement).data('template') };
@@ -585,18 +665,7 @@ EDD_auto.initial_search = function initial_search(selector, term) {
 
 $( window ).on("load", function() { // Shortcutting this to .load confuses jQuery
     var setup_info;
-    EDDAuto.User.initPreexisting();
-    EDDAuto.Strain.initPreexisting();
-    EDDAuto.CarbonSource.initPreexisting();
-    EDDAuto.MetadataType.initPreexisting();
-    EDDAuto.AssayMetadataType.initPreexisting();
-    EDDAuto.AssayLineMetadataType.initPreexisting();
-    EDDAuto.LineMetadataType.initPreexisting();
-    EDDAuto.StudyMetadataType.initPreexisting();
-    EDDAuto.Metabolite.initPreexisting();
-    EDDAuto.MeasurementType.initPreexisting();
-    EDDAuto.MetaboliteExchange.initPreexisting();
-    EDDAuto.MetaboliteSpecies.initPreexisting();
+    EDDAuto.BaseAuto.initPreexisting();
     // this makes the autocomplete work like a dropdown box
     // fires off a search as soon as the element gains focus
     $(document).on('focus', '.autocomp', function (ev) {
