@@ -349,7 +349,7 @@ class BiomassCalculationUI {
             this._dialogBox.addElement(okButton);
 
             inputs.forEach((input) => {
-                EDD_auto.setup_field_autocomplete(input, 'Metabolite', EDDData.MetaboliteTypes || {});
+                EDDAuto.BaseAuto.createFromElements(input, 'Metabolite', EDDData.MetaboliteTypes || {});
             });
         }, (error:string):void => {
             this._dialogBox.showMessage(error, ():void => callback.call({}, error));

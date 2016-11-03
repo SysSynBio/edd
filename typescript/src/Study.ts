@@ -1260,8 +1260,8 @@ module StudyD {
         // TODO the DOM traversing and filtering here is very hacky, do it better later
         user = EDD_auto.create_autocomplete($('#permission_user_box'));
         group = EDD_auto.create_autocomplete($('#permission_group_box'));
-        EDD_auto.setup_field_autocomplete(user, 'User');
-        EDD_auto.setup_field_autocomplete(group, 'Group');
+        EDDAuto.BaseAuto.createFromElements(user, 'User');
+        EDDAuto.BaseAuto.createFromElements(group, 'Group');
         $('form.permissions')
             .on('change', ':radio', (ev:JQueryInputEventObject):void => {
                 var radio: JQuery = $(ev.target);

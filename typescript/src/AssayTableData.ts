@@ -2339,8 +2339,6 @@ module EDDTableImport {
         currentlyVisibleMeasurementObjSets: any[];
         // For disambuguating metadata
         metadataObjSets: { [index:string]: MetadataDisambiguationRow};
-        // To give unique ID values to each autocomplete entity we create
-        autoCompUID: number;
 
         selectMajorKindStep: SelectMajorKindStep;
         nextStepCallback: any;
@@ -2371,7 +2369,6 @@ module EDDTableImport {
             this.measurementObjSets = {};
             this.currentlyVisibleMeasurementObjSets = [];
             this.metadataObjSets = {};
-            this.autoCompUID = 0;
             this.masterAssaysOptionsDisplayedForProtocol = 0;
 
             this.selectMajorKindStep = selectMajorKindStep;
@@ -2409,10 +2406,10 @@ module EDDTableImport {
             $('#masterMUnitsValue').addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
 
             // enable autocomplete on statically defined fields
-            EDD_auto.setup_field_autocomplete('#masterMComp', 'MeasurementCompartment');
-            EDD_auto.setup_field_autocomplete('#masterMType', 'GenericOrMetabolite', EDDData.MetaboliteTypes || {});
-            EDD_auto.setup_field_autocomplete('#masterMUnits', 'MeasurementUnit');
-            EDD_auto.setup_field_autocomplete('#masterUnits', 'MeasurementUnit');
+            EDDAuto.BaseAuto.createFromElements('#masterMComp', 'MeasurementCompartment');
+            EDDAuto.BaseAuto.createFromElements('#masterMType', 'GenericOrMetabolite', EDDData.MetaboliteTypes || {});
+            EDDAuto.BaseAuto.createFromElements('#masterMUnits', 'MeasurementUnit');
+            EDDAuto.BaseAuto.createFromElements('#masterUnits', 'MeasurementUnit');
         }
 
         setAllInputsEnabled(enabled: boolean) {
@@ -3430,7 +3427,7 @@ module EDDTableImport {
                 .addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
             this.metaObj.attr('name', 'disamMeta' + i).addClass('autocomp_altype')
                 .next().attr('name', 'disamMetaHidden' + i);
-            EDD_auto.setup_field_autocomplete(this.metaObj, 'AssayLineMetadataType', MetadataDisambiguationRow.autoCache);
+            EDDAuto.BaseAuto.createFromElements(this.metaObj, 'AssayLineMetadataType', MetadataDisambiguationRow.autoCache);
         }
     }
 
@@ -3479,10 +3476,10 @@ module EDDTableImport {
                 // only watch for changes on the hidden portion, let autocomplete work
                 EDDTableImport.typeDisambiguationStep.userChangedMeasurementDisam(ev.target);
             });
-            EDD_auto.setup_field_autocomplete(this.compObj, 'MeasurementCompartment', MeasurementDisambiguationRow.compAutoCache);
-            EDD_auto.setup_field_autocomplete(this.typeObj, 'GenericOrMetabolite', MeasurementDisambiguationRow.metaboliteAutoCache);
+            EDDAuto.BaseAuto.createFromElements(this.compObj, 'MeasurementCompartment', MeasurementDisambiguationRow.compAutoCache);
+            EDDAuto.BaseAuto.createFromElements(this.typeObj, 'GenericOrMetabolite', MeasurementDisambiguationRow.metaboliteAutoCache);
             EDD_auto.initial_search(this.typeObj, name);
-            EDD_auto.setup_field_autocomplete(this.unitsObj, 'MeasurementUnit', MeasurementDisambiguationRow.unitAutoCache);
+            EDDAuto.BaseAuto.createFromElements(this.unitsObj, 'MeasurementUnit', MeasurementDisambiguationRow.unitAutoCache);
         }
     }
 
@@ -3527,7 +3524,7 @@ module EDDTableImport {
             var model_name: string = "StudyLines";
             var opt = {
                 'search_extra': { 'study':  EDDData.currentStudyID }};
-            EDD_auto.setup_field_autocomplete(lineNameInput,
+            EDDAuto.BaseAuto.createFromElements(lineNameInput,
                 model_name,
                 EDDData.Lines,
                 opt,

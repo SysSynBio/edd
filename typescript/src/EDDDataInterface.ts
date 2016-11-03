@@ -191,6 +191,9 @@ interface EDDData {
     UnitTypes:{[id:number]: UnitType};
     Users:{[id:number]: UserRecord};
 
+    Exchange:any;
+    Species:any;
+
     // TODO: is this used anymore?
     MediaTypes:{[shortform:string]: string};
 };
