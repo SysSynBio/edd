@@ -2407,10 +2407,10 @@ module EDDTableImport {
             $('#masterMUnitsValue').addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
 
             // enable autocomplete on statically defined fields
-            EDDAuto.BaseAuto.createFromElements('#masterMComp', 'MeasurementCompartment');
-            EDDAuto.BaseAuto.createFromElements('#masterMType', 'GenericOrMetabolite', EDDData.MetaboliteTypes || {});
-            EDDAuto.BaseAuto.createFromElements('#masterMUnits', 'MeasurementUnit');
-            EDDAuto.BaseAuto.createFromElements('#masterUnits', 'MeasurementUnit');
+            //EDDAuto.BaseAuto.createFromElements('#masterMComp', 'MeasurementCompartment');
+            //EDDAuto.BaseAuto.createFromElements('#masterMType', 'GenericOrMetabolite', EDDData.MetaboliteTypes || {});
+            //EDDAuto.BaseAuto.createFromElements('#masterMUnits', 'MeasurementUnit');
+            //EDDAuto.BaseAuto.createFromElements('#masterUnits', 'MeasurementUnit');
         }
 
         setAllInputsEnabled(enabled: boolean) {
@@ -2612,7 +2612,7 @@ module EDDTableImport {
                 parentDiv;
             uniqueLineNames = this.identifyStructuresStep.uniqueLineNames;
 
-            this.currentlyVisibleLineObjSets.forEach((disam:any): void => {
+            this.currentlyVisibleLineObjSets.forEach((disam:LineDisambiguationRow): void => {
                 disam.detach();
             });
             $('#disambiguateLinesTable').remove();
@@ -2646,13 +2646,11 @@ module EDDTableImport {
                 })[0];
             body = <HTMLTableElement>$('<tbody>').appendTo(table)[0];
             uniqueLineNames.forEach((name: string, i: number): void => {
-                var disam: any,
+                var disam: LineDisambiguationRow,
                     row: HTMLTableRowElement,
                     defaultSel: any,
                     cell: JQuery,
                     select: JQuery,
-                    lineNameInput:JQuery,
-                    selectedLineIdInput:JQuery;
                 disam = this.lineObjSets[name];
                 if (!disam) {
                     disam = new LineDisambiguationRow(body, name, i);
@@ -2694,7 +2692,7 @@ module EDDTableImport {
             masterProtocol = this.selectMajorKindStep.masterProtocol;
 
             // remove stale data from previous run of this step
-            this.currentlyVisibleAssayObjSets.forEach((disam:any): void => {
+            this.currentlyVisibleAssayObjSets.forEach((disam:AssayDisambiguationRow): void => {
                 disam.detach();
             });
             this.currentlyVisibleAssayObjSets = [];
@@ -2743,13 +2741,11 @@ module EDDTableImport {
             totalRowCreationSeconds = 0;
             uniqueAssayNames.forEach((assayName: string, i: number): void => {
                 var assayId:string,
-                    disam: any,
+                    disam: AssayDisambiguationRow,
                     row: HTMLTableRowElement,
                     defaultSelection: any,
                     cell: JQuery,
                     aSelect: JQuery,
-                    lineNameInput: JQuery,
-                    selectedLineIdInput: JQuery;
                 disam = this.assayObjSets[assayName];
                 if (!disam) {
                     disam = new AssayDisambiguationRow(tableBody, assayName, i);
@@ -2955,7 +2951,7 @@ module EDDTableImport {
             }
             v = changed.data('visibleIndex') || 0;
             this.currentlyVisibleLineObjSets.slice(v).forEach((obj: any): void => {
-                var textInput: JQuery = obj.lineNameInput;
+                var textInput: JQuery = obj.lineAuto.inputElement;
                 if (textInput.data('setByUser')) {
                     return;
                 }
@@ -3003,7 +2999,7 @@ module EDDTableImport {
                 rowIndex: number,
                 nextSets: any[];
             hiddenInput = $(element);
-            auto = hiddenInput.data('EDDAutoObj');
+            auto = hiddenInput.data('eddautocompleteobj');
             textInput = auto.inputElement;
             type = auto.modelName;
             if (type === 'MeasurementCompartment' || type === 'MeasurementUnit') {
@@ -3139,7 +3135,7 @@ module EDDTableImport {
                     if (set.line_name !== null) {
                         lineDisam = this.lineObjSets[set.line_name];
                         if (lineDisam) {
-                            lineIdInput = lineDisam.selectedLineIdInput;
+                            lineIdInput = lineDisam.lineAuto.hiddenElement;
 
                             // if we've disabled import for the associated line, skip adding this
                             // measurement to the list
@@ -3162,7 +3158,7 @@ module EDDTableImport {
                                 return;  // continue to the next loop iteration parsedSets.forEach
                             }
                             assay_id = assaySelect.val();
-                            lineIdInput = assayDisam.selectedLineIdInput;
+                            lineIdInput = assayDisam.lineAuto.hiddenElement;
                             lineId = lineIdInput.val();
                         }
                     }
@@ -3483,66 +3479,51 @@ module EDDTableImport {
 
     export class LineDisambiguationRow extends DisambiguationRow {
 
-        lineNameInput:JQuery;
-        selectedLineIdInput:JQuery;
+        lineAuto:EDDAuto.StudyLine;
 
 
         build(body:HTMLTableElement, name, i) {
             var defaultSel:any, cell:JQuery;
-
-            defaultSel = LineDisambiguationRow.disambiguateAnAssayOrLine(name, i);
             cell = $(this.row.insertCell()).css('text-align', 'left');
+            defaultSel = LineDisambiguationRow.disambiguateAnAssayOrLine(name, i);
+
             this.appendLineAutoselect(cell, defaultSel);
-            this.lineNameInput.data('visibleIndex', i);
-            this.selectedLineIdInput.val("new");
+            this.lineAuto.inputElement.data('visibleIndex', i);
         }
 
 
         appendLineAutoselect(parentElement:JQuery, defaultSelection): void {
             // create a text input to gather user input
             var lineInputId = 'disamLineInput' + this.visibleIndex;
-            var lineNameInput = $('<input type="text" class="autocomp ui-autocomplete-input">')
-                .data('setByUser', false)
+
+            this.lineAuto = new EDDAuto.StudyLine({
+                container:parentElement,
+                hiddenValue:defaultSelection.lineID,
+                emptyCreatesNew:true,
+                nonEmptyRequired:false
+            });
+
+            this.lineAuto.inputElement.data('setByUser', false)
                 .attr('id', lineInputId)
-                .attr('placeholder', '(Create New)')
                 .addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
-                .appendTo(parentElement);
 
             // create a hidden form field to store the selected value
-            var selectedLineIdInput = $('<input type=hidden>')
-                .appendTo(parentElement)
-                .attr('id', 'disamLine' + this.visibleIndex)
+            this.lineAuto.hiddenElement.attr('id', 'disamLine' + this.visibleIndex)
                 .attr('name', 'disamLine' + this.visibleIndex)
-                .val("new")
                 .addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
 
-            // set up autocomplete for using controls created above
-            var model_name: string = "StudyLines";
-            var opt = {
-                'search_extra': { 'study':  EDDData.currentStudyID }};
-            EDDAuto.BaseAuto.createFromElements(lineNameInput,
-                model_name,
-                EDDData.Lines,
-                opt,
-                [{"name": "(Create New)", "id": "new"}]);
-
-            // save references to both the input and the hidden form field that stores the
-            // selected value
-            this.lineNameInput = lineNameInput;
-            this.selectedLineIdInput = selectedLineIdInput;
-
             // auto-select the line name if possible
-            if (defaultSelection.lineID) {
-                // search for the line ID corresponding to this name.
+            //if (defaultSelection.lineID) {
+            //    // search for the line ID corresponding to this name.
                 // ATData.existingLines is of type {id: number; n: string;}[]
-                (ATData.existingLines || []).forEach((line: any) => {  // TODO: possible optimization here -- no need for linear search
-                    if (defaultSelection.lineID === line.id) {
-                        lineNameInput.val(line.n);
-                        selectedLineIdInput.val(line.id.toString());
-                        return false; // stop looping
-                    }
-                });
-            }
+            //    (ATData.existingLines || []).forEach((line: any) => {  // TODO: possible optimization here -- no need for linear search
+            //        if (defaultSelection.lineID === line.id) {
+            //            lineNameInput.val(line.n);
+            //            selectedLineIdInput.val(line.id.toString());
+            //            return false; // stop looping
+            //        }
+            //    });
+            //}
         }
 
 

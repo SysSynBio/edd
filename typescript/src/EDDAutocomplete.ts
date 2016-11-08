@@ -12,6 +12,7 @@ module EDDAuto {
         // Mandatory: A JQuery object identifying the DOM element that contains, or will contain,
         // the input elements used by this autocomplete object.
         container:JQuery,
+
         // The JQuery object that uniquely identifies the autocomplete text input within the DOM.
         // The element identified by this selector will have the "autocomp" class added if not already
         // present for consistency with the rest of the UI.
@@ -21,20 +22,41 @@ module EDDAuto {
         // container element.
         inputElement?:JQuery,
         hiddenElement?:JQuery,
+
         // The string to show initially in the input element.
         // This may or may not be equivalent to a valid hiddenElement value.
         displayValue?:string,
+
         // A starting value for hiddenElement.  This value is a unique identifier of some
         // back-end data structure - like a database record Id.
+        // If this is provided but displayValue is not, we attempt to generate an initial displayValue
+        // based on it.
         hiddenValue?:string,
+
+        // Whether the field must have some value before submission (i.e. cannot be blank). Default is false.
+        nonEmptyRequired?:boolean,    // TODO: Implement
+
+        // Whether the field's contents must resolve to a valid Id before submission.
+        // Default is usually true - it depends on the subclass.
+        // Note that when nonEmptyRequired is false, a blank value is considered valid!
+        validIdRequired?:boolean,    // TODO: Implement
+
+        // Whether a blank field defaults to show a "(Create New)" placeholder and submits a hidden Id of 'new'.
+        // Default is false.        
+        emptyCreatesNew?:boolean,    // TODO: Implement
+
         // an optional dictionary to use / maintain as a cache of query results for this
         // autocomplete. Maps search term -> results.
         cache?:any,
+
         // an optional dictionary of static results to prepend to those returned
         // by search queries
         prependResults?:any,
+
         // the URI of the REST resource to use for querying autocomplete results
         search_uri?:string,
+
+        // Extra parameters to append to each query to the search engine
         search_extra?:any
     }
 
@@ -83,15 +105,17 @@ module EDDAuto {
             var autcompletes = $('input.autocomp').get();
             for ( var i = 0; i < autcompletes.length; i++ ) {
                 var a = autcompletes[i];
-                var autocompleteType = $(a).data('autocompletetype');
+                var autocompleteType = $(a).data('eddautocompletetype');
                 if (!autocompleteType) {
-                    throw Error("autocompleteType must be defined!");
+                    throw Error("eddautocompletetype must be defined!");
                 }
                 var opt:AutocompleteOptions = {
                     container: $(a).parent(),
                     inputElement: $(a),
                     hiddenElement: $(a).next('input[type=hidden]')
                 };
+                // This will automatically attach the created object to both input elements,
+                // under the attribute 'eddautocompleteobj'
                 new EDDAuto[autocompleteType](opt);
             }
         }
@@ -128,8 +152,8 @@ module EDDAuto {
             if ("hiddenValue" in this.opt) {
                 this.hiddenElement.val(this.opt.hiddenValue);
             }
-            this.inputElement.data('EDDAutoObj', this);
-            this.hiddenElement.data('EDDAutoObj', this);
+            this.inputElement.data('eddautocompleteobj', this);
+            this.hiddenElement.data('eddautocompleteobj', this);
 
             this.prependResults = this.opt.prependResults || [];
 
@@ -164,6 +188,10 @@ module EDDAuto {
                 'display_key': this.display_key,
                 'value_key': this.value_key
             });
+            if (this.opt['emptyCreatesNew']) {
+                this.inputElement.attr('placeholder', '(Create New)');
+            }
+
             var _this = this;
             // mcautocomplete is not in type definitions for jQuery, hence <any>
             (<any>this.inputElement).mcautocomplete({
@@ -247,15 +275,16 @@ module EDDAuto {
                 var hiddenId = hiddenElement.val();
                 var old = _this.cache[hiddenId] || {};
                 var current = auto.val();
+                var blank = this.opt['emptyCreatesNew'] ? 'new' : '';
 
                 if (current.trim() === '') {
                     // User cleared value in autocomplete, remove value from hidden ID
-                    hiddenElement.val('')
+                    hiddenElement.val(blank)
                         .trigger('change')
                         .trigger('input');
                 } else {
                     // User modified value in autocomplete without selecting new one, restore previous
-                    auto.val(old[_this.display_key] || '');
+                    auto.val(old[_this.display_key] || blank);
                 }
             });
         };
@@ -526,6 +555,22 @@ module EDDAuto {
             this.init();
         }
     }
+
+
+
+    export class StudyLine extends BaseAuto {
+        static columns = [ new AutoColumn('Name', '300px', 'name') ];
+
+        constructor(opt:AutocompleteOptions, search_options?) {
+            super(opt, search_options);
+            this.modelName = 'StudyLine';
+            this.columns = EDDAuto.MetaboliteSpecies.columns;
+            this.cacheId = 'Lines';
+            this.opt['search_extra'] = { 'study':  EDDData.currentStudyID };
+            this.init();
+        }
+    }
+
 }
 
 
