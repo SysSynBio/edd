@@ -486,7 +486,9 @@ module EDDEditable {
 		// Override this with your specific autocomplete type
 		createAutoCompleteObject():EDDAuto.BaseAuto {
 			// Create an input field that the user can edit with.
-			return new EDDAuto.User(this.element);
+			return new EDDAuto.User({
+				container:this.elementJQ
+			});
 			//, 'editElem' + EditableElement._uniqueIndex, this.getValue());
 		}
 
@@ -504,7 +506,7 @@ module EDDEditable {
 			//var selectRecord = e.recordCache().cache(id);
 			//auto.setSelection(new EDDAuto.AutocompleteFieldSelection(selectString, e.getEngineUID(), selectRecord));
 
-			var el = auto.inputElement;
+			var el = auto.visibleInput;
 
 			// Copy font attributes from our underlying control.
 			$(el).css("font-family", this.elementJQ.css("font-family"));
@@ -524,10 +526,10 @@ module EDDEditable {
 			this.elementJQ.addClass('active');
 
 			var auto = this.getAutoCompleteObject();	// Calling this may set it up for the first time
-			this.inputElement = auto.inputElement;
+			this.inputElement = auto.visibleInput;
 
 			this.clearElementForEditing();
-			this.element.appendChild(auto.inputElement[0]);
+			this.element.appendChild(auto.visibleInput[0]);
 
 			// Remember what we're editing in case they cancel or move to another element
 			EditableElement._prevEditableElement = this;
@@ -564,7 +566,9 @@ module EDDEditable {
 		// Override this with your specific autocomplete type
 		createAutoCompleteObject() {
 			// Create an input field that the user can edit with.
-			return new EDDAuto.User(this.element);
+			return new EDDAuto.User({
+				container:this.elementJQ
+			});
 			// null, 'editElem' + EditableElement._uniqueIndex, this.getValue()
 		}
 	}

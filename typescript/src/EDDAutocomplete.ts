@@ -13,23 +13,28 @@ module EDDAuto {
         // the input elements used by this autocomplete object.
         container:JQuery,
 
-        // The JQuery object that uniquely identifies the autocomplete text input within the DOM.
-        // The element identified by this selector will have the "autocomp" class added if not already
-        // present for consistency with the rest of the UI.
-        // Note that when specifying this, the inputElement must have an accompanying hiddenElement
+        // The JQuery object that uniquely identifies the visible autocomplete text input in the DOM.
+        // This element will have the "autocomp" class added if not already present.
+        // Note that when specifying this, the visibleInput must have an accompanying hiddenInput
         // specified which will be used to cache the selected value.
-        // If neither of these values are supplied, the elements will be created and appended to the
+        // If neither of these values are supplied, both elements will be created and appended to the
         // container element.
-        inputElement?:JQuery,
-        hiddenElement?:JQuery,
+        visibleInput?:JQuery,
+        hiddenInput?:JQuery,
+
+        // Optional form submission names to assign to the visible and hidden elements.
+        // To the back end, the hiddenInput is generally the important one, so the option
+        // for that is simply called 'name'.
+        visibleInputName?:string,
+        name?:string,
 
         // The string to show initially in the input element.
-        // This may or may not be equivalent to a valid hiddenElement value.
-        displayValue?:string,
+        // This may or may not be equivalent to a valid hiddenInput value.
+        visibleValue?:string,
 
-        // A starting value for hiddenElement.  This value is a unique identifier of some
+        // A starting value for hiddenInput.  This value is a unique identifier of some
         // back-end data structure - like a database record Id.
-        // If this is provided but displayValue is not, we attempt to generate an initial displayValue
+        // If this is provided but visibleValue is not, we attempt to generate an initial visibleValue
         // based on it.
         hiddenValue?:string,
 
@@ -80,8 +85,8 @@ module EDDAuto {
     export class BaseAuto {
 
         container:JQuery;
-        inputElement:JQuery;
-        hiddenElement:JQuery;
+        visibleInput:JQuery;
+        hiddenInput:JQuery;
 
         modelName:string;
         uid:number;
@@ -105,14 +110,14 @@ module EDDAuto {
             var autcompletes = $('input.autocomp').get();
             for ( var i = 0; i < autcompletes.length; i++ ) {
                 var a = autcompletes[i];
-                var autocompleteType = $(a).data('eddautocompletetype');
+                var autocompleteType = $(a).attr('eddautocompletetype');
                 if (!autocompleteType) {
                     throw Error("eddautocompletetype must be defined!");
                 }
                 var opt:AutocompleteOptions = {
                     container: $(a).parent(),
-                    inputElement: $(a),
-                    hiddenElement: $(a).next('input[type=hidden]')
+                    visibleInput: $(a),
+                    hiddenInput: $(a).next('input[type=hidden]')
                 };
                 // This will automatically attach the created object to both input elements,
                 // under the attribute 'eddautocompleteobj'
@@ -142,18 +147,18 @@ module EDDAuto {
             }
             this.container = this.opt.container;
 
-            this.inputElement = this.opt.inputElement ||
+            this.visibleInput = this.opt.visibleInput ||
                 $('<input type="text"/>').addClass('autocomp').appendTo(this.container);
-            this.hiddenElement = this.opt.hiddenElement ||
+            this.hiddenInput = this.opt.hiddenInput ||
                 $('<input type="hidden"/>').appendTo(this.container);
-            if ("displayValue" in this.opt) {
-                this.inputElement.val(this.opt.displayValue);
+            if ("visibleValue" in this.opt) {
+                this.visibleInput.val(this.opt.visibleValue);
             }
             if ("hiddenValue" in this.opt) {
-                this.hiddenElement.val(this.opt.hiddenValue);
+                this.hiddenInput.val(this.opt.hiddenValue);
             }
-            this.inputElement.data('eddautocompleteobj', this);
-            this.hiddenElement.data('eddautocompleteobj', this);
+            this.visibleInput.data('eddautocompleteobj', this);
+            this.hiddenInput.data('eddautocompleteobj', this);
 
             this.prependResults = this.opt.prependResults || [];
 
@@ -184,35 +189,41 @@ module EDDAuto {
 
             // TODO add flag(s) to handle multiple inputs
             // TODO possibly also use something like https://github.com/xoxco/jQuery-Tags-Input
-            this.inputElement.addClass('autocomp').data('EDD_auto', {
+            this.visibleInput.addClass('autocomp').data('EDD_auto', {
                 'display_key': this.display_key,
                 'value_key': this.value_key
             });
             if (this.opt['emptyCreatesNew']) {
-                this.inputElement.attr('placeholder', '(Create New)');
+                this.visibleInput.attr('placeholder', '(Create New)');
+            }
+            if (this.opt['visibleInputName']) {
+                this.visibleInput.attr('name', this.opt['visibleInputName']);
+            }
+            if (this.opt['name']) {
+                this.hiddenInput.attr('name', this.opt['name']);
             }
 
             var _this = this;
             // mcautocomplete is not in type definitions for jQuery, hence <any>
-            (<any>this.inputElement).mcautocomplete({
+            (<any>this.visibleInput).mcautocomplete({
                 // These next two options are what this plugin adds to the autocomplete widget.
                 // FIXME these will need to vary depending on record type
                 'showHeader': true,
                 'columns': this.columns,
                 // Event handler for when a list item is selected.
                 'select': function (event, ui) {
-                    var cacheKey, record, displayValue, hiddenValue;
+                    var cacheKey, record, visibleValue, hiddenValue;
                     if (ui.item) {
                         cacheKey = ui.item[_this.value_key];
                         record = _this.cache[cacheKey] = _this.cache[cacheKey] || {};
                         $.extend(record, ui.item);
-                        displayValue = record[_this.display_key] || '';
+                        visibleValue = record[_this.display_key] || '';
                         hiddenValue = record[_this.value_key] || '';
                         // assign value of selected item ID to sibling hidden input
 
-                        _this.inputElement.val(displayValue);
+                        _this.visibleInput.val(visibleValue);
 
-                        _this.hiddenElement.val(hiddenValue)
+                        _this.hiddenInput.val(hiddenValue)
                             .trigger('change')
                             .trigger('input');
                     }
@@ -270,16 +281,16 @@ module EDDAuto {
                     $(ev.target).removeClass('wait');
                 }
             }).on('blur', function (ev) {
-                var auto = _this.inputElement;
-                var hiddenElement = _this.hiddenElement;
-                var hiddenId = hiddenElement.val();
+                var auto = _this.visibleInput;
+                var hiddenInput = _this.hiddenInput;
+                var hiddenId = hiddenInput.val();
                 var old = _this.cache[hiddenId] || {};
                 var current = auto.val();
-                var blank = this.opt['emptyCreatesNew'] ? 'new' : '';
+                var blank = _this.opt['emptyCreatesNew'] ? 'new' : '';
 
                 if (current.trim() === '') {
                     // User cleared value in autocomplete, remove value from hidden ID
-                    hiddenElement.val(blank)
+                    hiddenInput.val(blank)
                         .trigger('change')
                         .trigger('input');
                 } else {
@@ -291,7 +302,7 @@ module EDDAuto {
 
 
         val() {
-            return this.hiddenElement.val();
+            return this.hiddenInput.val();
         }
     }
 
@@ -312,6 +323,24 @@ module EDDAuto {
             this.columns = EDDAuto.User.columns;
             this.display_key = 'fullname';
             this.cacheId = 'Users';
+            this.init();
+        }
+    }
+
+
+
+    export class Group extends BaseAuto {
+
+        static columns = [
+            new AutoColumn('Group', '200px', 'name')
+        ];
+
+        constructor(opt:AutocompleteOptions, search_options?) {
+            super(opt, search_options);
+            this.modelName = 'Group';
+            this.columns = EDDAuto.Group.columns;
+            this.display_key = 'name';
+            this.cacheId = 'Groups';
             this.init();
         }
     }
@@ -454,7 +483,55 @@ module EDDAuto {
             this.modelName = 'Metabolite';
             this.columns = EDDAuto.Metabolite.columns;
             this.cacheId = 'MetaboliteTypes';
-            this.inputElement.attr('size', 45)
+            this.visibleInput.attr('size', 45);
+            this.init();
+        }
+    }
+
+
+
+    export class Protein extends BaseAuto {
+
+        static columns = [ new AutoColumn('Name', '300px', 'name') ];
+
+        constructor(opt:AutocompleteOptions, search_options?) {
+            super(opt, search_options);
+            this.modelName = 'Protein';
+            this.columns = EDDAuto.Protein.columns;
+            this.cacheId = 'Proteins';
+            this.visibleInput.attr('size', 45);
+            this.init();
+        }
+    }
+
+
+
+    export class Gene extends BaseAuto {
+
+        static columns = [ new AutoColumn('Name', '300px', 'name') ];
+
+        constructor(opt:AutocompleteOptions, search_options?) {
+            super(opt, search_options);
+            this.modelName = 'Gene';
+            this.columns = EDDAuto.Gene.columns;
+            this.cacheId = 'Genes';
+            this.visibleInput.attr('size', 45);
+            this.init();
+        }
+    }
+
+
+
+    export class Phosphor extends BaseAuto {
+
+        static columns = [ new AutoColumn('Name', '300px', 'name') ];
+
+        constructor(opt:AutocompleteOptions, search_options?) {
+            super(opt, search_options);
+            this.modelName = 'Phosphor';
+            this.columns = EDDAuto.Phosphor.columns;
+            this.cacheId = 'Phosphors';
+            this.visibleInput.attr('size', 45);
             this.init();
         }
     }
@@ -469,7 +546,7 @@ module EDDAuto {
             this.modelName = 'GenericOrMetabolite';
             this.columns = EDDAuto.GenericOrMetabolite.columns;
             this.cacheId = 'GenericOrMetaboliteTypes';    // TODO: Is this correct?
-            this.inputElement.attr('size', 45)
+            this.visibleInput.attr('size', 45)
             this.init();
         }
     }
@@ -485,7 +562,7 @@ module EDDAuto {
             this.modelName = 'MeasurementType';
             this.columns = EDDAuto.MeasurementType.columns;
             this.cacheId = 'MeasurementTypes';
-            this.inputElement.attr('size', 45)
+            this.visibleInput.attr('size', 45)
             this.init();
         }
     }
@@ -500,7 +577,7 @@ module EDDAuto {
             this.modelName = 'MeasurementCompartment';
             this.columns = EDDAuto.MeasurementCompartment.columns;
             this.cacheId = 'MeasurementTypeCompartments';
-            this.inputElement.attr('size', 20)
+            this.visibleInput.attr('size', 20)
             this.init();
         }
     }
@@ -515,7 +592,7 @@ module EDDAuto {
             this.modelName = 'MeasurementUnit';
             this.columns = EDDAuto.MeasurementUnit.columns;
             this.cacheId = 'UnitTypes';
-            this.inputElement.attr('size', 10)
+            this.visibleInput.attr('size', 10)
             this.init();
         }
     }
@@ -535,7 +612,7 @@ module EDDAuto {
             this.modelName = 'MetaboliteExchange';
             this.columns = EDDAuto.MetaboliteExchange.columns;
             this.cacheId = 'Exchange';
-            this.opt['search_extra'] = { 'template': $(this.inputElement).data('template') };
+            this.opt['search_extra'] = { 'template': $(this.visibleInput).data('template') };
             this.init();
         }
     }
@@ -551,7 +628,7 @@ module EDDAuto {
             this.modelName = 'MetaboliteSpecies';
             this.columns = EDDAuto.MetaboliteSpecies.columns;
             this.cacheId = 'Species';
-            this.opt['search_extra'] = { 'template': $(this.inputElement).data('template') };
+            this.opt['search_extra'] = { 'template': $(this.visibleInput).data('template') };
             this.init();
         }
     }
@@ -564,13 +641,26 @@ module EDDAuto {
         constructor(opt:AutocompleteOptions, search_options?) {
             super(opt, search_options);
             this.modelName = 'StudyLine';
-            this.columns = EDDAuto.MetaboliteSpecies.columns;
+            this.columns = EDDAuto.StudyLine.columns;
             this.cacheId = 'Lines';
             this.opt['search_extra'] = { 'study':  EDDData.currentStudyID };
             this.init();
         }
     }
 
+
+
+    export class Registry extends BaseAuto {
+        static columns = [ new AutoColumn('Name', '300px', 'name') ];
+
+        constructor(opt:AutocompleteOptions, search_options?) {
+            super(opt, search_options);
+            this.modelName = 'Registry';
+            this.columns = EDDAuto.Registry.columns;
+            this.cacheId = 'Registries';
+            this.init();
+        }
+    }
 }
 
 
@@ -664,10 +754,10 @@ $.widget('custom.mcautocomplete', $.ui.autocomplete, {
 
 
 EDD_auto.create_autocomplete = function create_autocomplete(container) {
-    var inputElement, hiddenElement;
-    inputElement = $('<input type="text"/>').addClass('autocomp').appendTo(container);
-    hiddenElement = $('<input type="hidden"/>').appendTo(container);
-    return inputElement;
+    var visibleInput, hiddenInput;
+    visibleInput = $('<input type="text"/>').addClass('autocomp').appendTo(container);
+    hiddenInput = $('<input type="hidden"/>').appendTo(container);
+    return visibleInput;
 };
 
 

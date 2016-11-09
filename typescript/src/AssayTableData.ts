@@ -2852,20 +2852,20 @@ module EDDTableImport {
                     this.measurementObjSets[name] = disam;
                 }
                 // TODO sizing should be handled in CSS
-                disam.compAuto.inputElement.data('visibleIndex', i);
-                disam.typeAuto.inputElement.data('visibleIndex', i);
-                disam.unitsAuto.inputElement.data('visibleIndex', i);
+                disam.compAuto.visibleInput.data('visibleIndex', i);
+                disam.typeAuto.visibleInput.data('visibleIndex', i);
+                disam.unitsAuto.visibleInput.data('visibleIndex', i);
 
                 // If we're in MDV mode, the units pulldowns are irrelevant. Toggling
                 // the hidden unit input controls whether it's treated as required.
                 isMdv = mode === 'mdv';
-                disam.unitsAuto.inputElement.toggleClass('off', isMdv);
-                disam.unitsAuto.hiddenElement.toggleClass('off', isMdv);
+                disam.unitsAuto.visibleInput.toggleClass('off', isMdv);
+                disam.unitsAuto.hiddenInput.toggleClass('off', isMdv);
 
                 // Set required inputs as required
-                disam.compAuto.hiddenElement.addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
-                disam.typeAuto.hiddenElement.addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
-                disam.unitsAuto.hiddenElement.toggleClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS, !isMdv);
+                disam.compAuto.hiddenInput.addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
+                disam.typeAuto.hiddenInput.addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
+                disam.unitsAuto.hiddenInput.toggleClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS, !isMdv);
 
                 this.currentlyVisibleMeasurementObjSets.push(disam);
             });
@@ -2918,9 +2918,9 @@ module EDDTableImport {
                     disam = new MetadataDisambiguationRow(body, name, i);
                     this.metadataObjSets[name] = disam;
                 }
-                disam.metaAuto.inputElement.attr('name', 'disamMeta' + i)
+                disam.metaAuto.visibleInput.attr('name', 'disamMeta' + i)
                     .addClass('autocomp_altype');
-                disam.metaAuto.hiddenElement.attr('name', 'disamMetaHidden' + i);
+                disam.metaAuto.hiddenInput.attr('name', 'disamMetaHidden' + i);
             });
 
             if (uniqueMetadataNames.length > this.DUPLICATE_CONTROLS_THRESHOLD) {
@@ -2951,7 +2951,7 @@ module EDDTableImport {
             }
             v = changed.data('visibleIndex') || 0;
             this.currentlyVisibleLineObjSets.slice(v).forEach((obj: any): void => {
-                var textInput: JQuery = obj.lineAuto.inputElement;
+                var textInput: JQuery = obj.lineAuto.visibleInput;
                 if (textInput.data('setByUser')) {
                     return;
                 }
@@ -3000,7 +3000,7 @@ module EDDTableImport {
                 nextSets: any[];
             hiddenInput = $(element);
             auto = hiddenInput.data('eddautocompleteobj');
-            textInput = auto.inputElement;
+            textInput = auto.visibleInput;
             type = auto.modelName;
             if (type === 'MeasurementCompartment' || type === 'MeasurementUnit') {
                 rowIndex = textInput.data('setByUser', true).data('visibleIndex') || 0;
@@ -3034,7 +3034,7 @@ module EDDTableImport {
 
             allSet = this.currentlyVisibleMeasurementObjSets.every((obj: any): boolean => {
                 var compAuto: EDDAuto.MeasurementCompartment = obj.compAuto;
-                if (compAuto.inputElement.data('setByUser') || (compAuto.inputElement.val() && compAuto.val() !== '0')) {
+                if (compAuto.visibleInput.data('setByUser') || (compAuto.visibleInput.val() && compAuto.val() !== '0')) {
                     return true;
                 }
                 return false;
@@ -3135,7 +3135,7 @@ module EDDTableImport {
                     if (set.line_name !== null) {
                         lineDisam = this.lineObjSets[set.line_name];
                         if (lineDisam) {
-                            lineIdInput = lineDisam.lineAuto.hiddenElement;
+                            lineIdInput = lineDisam.lineAuto.hiddenInput;
 
                             // if we've disabled import for the associated line, skip adding this
                             // measurement to the list
@@ -3158,7 +3158,7 @@ module EDDTableImport {
                                 return;  // continue to the next loop iteration parsedSets.forEach
                             }
                             assay_id = assaySelect.val();
-                            lineIdInput = assayDisam.lineAuto.hiddenElement;
+                            lineIdInput = assayDisam.lineAuto.hiddenInput;
                             lineId = lineIdInput.val();
                         }
                     }
@@ -3175,7 +3175,7 @@ module EDDTableImport {
                             unitsId = measDisam.unitsAuto.val() || "1";
                             // If we've disabled import for measurements of this type, skip adding
                             // this measurement to the list
-                            if (measDisam.typeAuto.hiddenElement.is(':disabled')) {
+                            if (measDisam.typeAuto.hiddenInput.is(':disabled')) {
                                 return;  // continue to the next loop iteration parsedSets.forEach
                             }
                         }
@@ -3191,8 +3191,8 @@ module EDDTableImport {
                 Object.keys(set.metadata_by_name).forEach((name):void => {
                     metaDisam = this.metadataObjSets[name];
                     if (metaDisam) {
-                        metaId = metaDisam.metaAuto.hiddenElement.val();
-                        if (metaId && (!metaDisam.metaAuto.hiddenElement.is(':disabled'))) {
+                        metaId = metaDisam.metaAuto.val();
+                        if (metaId && (!metaDisam.metaAuto.hiddenInput.is(':disabled'))) {
                             metaDataById[metaId] = set.metadata_by_name[name];
                             metaDataByName[name] = set.metadata_by_name[name];
                             metaDataPresent = true;
@@ -3419,13 +3419,13 @@ module EDDTableImport {
 
             this.metaAuto = new EDDAuto.AssayLineMetadataType({
                 container: $(this.row.insertCell()),
-                displayValue: name,
+                visibleValue: name,
                 cache: MetadataDisambiguationRow.autoCache
             });
-            this.metaAuto.inputElement.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
+            this.metaAuto.visibleInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
                 .attr('name', 'disamMeta' + i)
                 .addClass('autocomp_altype');
-            this.metaAuto.hiddenElement.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
+            this.metaAuto.hiddenInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
                 .attr('name', 'disamMetaHidden' + i);
         }
     }
@@ -3463,8 +3463,8 @@ module EDDTableImport {
             [this.compAuto, this.typeAuto, this.unitsAuto].forEach((auto: EDDAuto.BaseAuto): void => {
                 var cell: JQuery = $(this.row.insertCell()).addClass('disamDataCell');
                 auto.container.addClass('disamDataCell');
-                auto.inputElement.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
-                auto.hiddenElement.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
+                auto.visibleInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
+                auto.hiddenInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
             });
 
             $(this.row).on('change', 'input[type=hidden]', (ev: JQueryInputEventObject): void => {
@@ -3488,7 +3488,7 @@ module EDDTableImport {
             defaultSel = LineDisambiguationRow.disambiguateAnAssayOrLine(name, i);
 
             this.appendLineAutoselect(cell, defaultSel);
-            this.lineAuto.inputElement.data('visibleIndex', i);
+            this.lineAuto.visibleInput.data('visibleIndex', i);
         }
 
 
@@ -3503,12 +3503,12 @@ module EDDTableImport {
                 nonEmptyRequired:false
             });
 
-            this.lineAuto.inputElement.data('setByUser', false)
+            this.lineAuto.visibleInput.data('setByUser', false)
                 .attr('id', lineInputId)
                 .addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
 
             // create a hidden form field to store the selected value
-            this.lineAuto.hiddenElement.attr('id', 'disamLine' + this.visibleIndex)
+            this.lineAuto.hiddenInput.attr('id', 'disamLine' + this.visibleIndex)
                 .attr('name', 'disamLine' + this.visibleIndex)
                 .addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
 

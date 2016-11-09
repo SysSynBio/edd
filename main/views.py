@@ -1324,7 +1324,7 @@ meta_pattern = re.compile(r'(\w*)MetadataType$')
 # /search
 def search(request):
     """ Naive implementation of model-independent server-side autocomplete backend,
-        paired with autocomplete2.js on the client side. Call out to Solr or ICE where
+        paired with EDDAutocomplete.js on the client side. Call out to Solr or ICE where
         needed. """
     return model_search(request, request.GET["model"])
 
@@ -1337,7 +1337,7 @@ AUTOCOMPLETE_VIEW_LOOKUP = {
     'MetaboliteSpecies': autocomplete.search_sbml_species,
     'Strain': autocomplete.search_strain,
     'StudyWrite': autocomplete.search_study_writable,
-    'StudyLines': autocomplete.search_study_lines,
+    'StudyLine': autocomplete.search_study_lines,
     'User': autocomplete.search_user,
 }
 
