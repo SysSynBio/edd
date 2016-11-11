@@ -187,7 +187,7 @@
         });
         // set up study selection input
         _auto = $('#id_study_0');
-        EDDAuto.BaseAuto.createFromElements(_auto, 'StudyWrite');
+        EDDAuto.BaseAuto.createFromElements(_auto, 'StudyWritable');
         _auto.on('mcautocompleteselect', function (ev, ui) {
             ui.item && fetchStudyInfo(ui.item.id);
             _auto.blur();

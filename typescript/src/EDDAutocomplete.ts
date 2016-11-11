@@ -183,7 +183,7 @@ module EDDAuto {
 
             this.emptyResult = {};
             this.emptyResult[this.columns[0].valueField] = this.emptyResult[0] = 'No Results Found';
-            this.columns.slice(1).forEach(function (column, index) {
+            this.columns.slice(1).forEach((column:AutoColumn, index:number):void => {
                 this.emptyResult[column.valueField] = this.emptyResult[index] = '';
             });
 
@@ -203,7 +203,7 @@ module EDDAuto {
                 this.hiddenInput.attr('name', this.opt['name']);
             }
 
-            var _this = this;
+            var __this = this;
             // mcautocomplete is not in type definitions for jQuery, hence <any>
             (<any>this.visibleInput).mcautocomplete({
                 // These next two options are what this plugin adds to the autocomplete widget.
@@ -214,16 +214,16 @@ module EDDAuto {
                 'select': function (event, ui) {
                     var cacheKey, record, visibleValue, hiddenValue;
                     if (ui.item) {
-                        cacheKey = ui.item[_this.value_key];
-                        record = _this.cache[cacheKey] = _this.cache[cacheKey] || {};
+                        cacheKey = ui.item[__this.value_key];
+                        record = __this.cache[cacheKey] = __this.cache[cacheKey] || {};
                         $.extend(record, ui.item);
-                        visibleValue = record[_this.display_key] || '';
-                        hiddenValue = record[_this.value_key] || '';
+                        visibleValue = record[__this.display_key] || '';
+                        hiddenValue = record[__this.value_key] || '';
                         // assign value of selected item ID to sibling hidden input
 
-                        _this.visibleInput.val(visibleValue);
+                        __this.visibleInput.val(visibleValue);
 
-                        _this.hiddenInput.val(hiddenValue)
+                        __this.hiddenInput.val(hiddenValue)
                             .trigger('change')
                             .trigger('input');
                     }
@@ -233,40 +233,40 @@ module EDDAuto {
                 'minLength': 0,
                 'source': function (request, response) {
                     var result, modelCache, termCachedResults;
-                    modelCache = EDD_auto.request_cache[_this.modelName] = EDD_auto.request_cache[_this.modelName] || {};
+                    modelCache = EDD_auto.request_cache[__this.modelName] = EDD_auto.request_cache[__this.modelName] || {};
                     termCachedResults = modelCache[request.term];
                     if (termCachedResults) {
                         // prepend any optional default results
-                        var displayResults = _this.prependResults.concat(termCachedResults);
+                        var displayResults = __this.prependResults.concat(termCachedResults);
 
                         response(displayResults);
                         return;
                     }
                     $.ajax({
-                        'url': _this.search_uri,
+                        'url': __this.search_uri,
                         'dataType': 'json',
                         'data': $.extend({
-                            'model': _this.modelName,
+                            'model': __this.modelName,
                             'term': request.term
-                        }, _this.opt['search_extra']),
+                        }, __this.opt['search_extra']),
                         // The success event handler will display "No match found" if no items are returned.
                         'success': function (data) {
                             var result;
                             if (!data || !data.rows || data.rows.length === 0) {
-                                result = [ _this.emptyResult ];
+                                result = [ __this.emptyResult ];
                             } else {
                                 result = data.rows;
                                 // store returned results in cache
                                 result.forEach(function (item) {
-                                    var cacheKey = item[_this.value_key],
-                                        cache_record = _this.cache[cacheKey] = _this.cache[cacheKey] || {};
+                                    var cacheKey = item[__this.value_key],
+                                        cache_record = __this.cache[cacheKey] = __this.cache[cacheKey] || {};
                                     $.extend(cache_record, item);
                                 });
                             }
                             modelCache[request.term] = result;
 
                             // prepend any optional default results
-                            var displayResults = _this.prependResults.concat(result);
+                            var displayResults = __this.prependResults.concat(result);
                             response(displayResults);
                         },
                         'error': function (jqXHR, status, err) {
@@ -281,12 +281,12 @@ module EDDAuto {
                     $(ev.target).removeClass('wait');
                 }
             }).on('blur', function (ev) {
-                var auto = _this.visibleInput;
-                var hiddenInput = _this.hiddenInput;
+                var auto = __this.visibleInput;
+                var hiddenInput = __this.hiddenInput;
                 var hiddenId = hiddenInput.val();
-                var old = _this.cache[hiddenId] || {};
+                var old = __this.cache[hiddenId] || {};
                 var current = auto.val();
-                var blank = _this.opt['emptyCreatesNew'] ? 'new' : '';
+                var blank = __this.opt['emptyCreatesNew'] ? 'new' : '';
 
                 if (current.trim() === '') {
                     // User cleared value in autocomplete, remove value from hidden ID
@@ -295,7 +295,7 @@ module EDDAuto {
                         .trigger('input');
                 } else {
                     // User modified value in autocomplete without selecting new one, restore previous
-                    auto.val(old[_this.display_key] || blank);
+                    auto.val(old[__this.display_key] || blank);
                 }
             });
         };
@@ -629,6 +629,20 @@ module EDDAuto {
             this.columns = EDDAuto.MetaboliteSpecies.columns;
             this.cacheId = 'Species';
             this.opt['search_extra'] = { 'template': $(this.visibleInput).data('template') };
+            this.init();
+        }
+    }
+
+
+
+    export class StudyWritable extends BaseAuto {
+        static columns = [ new AutoColumn('Name', '300px', 'name') ];
+
+        constructor(opt:AutocompleteOptions, search_options?) {
+            super(opt, search_options);
+            this.modelName = 'StudyWritable';
+            this.columns = EDDAuto.StudyWritable.columns;
+            this.cacheId = 'StudiesWritable';
             this.init();
         }
     }

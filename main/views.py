@@ -1336,7 +1336,7 @@ AUTOCOMPLETE_VIEW_LOOKUP = {
     'MetaboliteExchange': autocomplete.search_sbml_exchange,
     'MetaboliteSpecies': autocomplete.search_sbml_species,
     'Strain': autocomplete.search_strain,
-    'StudyWrite': autocomplete.search_study_writable,
+    'StudyWritable': autocomplete.search_study_writable,
     'StudyLine': autocomplete.search_study_lines,
     'User': autocomplete.search_user,
 }

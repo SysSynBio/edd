@@ -106,7 +106,7 @@
                     <p><label for="id_study-name">Study Name</label> <input id="id_study-name" maxlength="255" name="study-name" size="50" type="text" value="CJJ-Test" /></p>
 <p><label for="id_study-description">Description</label> <textarea cols="100" id="id_study-description" name="study-description" rows="10">
 CJJ Test</textarea></p>
-<p><label for="id_study-contact_0">Contact</label> <input class="autocomp autocomp_user" id="id_study-contact_0" name="study-contact_0" type="text" value="cjjoshua" /><input id="id_study-contact_1" name="study-contact_1" type="hidden" value="7" /></p>
+<p><label for="id_study-contact_0">Contact</label> <input class="autocomp" eddautocompletetype="User" id="id_study-contact_0" name="study-contact_0" type="text" value="cjjoshua" /><input id="id_study-contact_1" name="study-contact_1" type="hidden" value="7" /></p>
                     <p>
                         <label></label>
                         <button id="update_study" name="action" value="update">Update Study</button>
@@ -290,13 +290,13 @@ CJJ Test</textarea></p>
 <p><label for="id_line-description"><input type="checkbox" class="off bulk" name="line-_bulk_description" checked="checked" value/>Description</label> <textarea cols="40" id="id_line-description" name="line-description" rows="2">
 </textarea></p>
 <p><label for="id_line-control"><input type="checkbox" class="off bulk" name="line-_bulk_control" checked="checked" value/>Is Control?</label> <input id="id_line-control" name="line-control" type="checkbox" /></p>
-<p><label for="id_line-contact_0"><input type="checkbox" class="off bulk" name="line-_bulk_contact" checked="checked" value/>Contact</label> <input class="autocomp autocomp_user" id="id_line-contact_0" name="line-contact_0" type="text" /><input id="id_line-contact_1" name="line-contact_1" type="hidden" /></p>
-<p><label for="id_line-experimenter_0"><input type="checkbox" class="off bulk" name="line-_bulk_experimenter" checked="checked" value/>Experimenter</label> <input class="autocomp autocomp_user" id="id_line-experimenter_0" name="line-experimenter_0" type="text" /><input id="id_line-experimenter_1" name="line-experimenter_1" type="hidden" /></p>
-<p><label for="id_line-carbon_source_0"><input type="checkbox" class="off bulk" name="line-_bulk_carbon_source" checked="checked" value/>Carbon Source</label> <input class="autocomp autocomp_carbon" id="id_line-carbon_source_0" name="line-carbon_source_0" type="text" /><input id="id_line-carbon_source_1" name="line-carbon_source_1" type="hidden" /></p>
-<p><label for="id_line-strains_0"><input type="checkbox" class="off bulk" name="line-_bulk_strains" checked="checked" value/>Strains</label> <input class="autocomp autocomp_reg" id="id_line-strains_0" name="line-strains_0" type="text" /><input id="id_line-strains_1" name="line-strains_1" type="hidden" /><input id="id_line-meta_store" name="line-meta_store" type="hidden" value="{}" /><input id="initial-line-id_line-meta_store" name="initial-line-meta_store" type="hidden" value="{}" /><input id="id_line-ids" name="line-ids" type="hidden" /></p>
+<p><label for="id_line-contact_0"><input type="checkbox" class="off bulk" name="line-_bulk_contact" checked="checked" value/>Contact</label> <input class="autocomp" eddautocompletetype="User" id="id_line-contact_0" name="line-contact_0" type="text" /><input id="id_line-contact_1" name="line-contact_1" type="hidden" /></p>
+<p><label for="id_line-experimenter_0"><input type="checkbox" class="off bulk" name="line-_bulk_experimenter" checked="checked" value/>Experimenter</label> <input class="autocomp" eddautocompletetype="User" id="id_line-experimenter_0" name="line-experimenter_0" type="text" /><input id="id_line-experimenter_1" name="line-experimenter_1" type="hidden" /></p>
+<p><label for="id_line-carbon_source_0"><input type="checkbox" class="off bulk" name="line-_bulk_carbon_source" checked="checked" value/>Carbon Source</label> <input class="autocomp" eddautocompletetype="CarbonSource" id="id_line-carbon_source_0" name="line-carbon_source_0" type="text" /><input id="id_line-carbon_source_1" name="line-carbon_source_1" type="hidden" /></p>
+<p><label for="id_line-strains_0"><input type="checkbox" class="off bulk" name="line-_bulk_strains" checked="checked" value/>Strains</label> <input class="autocomp" eddautocompletetype="Registry" id="id_line-strains_0" name="line-strains_0" type="text" /><input id="id_line-strains_1" name="line-strains_1" type="hidden" /><input id="id_line-meta_store" name="line-meta_store" type="hidden" value="{}" /><input id="initial-line-id_line-meta_store" name="initial-line-meta_store" type="hidden" value="{}" /><input id="id_line-ids" name="line-ids" type="hidden" /></p>
                 <p class="line-edit-meta">
                     <span class="label">
-                        <input type="text" class="autocomp autocomp_ltype" placeholder="Metadata Type" size="12" />
+                        <input type="text" class="autocomp" eddautocompletetype="LineMetadataType" placeholder="Metadata Type" size="12" />
                         <input type="hidden" class="line-meta-type" value="" />
                     </span>
                     <input type="text" class="line-meta-value" placeholder="Metadata Value" />
@@ -375,7 +375,7 @@ CJJ Test</textarea></p>
 <option value="1941">Targeted Proteomics</option>
 <option value="1937">Transcriptomics</option>
 </select></p>
-<p><label for="id_assay-experimenter_0">Experimenter</label> <input class="autocomp autocomp_user" id="id_assay-experimenter_0" name="assay-experimenter_0" type="text" /><input id="id_assay-experimenter_1" name="assay-experimenter_1" type="hidden" /><input id="id_assay-assay_id" name="assay-assay_id" type="hidden" /></p>
+<p><label for="id_assay-experimenter_0">Experimenter</label> <input class="autocomp" eddautocompletetype="User" id="id_assay-experimenter_0" name="assay-experimenter_0" type="text" /><input id="id_assay-experimenter_1" name="assay-experimenter_1" type="hidden" /><input id="id_assay-assay_id" name="assay-assay_id" type="hidden" /></p>
                 <button type="submit" name="action" value="assay">Add Assay</button>
             </div>
         </div>
@@ -415,7 +415,7 @@ CJJ Test</textarea></p>
                 <span class="discloseLink"><a href="#">Add Measurements To Selected Assays</a></span>
             </div>
             <div class="sectionContent discloseBody measurement-create edd-form">
-                <p><label for="id_measurement-measurement_type_0">Type</label> <input class="autocomp autocomp_measure" id="id_measurement-measurement_type_0" name="measurement-measurement_type_0" type="text" /><input id="id_measurement-measurement_type_1" name="measurement-measurement_type_1" type="hidden" /></p>
+                <p><label for="id_measurement-measurement_type_0">Type</label> <input class="autocomp" eddautocompletetype="MeasurementType" id="id_measurement-measurement_type_0" name="measurement-measurement_type_0" type="text" /><input id="id_measurement-measurement_type_1" name="measurement-measurement_type_1" type="hidden" /></p>
 <p><label for="id_measurement-y_units">Units</label> <select id="id_measurement-y_units" name="measurement-y_units">
 <option value="" selected="selected">---------</option>
 <option value="1">n/a</option>
