@@ -11,14 +11,12 @@
     <script type="text/javascript" src="{% static 'main/js/Dragboxes.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/index.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/Utl.js' %}"></script>
-    <script type="text/javascript" src="{% static 'main/js/autocomplete2.js' %}"></script>
+    <script type="text/javascript" src="{% static 'main/js/EDDAutocomplete.js' %}"></script>
+    <script type="text/javascript" src="{% static 'main/js/EDDEditableElement.js' %}"></script>
 {% endblock js_css %}
 
 
 {% block status %}
-    {% if form.errors %}
-    {{ form.errors }}
-    {% endif %}
     {{ block.super }}
 {% endblock status %}
 
@@ -30,19 +28,10 @@
             <span class="discloseLink"><a href="#">Add A New Study</a></span>
         </div>
         <div class="sectionContent discloseBody">
-            <form action="{% url 'main:create_study' %}" class="edd-form" method="POST">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit">Add Study</button>
-            </form>
+        <a href="study">Button to create study here</a>
         </div>
     </div>
     {% endif %}
-    <p>Last viewed:
-    {% for study in latest_viewed_studies %}
-        <a href="{% url 'main:detail' study.id %}">{{ study.name }}</a>{% if not forloop.last %},{% endif %}
-    {% endfor %}
-    </p>
     <div class="pageSection">
         <table id="studiesTable"></table>
     </div>

@@ -117,7 +117,7 @@ class StudyCreateView(generic.edit.CreateView):
         return reverse('main:detail', kwargs={'pk': self.object.pk})
 
 
-class StudyIndexView(StudyCreateView):
+class StudyIndexView(generic.TemplateView):
     template_name = 'main/index.html'
 
     def get_context_data(self, **kwargs):
@@ -131,6 +131,7 @@ class StudyIndexView(StudyCreateView):
         latest = map(lambda pk: latest_by_pk.get(pk, None), lvs)
         # filter out the Nones
         context['latest_viewed_studies'] = filter(bool, latest)
+        context['can_create'] = Study.user_can_create(self.request.user)
         return context
 
 
