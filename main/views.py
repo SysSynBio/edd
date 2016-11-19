@@ -89,7 +89,7 @@ def load_study(request, study_id, permission_type=['R', 'W', ]):
 
 class StudyCreateView(generic.edit.CreateView):
     """
-    View for request to create a study, and the index page.
+    View for request to create a study.
     """
     form_class = CreateStudyForm
     model = Study
@@ -114,10 +114,14 @@ class StudyCreateView(generic.edit.CreateView):
         return kwargs
 
     def get_success_url(self):
-        return reverse('main:detail', kwargs={'pk': self.object.pk})
+        return reverse('main:detail', kwargs={'pk': self.object.pk})    # To Overvirwew
 
 
-class StudyIndexView(generic.TemplateView):
+class StudyIndexView(generic.list.ListView):
+    """
+    View for the the index page.
+    """
+    model = Study
     template_name = 'main/index.html'
 
     def get_context_data(self, **kwargs):

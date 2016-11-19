@@ -353,7 +353,7 @@ class CreateStudyForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         # removes default hard-coded suffix of colon character on all labels
         kwargs.setdefault('label_suffix', '')
-        self._user = kwargs.pop('user', None)
+        self._user = kwargs.pop('user', None)   # Q: Why are we assigning this to self?
         super(CreateStudyForm, self).__init__(*args, **kwargs)
         # self.fields exists after super.__init__()
         if self._user:
