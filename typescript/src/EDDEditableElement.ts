@@ -34,20 +34,44 @@ module EDDEditable {
 		static _prevEditableElement:any = null;
 
 
-		constructor(parentElement: HTMLElement, style?: string) {
-
-	        this.elementJQ = $('<div type="text"/>').addClass(style || '');
-			if (parentElement) {
-	            this.elementJQ.appendTo(parentElement);
-				this.parentElement = parentElement;
-			} else {
+		// This constructor accepts a pre-existing editable element, in the form of
+		// a div with the class 'editable-field', or a reference to a container
+		// where the editable element will be created.
+		//   It distinguishes the two cases by looking for the class 'editable-field'
+		// on the provided element.
+		//   If no element is provided, the class creates an element and assumes
+		// it will be added to the DOM later by a call to its appendTo method, which
+		// provides a parent element.
+		constructor(parentOrElement: HTMLElement, style?: string) {
+			// If we've been given no element, make one.
+			if (!parentOrElement) {
+		        this.elementJQ = $('<div/>').addClass(style || '');
 				this.parentElement = null;
+			// If we have an element, and it looks like an editable field,
+			// use it, and find its parent.
+			} else if ($(parentOrElement).hasClass('editable-field')) {
+	            this.elementJQ = $(parentOrElement);
+				this.parentElement = parentOrElement.parentNode;
+			// If it's not an editable field, declare it a parent,
+			// and go looking for a child that might be a pre-existing
+			// editable field.
+			} else {
+				this.parentElement = parentOrElement;
+				var potentialField = $(parentOrElement).children('#editable-field').first();
+				if (potentialField) {
+		            this.elementJQ = potentialField;
+		       	// No field?  Make one and add it under the parent.
+		        } else {
+		        	// Styling will be set later with setDefaultStyling()
+			        this.elementJQ = $('<div/>').addClass(style || '');
+		            this.elementJQ.appendTo(parentOrElement);
+		       	}
 			}
+			this.element = this.elementJQ.get();
 
 			var id = EditableElement._uniqueIndex.toString();
 			EditableElement._uniqueIndex += 1;
 			this.id = id;
-			this.element = this.elementJQ[0];
 			this.element.id = id;
 
 			this.inputElement = null;
@@ -121,9 +145,7 @@ module EDDEditable {
 
 		showValue() {
 			var e = this.element;
-			while (e.firstChild) {
-				e.removeChild(e.firstChild);
-			}
+            this.elementJQ.children().detach();
 			var v = this.getDisplayValue();
 			var bl = this.blankLabel();
 
@@ -209,9 +231,7 @@ module EDDEditable {
 				p.appendChild(c);
 			}
 
-			while (this.editControlsContainer.firstChild) {
-				this.editControlsContainer.removeChild(this.editControlsContainer.firstChild);
-			}
+            $(this.editControlsContainer).children().detach();
 			this.editControlsContainer.appendChild(this.editButtonElement);
 		}
 
@@ -226,49 +246,50 @@ module EDDEditable {
 			this.elementJQ.removeClass('saving');
 			this.elementJQ.addClass('active');
 
-			// Figure out how high to make the text edit box.
-			var desiredFontSize = this.elementJQ.css("font-size");
-			var lineHeight = parseInt( desiredFontSize, 10 );
-			var desiredNumLines = this.elementJQ.height() / lineHeight;
-			desiredNumLines = Math.floor(desiredNumLines) + 1;
-			if (this.minimumRows) {
-				if (desiredNumLines < this.minimumRows) {
-					desiredNumLines = this.minimumRows;
+			// Attempt to locate a pre-existing input element inside the
+			// editable area, and if one is located, take its value as the
+			// default value for the field.  If no element exists, make a new one,
+			// and assume it should be a textarea.
+
+			if (!this.inputElement) {
+				var potentialInput = this.elementJQ.children('input').first();
+				if (potentialInput) {
+		            this.inputElement = potentialInput.get();
+		        } else {
+					this.inputElement = document.createElement("textarea");
+					this.inputElement.type = "text";
+
+					// Figure out how high to make the text edit box.
+					var desiredFontSize = this.elementJQ.css("font-size");
+					var lineHeight = parseInt( desiredFontSize, 10 );
+					var desiredNumLines = this.elementJQ.height() / lineHeight;
+					desiredNumLines = Math.floor(desiredNumLines) + 1;
+					if (this.minimumRows) {
+						desiredNumLines = Math.max(desiredNumLines, this.minimumRows)
+					}
+					if (this.maximumRows) {
+						desiredNumLines = Math.min(desiredNumLines, this.maximumRows)
+					}
+					// Copy font attributes to match.
+					$(this.inputElement).css( "font-family", this.elementJQ.css("font-family") );
+					$(this.inputElement).css( "font-size", desiredFontSize );
+					// Set width and height.
+					this.inputElement.style.width = "100%";
+					$(this.inputElement).attr('rows', desiredNumLines)
+
+					this.inputElement.value = this.getValue();
 				}
 			}
-			if (this.maximumRows) {
-				if (desiredNumLines > this.maximumRows) {
-					desiredNumLines = this.maximumRows;
-				}
-			}
-
-			// Create an input field that the user can edit with.
-			var i = document.createElement("textarea");
-			this.inputElement = i;
-
-			i.type = "text";
-			i.value = this.getDisplayValue();
-
-			// Copy font attributes from our underlying control.
-			$(i).css( "font-family", this.elementJQ.css("font-family") );
-			$(i).css( "font-size", desiredFontSize );
-
-			// Set width and height.
-			i.style.width = "100%";
-			$(i).attr('rows', desiredNumLines)
-			// Compel the enclosing div to be 100% width as well, so our textarea gets
-			// the maximum available space
-			//this.element.style.width = "100%";
 
 			this.clearElementForEditing();
-			this.element.appendChild(i);
+			this.element.appendChild(this.inputElement);
 
 			// Remember what we're editing in case they cancel or move to another element
 			EditableElement._prevEditableElement = this;
 
 			// Set focus to the new input element ASAP after the click handler.
-			// We can't just do this in here because the browser won't actually set the focus,
-			// presumably because it thinks the focus should be in what was just clicked on.
+			// We can't just do this in here because the browser will set the focus itself
+			// after it's done handling the event that triggered this method.
 			window.setTimeout(function() {
 				pThis.inputElement.focus();
 			}, 0);
@@ -282,7 +303,7 @@ module EDDEditable {
 				}
 			};
 
-			// TODO: Handle losing focus (in which case we commit changes).
+			// TODO: Handle losing focus (in which case we commit changes?)
 		}
 
 
@@ -291,14 +312,10 @@ module EDDEditable {
 		// and clears it of all content, then re-adds the basic edit control widgets.
 		clearElementForEditing() {
 			// Clear the element out
-			while (this.element.firstChild) {
-				this.element.removeChild(this.element.firstChild);
-			}
+			this.elementJQ.children().detach();
 			// Re-add the controls area
 			this.element.appendChild(this.editControlsPositioner);
-			while (this.editControlsContainer.firstChild) {
-				this.editControlsContainer.removeChild(this.editControlsContainer.firstChild);
-			}
+			$(this.editControlsContainer).children().detach();
 			this.editControlsContainer.appendChild(this.acceptButtonElement);
 			this.editControlsContainer.appendChild(this.cancelButtonElement);
 			//this.editButtonElement.className = "icon icon-edit";
@@ -346,7 +363,7 @@ module EDDEditable {
 			// We can't just read the old width out and save it, then re-insert it now, because
 			// that may permanently fix the element at a width that it may have only had
 			// before because of external layout factors.
-			//this.element.style.width = '';
+			//this.element.style.width = '';	// (Not doing this for now)
 
 			// Restore the content.
 			this.showValue();
@@ -496,6 +513,11 @@ module EDDEditable {
 		// This either returns a reference to the autocomplete object,
 		// or if necessary, creates a new one and prepares it, then returns it.
 		getAutoCompleteObject():EDDAuto.BaseAuto {
+
+			// fart
+			// 			var potentialInput = this.elementJQ.children('input').first();
+
+
 			if (this.autoCompleteObject) {
 				return this.autoCompleteObject;
 			}
@@ -549,7 +571,7 @@ module EDDEditable {
 					pThis.commitEdit();
 				}
 			};
-			// TODO: Handle losing focus (in which case we should commit changes?).
+			// TODO: Handle losing focus (in which case we commit changes?)
 		}
 
 
