@@ -120,7 +120,7 @@ module EDDAuto {
                     hiddenInput: $(a).next('input[type=hidden]')
                 };
                 // This will automatically attach the created object to both input elements,
-                // under the attribute 'eddautocompleteobj'
+                // in the jQuery data interface, under the 'edd' object, attribute 'autocompleteobj'.
                 new EDDAuto[autocompleteType](opt);
             }
         }
@@ -157,8 +157,8 @@ module EDDAuto {
             if ("hiddenValue" in this.opt) {
                 this.hiddenInput.val(this.opt.hiddenValue);
             }
-            this.visibleInput.data('eddautocompleteobj', this);
-            this.hiddenInput.data('eddautocompleteobj', this);
+            this.visibleInput.data('edd', {'autocompleteobj': this});
+            this.hiddenInput.data('edd', {'autocompleteobj': this});
 
             this.prependResults = this.opt.prependResults || [];
 
@@ -189,10 +189,7 @@ module EDDAuto {
 
             // TODO add flag(s) to handle multiple inputs
             // TODO possibly also use something like https://github.com/xoxco/jQuery-Tags-Input
-            this.visibleInput.addClass('autocomp').data('EDD_auto', {
-                'display_key': this.display_key,
-                'value_key': this.value_key
-            });
+            this.visibleInput.addClass('autocomp');
             if (this.opt['emptyCreatesNew']) {
                 this.visibleInput.attr('placeholder', '(Create New)');
             }
@@ -776,14 +773,16 @@ EDD_auto.create_autocomplete = function create_autocomplete(container) {
 
 
 EDD_auto.initial_search = function initial_search(selector, term) {
-    var autoInput = $(selector), data = autoInput.data('EDD_auto'), oldResponse;
+    var autoInput = $(selector);
+    var autoObj = autoInput.data('edd').autocompleteobj;
+    var oldResponse;
     oldResponse = autoInput.mcautocomplete('option', 'response');
     autoInput.mcautocomplete('option', 'response', function (ev, ui) {
         var highest = 0, best, termLower = term.toLowerCase();
         autoInput.mcautocomplete('option', 'response', oldResponse);
         oldResponse.call({}, ev, ui);
         ui.content.every(function (item) {
-            var val = item[data.display_key], valLower = val.toLowerCase();
+            var val = item[autoObj.display_key], valLower = val.toLowerCase();
             if (val === term) {
                 best = item;
                 return false;  // do not need to continue

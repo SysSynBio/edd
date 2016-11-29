@@ -9,6 +9,8 @@
 
 module EDDEditable {
 
+	// TODO: For editable fields built entirely on the front-end, with no
+	// pre-existing input elements, we need a way to specify the default value.
 	export class EditableElement {
 
 		parentElement:HTMLElement;
@@ -30,6 +32,7 @@ module EDDEditable {
 		// Declaring this into a variable during instantiation,
 		// so whe can ".off" the event using the reference.
 		keyESCHandler: any;
+		keyEnterHandler: any;
 
 		static _prevEditableElement:any = null;
 
@@ -51,7 +54,7 @@ module EDDEditable {
 			// use it, and find its parent.
 			} else if ($(parentOrElement).hasClass('editable-field')) {
 	            this.elementJQ = $(parentOrElement);
-				this.parentElement = parentOrElement.parentNode;
+				this.parentElement = parentOrElement.parentElement;
 			// If it's not an editable field, declare it a parent,
 			// and go looking for a child that might be a pre-existing
 			// editable field.
@@ -67,7 +70,7 @@ module EDDEditable {
 		            this.elementJQ.appendTo(parentOrElement);
 		       	}
 			}
-			this.element = this.elementJQ.get();
+			this.element = this.elementJQ.get(0);
 
 			var id = EditableElement._uniqueIndex.toString();
 			EditableElement._uniqueIndex += 1;
@@ -78,11 +81,16 @@ module EDDEditable {
 			this.minimumRows = null;
 			this.maximumRows = null;
 
+			// For attaching to the document
 			this.keyESCHandler = (e) => {
-				if (e.which == 27) {
-					// ESCAPE key. Cancel out.
-					this.cancelEditing();
-				}
+				// ESCAPE key. Cancel out.
+				if (e.which == 27) { this.cancelEditing(); }
+			};
+
+			// For attaching to the input element
+			this.keyEnterHandler = (e) => {
+				// ENTER key. Commit the changes.
+				if (e.which == 13) { this.commitEdit(); }
 			};
 
 			this.setUpMainElement();
@@ -101,13 +109,6 @@ module EDDEditable {
 
 		getValue():string {
 			return '';
-		}
-
-
-		// Override if the value of the field needs to be post-processed or interpreted in some way before being displayed.
-		// It is very likely this will need to be altered when subclassing EditableAutocomplete
-		getDisplayValue():string {
-			return this.getValue();
 		}
 
 
@@ -254,7 +255,7 @@ module EDDEditable {
 			if (!this.inputElement) {
 				var potentialInput = this.elementJQ.children('input').first();
 				if (potentialInput) {
-		            this.inputElement = potentialInput.get();
+		            this.inputElement = potentialInput.get(0);
 		        } else {
 					this.inputElement = document.createElement("textarea");
 					this.inputElement.type = "text";
@@ -293,16 +294,7 @@ module EDDEditable {
 			window.setTimeout(function() {
 				pThis.inputElement.focus();
 			}, 0);
-			this.setUpESCHandler();
-
-			// Handle special keys like enter and escape.
-			i.onkeydown = function(e) {
-				if (e.which == 13) {
-					// ENTER key. Commit the changes.
-					pThis.commitEdit();
-				}
-			};
-
+			this.setUpKeyHandler();
 			// TODO: Handle losing focus (in which case we commit changes?)
 		}
 
@@ -350,7 +342,7 @@ module EDDEditable {
 			var pThis = this;
 			var element = this.element;
 
-			this.removeESCHandler();
+			this.removeKeyHandler();
 
 			// Remove the input box.
 			if (this.inputElement && this.inputElement.parentNode) {
@@ -440,18 +432,23 @@ module EDDEditable {
 		}
 
 
-		setUpESCHandler() {
+		// Handle special keys like enter and escape.
+		// We're doing it this way because we only ever want one
+		// EditableElement responding to an ESC or an Enter at a time,
+		// and this is actually less messy than attaching a generic
+		// event handler to the document and then ferreting out the
+		// intended object from the DOM.
+		// There is no pollution from multiple handlers because every time we
+		// add one, we remove the previous.  (See clickToEditHandler)
+		setUpKeyHandler() {
 			$(<any>document).on('keydown', this.keyESCHandler);
+			this.inputElement.on('keydown', this.keyEnterHandler);
 		}
 
 
-		removeESCHandler() {
+		removeKeyHandler() {
 	        $(<any>document).off('keydown', this.keyESCHandler);
-		}
-
-
-		getEditedValue():any {
-			return this.inputElement.value;
+			this.inputElement.off('keydown', this.keyEnterHandler);
 		}
 
 
@@ -480,6 +477,17 @@ module EDDEditable {
 				this.elementJQ.addClass('off');
 			}
 		}
+
+
+		// Override if the value of the field needs to be post-processed before being displayed.
+		getDisplayValue():string {
+			return this.getValue();
+		}
+
+
+		getEditedValue():any {
+			return this.inputElement.value;
+		}
 	}
 
 
@@ -501,42 +509,66 @@ module EDDEditable {
 
 
 		// Override this with your specific autocomplete type
-		createAutoCompleteObject():EDDAuto.BaseAuto {
+		createAutoCompleteObject(opt?:EDDAuto.AutocompleteOptions):EDDAuto.BaseAuto {
 			// Create an input field that the user can edit with.
-			return new EDDAuto.User({
-				container:this.elementJQ
-			});
+			return new EDDAuto.User($.extend({}, opt));
 			//, 'editElem' + EditableElement._uniqueIndex, this.getValue());
 		}
 
 
 		// This either returns a reference to the autocomplete object,
 		// or if necessary, creates a new one and prepares it, then returns it.
+		// TODO: For editable autocomplete fields built entirely on the front-end,
+		// we need to pass down a default value.
+		// Note that this does not do any type checking of pre-existing autocomplete
+		// elements - that is, it does not check the eddautocompletetype attribute to
+		// make sure that it matches the type that it will attempt to create.
+		// For example, an EditableAutocomplete subclass for User will always assume
+		// the input elements it finds are for a User autocomplete type.
 		getAutoCompleteObject():EDDAuto.BaseAuto {
 
-			// fart
-			// 			var potentialInput = this.elementJQ.children('input').first();
-
+			var visibleInput = this.elementJQ.children('input[type="text"]').first();	// ':first-of-type' would be wrong here
+			var hiddenInput = this.elementJQ.children('input[type="hidden"]').first();
+			var autoObject:EDDAuto.BaseAuto = null;
 
 			if (this.autoCompleteObject) {
 				return this.autoCompleteObject;
 			}
-			var auto = this.createAutoCompleteObject();
-			// Assume that there is only one AutocompleteEngine involved, and that it can resolve the value from getValue.
-			//var id = this.getValue();
-			//var selectString = e.resolveRecordIDToSelectString(id);
-			//var selectRecord = e.recordCache().cache(id);
-			//auto.setSelection(new EDDAuto.AutocompleteFieldSelection(selectString, e.getEngineUID(), selectRecord));
 
-			var el = auto.visibleInput;
+			// If we found an input, we can check for an autocomplete object already attached to it.
+			// This is required because EDDAuto.BaseAuto.initPreexisting() may have spidered through and
+			// made one aleady.
 
+			if (visibleInput.length !== 0) {
+                var eddData = visibleInput.data('edd');
+                if (eddData) {
+                	autoObject = eddData.autocompleteobj;
+                }
+                if (!autoObject && (hiddenInput.length !== 0)) {
+					autoObject = this.createAutoCompleteObject({
+						container:this.elementJQ,
+						visibleInput:visibleInput,
+						hiddenInput:hiddenInput
+					});
+                }
+            }
+            // If all else fails (one input missing, no eddData, or no autocompleteobj),
+            // make a new object with new elements.
+            if (!autoObject) {
+				autoObject = this.createAutoCompleteObject({
+					container:this.elementJQ
+				});
+			}
+
+			this.autoCompleteObject = autoObject;
+
+			var el = autoObject.visibleInput;
 			// Copy font attributes from our underlying control.
 			$(el).css("font-family", this.elementJQ.css("font-family"));
 			$(el).css("font-size", this.elementJQ.css("font-size"));
-			$(el).css("width", "100%");
+			//$(el).css("width", "100%");
 
-			this.autoCompleteObject = auto;
-			return auto;
+			return autoObject;
 		}
 
 
@@ -562,22 +594,22 @@ module EDDEditable {
 			window.setTimeout(function() {
 				pThis.inputElement.focus();
 			}, 0);
-			this.setUpESCHandler();
-
-			// Handle special keys like enter and escape.
-			this.inputElement.onkeydown = function(e) {
-				if (e.which == 13) {
-					// ENTER key. Commit the changes.
-					pThis.commitEdit();
-				}
-			};
+			this.setUpKeyHandler();
 			// TODO: Handle losing focus (in which case we commit changes?)
 		}
 
 
+		// It is possible this will need to be altered further when subclassing EditableAutocomplete,
+		// as some record string-equivalents can be ambiguous.
+		getDisplayValue():string {
+			var auto = this.getAutoCompleteObject();
+			return auto.visibleInput.val();
+		}
+
+
 		getEditedValue():any {
-			var auto = this.getAutoCompleteObject();			
-//			return auto.latestSelection.matchedRecord.id;
+			var auto = this.getAutoCompleteObject();
+			return auto.val();
 		}
 	}
 

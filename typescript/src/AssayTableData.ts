@@ -2999,7 +2999,7 @@ module EDDTableImport {
                 rowIndex: number,
                 nextSets: any[];
             hiddenInput = $(element);
-            auto = hiddenInput.data('eddautocompleteobj');
+            auto = hiddenInput.data('edd').autocompleteobj;    // If this is missing we might as well throw an error
             textInput = auto.visibleInput;
             type = auto.modelName;
             if (type === 'MeasurementCompartment' || type === 'MeasurementUnit') {
