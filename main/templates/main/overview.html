@@ -11,13 +11,14 @@
     <script type="text/javascript">
 
         EDDData.currentStudyID = {{ study.id }};
+        EDDData.currentStudyWriteable = {% if writeable %}true{% else %}false{% endif %};
 
     </script>
+    <script type="text/javascript" src="{% static 'main/js/Utl.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/EDDAutocomplete.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/EDDEditableElement.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/Dragboxes.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/DataGrid.js' %}"></script>
-    <script type="text/javascript" src="{% static 'main/js/Utl.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/Overview.js' %}"></script>
     <link rel="stylesheet" type="text/css" href="{% static "main/style.css" %}">
 {% endblock js_css %}
@@ -34,164 +35,183 @@
 
 
 {% block content %}
-    <div class="pageSection">
-        <div class="sectionHead" id="genInfoViewBanner">General Information</div>
-        {% if writable %}
-        <div class="disclose">
-            <div class="sectionChapter">
-                <span class="discloseLink">Edit Details</span>
-            </div>
-            <div class="sectionActions discloseBody">
-                <form action="" class="edd-form" enctype="multipart/form-data" method="POST">
+
+<div>General Information</div>
+
+<div class="pageSection">
+
+    <form action="" class="edd-form" enctype="multipart/form-data" method="POST">
+        {% csrf_token %}
+
+        {{ form.non_field_errors }}
+
+
+        <table class="formTable">
+            <tr>
+                <td>
+                    <div class="form-label">
+                        <label for="{{ form.name.id_for_label }}">Name:</label>
+                        {{ form.name.errors }}
+                    </div>
+                </td>
+                <td>
+                    <div class="editable-field inactive">
+                        {{ study.name }}
+                        {{ form.name }}
+                    </div>
+                </td>
+                <td>
+                    <div class="form-label">
+                        <label for="{{ form.contact.id_for_label }}">Contact:</label>
+                        {{ form.contact.errors }}
+                    </div>
+                </td>
+                <td>
+                    <div class="editable-field inactive">
+                        {% if study.contact %}
+                            {% if writeable %}
+                                {{ study.contact.first_name }} {{ study.contact.last_name }}
+                            {% else %}
+                                <a href="mailto:{{ study.contact.email }}">
+                                    {{ study.contact.first_name }} {{ study.contact.last_name }}
+                                </a>
+                            {% endif %}
+                        {% elif study.contact_extra %}
+                            {{ study.contact_extra }}
+                        {% else %}
+                            (None)
+                        {% endif %}
+                        {{ form.contact }}
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-label">
+                        <label for="{{ form.description.id_for_label }}">Description:</label>
+                        {{ form.description.errors }}
+                    </div>
+                </td>
+                <td>
+                    <div class="editable-field inactive">
+                        {% firstof study.description "<i>(None)</i>"|safe %}
+                        {{ form.description }}
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        Next step:
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        Next step button here
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+<div class="pageSectionTabs">
+    {% if writable %}
+        <div class="{% if not new_attach.errors %}{% if not new_comment.errors %}active{% endif %}{% endif %} absoverlay">Permissions</div>
+        <div class="{% if not new_attach.errors %}{% if not new_comment.errors %}active{% endif %}{% endif %}"
+            for="permissionsSection">Permissions</div>
+    {% endif %}
+    <div class="{% if new_attach.errors %}active{% endif %} absoverlay">Attachments ({{ study.attachments|length }})</div>
+    <div class="{% if new_attach.errors %}active{% endif %}"
+        for="attachmentsSection">Attachments ({{ study.attachments|length }})</div>
+    <div class="{% if new_comment.errors %}active{% endif %} absoverlay">Comments ({{ study.comment_list|length }})</div>
+    <div class="{% if new_comment.errors %}active{% endif %}"
+        for="commentsSection">Comments ({{ study.comment_list|length }})</div>
+</div>
+
+{% if writable %}
+    <div class="pageSection pageSectionTabContent {% if new_attach.errors or new_comment.errors %}off{% endif %}" id="permissionsSection">
+        <div class="sectionContent">
+            {% with perms=study.get_combined_permission %}
+                {% if perms %}
+                <table cellpadding="0" cellspacing="0" class="dataTable sortable">
+                    <tr class="columnLabels">
+                        <th class="sortheader smaller">Who</th>
+                        <th class="sortheader smaller">Level</th>
+                    </tr>
+                    {% for perm in perms %}
+                    <tr class="stripeRow{% cycle 'A' 'B' %}">
+                        <td>{{ perm.get_who_label }}</td>
+                        <td>{{ perm.get_type_label }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% endif %}
+            {% endwith %}
+            <div class="sectionActions">
+                <form method="POST" enctype="multipart/form-data" class="permissions edd-form off" action="">
                     {% csrf_token %}
-                    {{ edit_study.as_p }}
-                    <p>
-                        <label></label>
-                        <button id="update_study" name="action" value="update">Update Study</button>
-                    </p>
+                    <span id="permission_user_box">
+                    <label for="permission_user">
+                        <input type="radio" id="permission_user" name="class" value="User" checked="checked"/>
+                        <span>User</span>
+                    </label>
+                    </span>
+                    <span id="permission_group_box">
+                    <label for="permission_group">
+                        <input type="radio" id="permission_group" name="class" value="Group"/>
+                        <span>Group</span>
+                    </label>
+                    </span>
+                    <span id="permission_public_box">
+                    <label for="permission_public">
+                        <input type="radio" id="permission_public" name="class" value="Public"/>
+                        <span>Public</span>
+                    </label>
+                    </span>
+                    <select name="type">
+                        <option value="N">None</option>
+                        <option value="R">Read</option>
+                        <option value="W">Write</option>
+                    </select>
+                    <button id="set_permission">Set Permission</button>
                 </form>
             </div>
         </div>
-        {% else %}
-        <div class="sectionContent" id="genInfoView">
-            <dl class="infolist">
-                <dt>Description</dt>
-                <dd>{% firstof study.description "<i>(None)</i>"|safe %}</dd>
-                <dt>Contact</dt>
-                <dd>{% if study.contact %}
-                    <a href="mailto:{{ study.contact.email }}">{{ study.contact.first_name }} {{ study.contact.last_name }}</a>
-                    {% elif study.contact_extra %}
-                    {{ study.contact_extra }}
-                    {% else %}
-                    (None)
-                    {% endif %}
-                </dd>
-            </dl>
-        </div>
-        {% endif %}
+    </div>
+{% endif %}
+
+<div class="pageSection pageSectionTabContent {% if not new_attach.errors %}off{% endif %}" id="attachmentsSection">
+    <div class="sectionContent">
+        {% with attachments=study.attachments %}
+            {% include "main/include_attachments.html" %}
+        {% endwith %}
         {% if writable %}
-        <div class="disclose discloseHide" id="permissions">
-            <div class="sectionChapter" id="permissionsBanner">
-                <span class="discloseLink">Permissions</span>
-            </div>
-            <div class="sectionActions discloseBody">
-                {% with perms=study.get_combined_permission %}
-                    {% if perms %}
-                    <table cellpadding="0" cellspacing="0" class="dataTable sortable">
-                        <tr class="columnLabels">
-                            <th class="sortheader smaller">Who</th>
-                            <th class="sortheader smaller">Level</th>
-                        </tr>
-                        {% for perm in perms %}
-                        <tr class="stripeRow{% cycle 'A' 'B' %}">
-                            <td>{{ perm.get_who_label }}</td>
-                            <td>{{ perm.get_type_label }}</td>
-                        </tr>
-                        {% endfor %}
-                    </table>
-                    {% endif %}
-                {% endwith %}
-                <div class="sectionActions">
-                    <form method="POST" enctype="multipart/form-data" class="permissions edd-form off" action="">
-                        {% csrf_token %}
-                        <span id="permission_user_box">
-                        <label for="permission_user">
-                            <input type="radio" id="permission_user" name="class" value="User" checked="checked"/>
-                            <span>User</span>
-                        </label>
-                        </span>
-                        <span id="permission_group_box">
-                        <label for="permission_group">
-                            <input type="radio" id="permission_group" name="class" value="Group"/>
-                            <span>Group</span>
-                        </label>
-                        </span>
-                        <span id="permission_public_box">
-                        <label for="permission_public">
-                            <input type="radio" id="permission_public" name="class" value="Public"/>
-                            <span>Public</span>
-                        </label>
-                        </span>
-                        <select name="type">
-                            <option value="N">None</option>
-                            <option value="R">Read</option>
-                            <option value="W">Write</option>
-                        </select>
-                        <button id="set_permission">Set Permission</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+        <form method="POST" enctype="multipart/form-data" class="attachments edd-form" action="">
+            {% csrf_token %}
+            {{ new_attach.as_p }}
+            <p><button type="submit" name="action" value="attach">Attach File</button></p>
+        </form>
         {% endif %}
-        <div class="disclose{% if not new_attach.errors %} discloseHide{% endif %}" id="attachments">
-            <div class="sectionChapter" id="attachmentsBanner">
-                <span class="discloseLink">Attachments ({{ study.attachments|length }})</span>
-            </div>
-            <div class="sectionActions discloseBody">
-                {% with attachments=study.attachments %}
-                    {% include "main/include_attachments.html" %}
-                {% endwith %}
-                <div class="sectionActionsw">
-                    {% if writable %}
-                    <form method="POST" enctype="multipart/form-data" class="attachments edd-form" action="">
-                        {% csrf_token %}
-                        {{ new_attach.as_p }}
-                        <p><button type="submit" name="action" value="attach">Attach File</button></p>
-                    </form>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="disclose{% if not new_comment.errors %} discloseHide{% endif %}" id="comments">
-            <div class="sectionChapter" id="commentsBanner">
-                <span class="discloseLink">Comments ({{ study.comment_list|length }})</span>
-            </div>
-            <div class="sectionActions discloseBody">
-                <ol class="comment-list">
-                {% for comment in study.comment_list reversed %}
-                    <li>
-                        <span>{{ comment.created.full_name }} at {{ comment.created.format_timestamp }}</span>
-                        <p>{{ comment.body }}</p>
-                    </li>
-                {% endfor %}
-                </ol>
-                <div class="sectionActions">
-                    <form method="POST" class="comments edd-form" action="">
-                        {% csrf_token %}
-                        {{ new_comment.as_p }}
-                        <p><button type="submit" name="action" value="comment">Comment</button></p>
-                    </form>
-                </div>
-            </div>
+    </div>
+</div>
+
+<div class="pageSection pageSectionTabContent {% if not new_comment.errors %}off{% endif %}" id="commentsSection">
+    <div class="sectionContent">
+        <ol class="comment-list">
+            {% for comment in study.comment_list reversed %}
+                <li>
+                    <span>{{ comment.created.full_name }} at {{ comment.created.format_timestamp }}</span>
+                    <p>{{ comment.body }}</p>
+                </li>
+            {% endfor %}
+        </ol>
+        <div class="sectionActions">
+            <form method="POST" class="comments edd-form" action="">
+                {% csrf_token %}
+                {{ new_comment.as_p }}
+                <p><button type="submit" name="action" value="comment">Comment</button></p>
+            </form>
         </div>
     </div>
-    <div class="pageSectionTabs" id="graphTabsOverviewSelected">
-        <div class="active absoverlay">Data Overview</div>
-        <div class="active">Data Overview</div>
-    </div>
-    <div class="pageSection pageSectionTabContent" id="overviewSection">
-        <div class="sectionContent">
-            <div class="btn-toolbar">
-                <div class="btn-group" data-toggle="buttons" id="chartType">
-                    <label class="btn btn-default btn-sm active line">
-                        <input value="linechart" type="radio" autocomplete="off" checked />
-                        <img src="{% static 'main/images/chart_curve.png' %}" />
-                    </label>
-                    <label class="btn btn-default btn-sm" style="margin-right: 20px;">
-                        <input type="radio" autocomplete="off" />
-                        <img src="{% static 'main/images/chart_bar.png' %}" />
-                    </label>
-                    <label class="btn btn-default btn-sm groupByTimeBar hidden">
-                        <input value="timeBar" type="radio" autocomplete="off" />Time
-                    </label>
-                    <label class="btn btn-default btn-sm groupByProteinBar hidden">
-                        <input type="radio" autocomplete="off" value="barAssay" />Line
-                    </label>
-                    <label class="btn btn-default btn-sm groupByMeasurementBar hidden">
-                        <input type="radio" value="groupedMeasurement" autocomplete="off" />Measurement
-                    </label>
-                </div>
-            </div>
-        </div>
-    </div>    
+</div>
+
 {% endblock content %}

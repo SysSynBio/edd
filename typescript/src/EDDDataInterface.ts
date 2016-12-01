@@ -176,6 +176,7 @@ interface UserRecord {
 interface EDDData {
     currentUserID: number;
     currentStudyID: number;    // Can be null/undefined when no Study is chosen
+    currentStudyWriteable: boolean;
     AssayMeasurements:{[id:number]: AssayMeasurementRecord};
     Assays:{[id:number]: AssayRecord};
     CSources:{[id:number]: CarbonSourceRecord};

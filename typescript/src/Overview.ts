@@ -31,6 +31,40 @@ module StudyOverview {
         this.metabolicMapName = null;
         this.biomassCalculation = -1;
 
+        // Set up click-to-browse tabs
+        // put the click handler at the document level, then filter to any link inside a .disclose
+        $(document).on('click', '.pageSectionTabs div:not(.active)', (e) => {
+            var div = $(e.target).closest('div');
+
+            var targetTab;
+            var targetabOverlay;
+
+            if (div.hasClass('absoverlay')) {
+                targetTab = div.next('div:not(.absoverlay)');
+                targetabOverlay = div;
+            } else {
+                targetTab = div;
+                targetabOverlay = targetTab.prev('.absoverlay');
+            }
+
+            var activeTabs = targetTab.closest('div.pageSectionTabs').children('div.active');
+
+            activeTabs.removeClass('active');
+            targetTab.addClass('active');
+            targetabOverlay.addClass('active');
+
+            var targetTabContentID = targetTab.attr('for');
+            var activeNonOverlayTabEls = activeTabs.filter('div:not(.absoverlay)').get();
+
+            // Hide the content section for whatever tabs were active, then show the one selected
+            for ( var i = 0; i < activeNonOverlayTabEls.length; i++ ) {
+                var a = activeNonOverlayTabEls[i];
+                var tabContentID = $(a).attr('for');
+                $('#'+tabContentID).addClass('off');
+            }
+            $('#'+targetTabContentID).removeClass('off');
+        });
+
         // put the click handler at the document level, then filter to any link inside a .disclose
         $(document).on('click', '.disclose .discloseLink', (e) => {
             $(e.target).closest('.disclose').toggleClass('discloseHide');
@@ -38,7 +72,7 @@ module StudyOverview {
         });
 
         $.ajax({
-            'url': 'edddata/',
+            'url': '/study/' + EDDData.currentStudyID + '/edddata/',
             'type': 'GET',
             'error': (xhr, status, e) => {
                 console.log(['Loading EDDData failed: ', status, ';', e].join(''));

@@ -18,6 +18,10 @@ urlpatterns = [
         login_required(views.StudyDetailView.as_view()),
         name='detail'
         ),
+    url(r'^study/(?P<pk>\d+)/overview/$',
+        login_required(views.StudyOverviewView.as_view()),
+        name='overview'
+        ),
     url(r'^study/(?P<study>\d+)/assaydata/$', login_required(views.study_assay_table_data)),
     url(r'^study/(?P<study>\d+)/edddata/$', login_required(views.study_edddata)),
     url(r'^study/(?P<study>\d+)/measurements/(?P<protocol>\d+)/$',

@@ -9,6 +9,7 @@
 
 module EDDEditable {
 
+
 	// TODO: For editable fields built entirely on the front-end, with no
 	// pre-existing input elements, we need a way to specify the default value.
 	export class EditableElement {
@@ -35,6 +36,27 @@ module EDDEditable {
 		keyEnterHandler: any;
 
 		static _prevEditableElement:any = null;
+
+
+	    static initPreexisting() {
+	        // Using 'for' instead of '$.each()' because TypeScript likes to monkey with 'this'. 
+	        var editableFields = $('div.editable-field').get();
+	        for ( var i = 0; i < editableFields.length; i++ ) {
+	            var a = editableFields[i];
+//	            var autocompleteType = $(a).attr('eddautocompletetype');
+//	            if (!autocompleteType) {
+//	                throw Error("eddautocompletetype must be defined!");
+//	            }
+//	            var opt:AutocompleteOptions = {
+//	                container: $(a).parent(),
+//	                visibleInput: $(a),
+//	                hiddenInput: $(a).next('input[type=hidden]')
+//	            };
+	            // This will automatically attach the created object to both input elements,
+	            // in the jQuery data interface, under the 'edd' object, attribute 'autocompleteobj'.
+//	            new EDDAuto[autocompleteType](opt);
+	        }
+	    }
 
 
 		// This constructor accepts a pre-existing editable element, in the form of
@@ -627,3 +649,18 @@ module EDDEditable {
 		}
 	}
 }
+
+
+(function ($) { // immediately invoked function to bind jQuery to $
+
+$( window ).on("load", function() { // Shortcutting this to .load confuses jQuery
+    EDDEditable.EditableElement.initPreexisting();
+    // this makes the autocomplete work like a dropdown box
+    // fires off a search as soon as the element gains focus
+    $(document).on('focus', '.autocomp', function (ev) {
+        $(ev.target).addClass('autocomp_search').mcautocomplete('search');
+    })
+});
+
+}(jQuery));
+

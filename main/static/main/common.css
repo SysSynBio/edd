@@ -841,6 +841,9 @@ div.pageSectionTabs > div.absoverlay {
     padding-left:10px;
     padding-right:10px;
 }
+div.pageSectionTabs > div:not(.active) {
+    cursor: pointer;
+}
 /* This overrides some of the settings in the pageSection style */
 div.pageSectionTabContent {
     margin:0px 8px 3px 8px;
