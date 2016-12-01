@@ -43,18 +43,12 @@ module EDDEditable {
 	        var editableFields = $('div.editable-field').get();
 	        for ( var i = 0; i < editableFields.length; i++ ) {
 	            var a = editableFields[i];
-//	            var autocompleteType = $(a).attr('eddautocompletetype');
-//	            if (!autocompleteType) {
-//	                throw Error("eddautocompletetype must be defined!");
-//	            }
-//	            var opt:AutocompleteOptions = {
-//	                container: $(a).parent(),
-//	                visibleInput: $(a),
-//	                hiddenInput: $(a).next('input[type=hidden]')
-//	            };
-	            // This will automatically attach the created object to both input elements,
-	            // in the jQuery data interface, under the 'edd' object, attribute 'autocompleteobj'.
-//	            new EDDAuto[autocompleteType](opt);
+				var hasAuto = $(a).children('input[type="text"].autocomp').first();	// ':first-of-type' would be wrong here
+				if (hasAuto.length == 1) {
+		            new EDDEditable.EditableAutocomplete(a);
+				} else {
+		            new EDDEditable.EditableElement(a);
+				}
 	        }
 	    }
 
@@ -82,8 +76,8 @@ module EDDEditable {
 			// editable field.
 			} else {
 				this.parentElement = parentOrElement;
-				var potentialField = $(parentOrElement).children('#editable-field').first();
-				if (potentialField) {
+				var potentialField = $(parentOrElement).children('.editable-field').first();
+				if (potentialField.length == 1) {
 		            this.elementJQ = potentialField;
 		       	// No field?  Make one and add it under the parent.
 		        } else {
@@ -276,7 +270,7 @@ module EDDEditable {
 
 			if (!this.inputElement) {
 				var potentialInput = this.elementJQ.children('input').first();
-				if (potentialInput) {
+				if (potentialInput.length == 1) {
 		            this.inputElement = potentialInput.get(0);
 		        } else {
 					this.inputElement = document.createElement("textarea");
@@ -464,13 +458,13 @@ module EDDEditable {
 		// add one, we remove the previous.  (See clickToEditHandler)
 		setUpKeyHandler() {
 			$(<any>document).on('keydown', this.keyESCHandler);
-			this.inputElement.on('keydown', this.keyEnterHandler);
+			$(this.inputElement).on('keydown', this.keyEnterHandler);
 		}
 
 
 		removeKeyHandler() {
 	        $(<any>document).off('keydown', this.keyESCHandler);
-			this.inputElement.off('keydown', this.keyEnterHandler);
+			$(this.inputElement).off('keydown', this.keyEnterHandler);
 		}
 
 
@@ -549,7 +543,7 @@ module EDDEditable {
 		// the input elements it finds are for a User autocomplete type.
 		getAutoCompleteObject():EDDAuto.BaseAuto {
 
-			var visibleInput = this.elementJQ.children('input[type="text"]').first();	// ':first-of-type' would be wrong here
+			var visibleInput = this.elementJQ.children('input[type="text"].autocomp').first();	// ':first-of-type' would be wrong here
 			var hiddenInput = this.elementJQ.children('input[type="hidden"]').first();
 			var autoObject:EDDAuto.BaseAuto = null;
 

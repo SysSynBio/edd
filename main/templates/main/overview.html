@@ -36,82 +36,72 @@
 
 {% block content %}
 
-<div>General Information</div>
+<div>Overview</div>
 
-<div class="pageSection">
+<form action="" class="edd-form" enctype="multipart/form-data" method="POST">
+    {% csrf_token %}
 
-    <form action="" class="edd-form" enctype="multipart/form-data" method="POST">
-        {% csrf_token %}
+    {{ edit_study.non_field_errors }}
 
-        {{ form.non_field_errors }}
-
-
-        <table class="formTable">
-            <tr>
-                <td>
-                    <div class="form-label">
-                        <label for="{{ form.name.id_for_label }}">Name:</label>
-                        {{ form.name.errors }}
-                    </div>
-                </td>
-                <td>
-                    <div class="editable-field inactive">
-                        {{ study.name }}
-                        {{ form.name }}
-                    </div>
-                </td>
-                <td>
-                    <div class="form-label">
-                        <label for="{{ form.contact.id_for_label }}">Contact:</label>
-                        {{ form.contact.errors }}
-                    </div>
-                </td>
-                <td>
-                    <div class="editable-field inactive">
-                        {% if study.contact %}
-                            {% if writeable %}
-                                {{ study.contact.first_name }} {{ study.contact.last_name }}
-                            {% else %}
-                                <a href="mailto:{{ study.contact.email }}">
-                                    {{ study.contact.first_name }} {{ study.contact.last_name }}
-                                </a>
-                            {% endif %}
-                        {% elif study.contact_extra %}
-                            {{ study.contact_extra }}
+    <table class="formTable">
+        <tr>
+            <td class="form-label">
+                <label for="{{ edit_study.name.id_for_label }}">Name:</label>
+                {{ edit_study.name.errors }}
+            </td>
+            <td>
+                <div class="editable-field inactive">
+                    {{ study.name }}
+                    {{ edit_study.name }}
+                </div>
+            </td>
+            <td class="form-label">
+                <label for="{{ edit_study.contact.id_for_label }}">Contact:</label>
+                {{ edit_study.contact.errors }}
+            </td>
+            <td>
+                <div class="editable-field inactive">
+                    {% if study.contact %}
+                        {% if writeable %}
+                            {{ study.contact.first_name }} {{ study.contact.last_name }}
                         {% else %}
-                            (None)
+                            <a href="mailto:{{ study.contact.email }}">
+                                {{ study.contact.first_name }} {{ study.contact.last_name }}
+                            </a>
                         {% endif %}
-                        {{ form.contact }}
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div class="form-label">
-                        <label for="{{ form.description.id_for_label }}">Description:</label>
-                        {{ form.description.errors }}
-                    </div>
-                </td>
-                <td>
-                    <div class="editable-field inactive">
-                        {% firstof study.description "<i>(None)</i>"|safe %}
-                        {{ form.description }}
-                    </div>
-                </td>
-                <td>
-                    <div>
-                        Next step:
-                    </div>
-                </td>
-                <td>
-                    <div>
-                        Next step button here
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </form>
-</div>
+                    {% elif study.contact_extra %}
+                        {{ study.contact_extra }}
+                    {% else %}
+                        (None)
+                    {% endif %}
+                    {{ edit_study.contact }}
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class="form-label">
+                <label for="{{ edit_study.description.id_for_label }}">Description:</label>
+                {{ edit_study.description.errors }}
+            </td>
+            <td>
+                <div class="editable-field inactive">
+                    {% firstof study.description "<i>(None)</i>"|safe %}
+                    {{ edit_study.description }}
+                </div>
+            </td>
+            <td>
+                <div>
+                    Next step:
+                </div>
+            </td>
+            <td>
+                <div>
+                    Next step button here
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
 
 <div class="pageSectionTabs">
     {% if writable %}
