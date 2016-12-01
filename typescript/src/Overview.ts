@@ -31,6 +31,35 @@ module StudyOverview {
         this.metabolicMapName = null;
         this.biomassCalculation = -1;
 
+        new EDDEditable.EditableElement($('#editable-study-name').get()[0]);
+        new EDDEditable.EditableAutocomplete($('#editable-study-contact').get()[0]);
+        new EDDEditable.EditableElement($('#editable-study-description').get()[0]);
+
+
+        // put the click handler at the document level, then filter to any link inside a .disclose
+        $(document).on('click', '.disclose .discloseLink', (e) => {
+            $(e.target).closest('.disclose').toggleClass('discloseHide');
+            return false;
+        });
+
+        $.ajax({
+            'url': '/study/' + EDDData.currentStudyID + '/edddata/',
+            'type': 'GET',
+            'error': (xhr, status, e) => {
+                console.log(['Loading EDDData failed: ', status, ';', e].join(''));
+            },
+            'success': (data) => {
+                EDDData = $.extend(EDDData || {}, data);
+            }
+        });
+
+        prepareTabs();
+
+        $(window).on('load', preparePermissions);
+    }
+
+
+    function prepareTabs() {
         // Set up click-to-browse tabs
         // put the click handler at the document level, then filter to any link inside a .disclose
         $(document).on('click', '.pageSectionTabs div:not(.active)', (e) => {
@@ -64,25 +93,6 @@ module StudyOverview {
             }
             $('#'+targetTabContentID).removeClass('off');
         });
-
-        // put the click handler at the document level, then filter to any link inside a .disclose
-        $(document).on('click', '.disclose .discloseLink', (e) => {
-            $(e.target).closest('.disclose').toggleClass('discloseHide');
-            return false;
-        });
-
-        $.ajax({
-            'url': '/study/' + EDDData.currentStudyID + '/edddata/',
-            'type': 'GET',
-            'error': (xhr, status, e) => {
-                console.log(['Loading EDDData failed: ', status, ';', e].join(''));
-            },
-            'success': (data) => {
-                EDDData = $.extend(EDDData || {}, data);
-            }
-        });
-
-        $(window).on('load', preparePermissions);
     }
 
 
@@ -112,7 +122,7 @@ module StudyOverview {
                 perm.type = $('form.permissions').find('[name=type]').val();
                 perm[klass.toLowerCase()] = { 'id': auto.closest('span').find('input:hidden').val() };
                 $.ajax({
-                    'url': 'permissions/',
+                    'url': '/study/' + EDDData.currentStudyID + '/permissions/',
                     'type': 'POST',
                     'data': {
                         'data': JSON.stringify([perm]),

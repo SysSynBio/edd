@@ -50,7 +50,7 @@
                 {{ edit_study.name.errors }}
             </td>
             <td>
-                <div class="editable-field inactive">
+                <div class="editable-field inactive" id="editable-study-name">
                     {{ study.name }}
                     {{ edit_study.name }}
                 </div>
@@ -60,7 +60,7 @@
                 {{ edit_study.contact.errors }}
             </td>
             <td>
-                <div class="editable-field inactive">
+                <div class="editable-field inactive" id="editable-study-contact">
                     {% if study.contact %}
                         {% if writeable %}
                             {{ study.contact.first_name }} {{ study.contact.last_name }}
@@ -84,7 +84,7 @@
                 {{ edit_study.description.errors }}
             </td>
             <td>
-                <div class="editable-field inactive">
+                <div class="editable-field inactive" id="editable-study-description">
                     {% firstof study.description "<i>(None)</i>"|safe %}
                     {{ edit_study.description }}
                 </div>

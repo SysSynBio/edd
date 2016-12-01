@@ -38,19 +38,19 @@ module EDDEditable {
 		static _prevEditableElement:any = null;
 
 
-	    static initPreexisting() {
-	        // Using 'for' instead of '$.each()' because TypeScript likes to monkey with 'this'. 
-	        var editableFields = $('div.editable-field').get();
-	        for ( var i = 0; i < editableFields.length; i++ ) {
-	            var a = editableFields[i];
-				var hasAuto = $(a).children('input[type="text"].autocomp').first();	// ':first-of-type' would be wrong here
-				if (hasAuto.length == 1) {
-		            new EDDEditable.EditableAutocomplete(a);
-				} else {
-		            new EDDEditable.EditableElement(a);
-				}
-	        }
-	    }
+	    //static initPreexisting() {
+	    //    // Using 'for' instead of '$.each()' because TypeScript likes to monkey with 'this'. 
+	    //    var editableFields = $('div.editable-field').get();
+	    //    for ( var i = 0; i < editableFields.length; i++ ) {
+	    //        var a = editableFields[i];
+		//		var hasAuto = $(a).children('input[type="text"].autocomp').first();	// ':first-of-type' would be wrong here
+		//		if (hasAuto.length == 1) {
+		//            new EDDEditable.EditableAutocomplete(a);
+		//		} else {
+		//            new EDDEditable.EditableElement(a);
+		//		}
+	    //    }
+	    //}
 
 
 		// This constructor accepts a pre-existing editable element, in the form of
@@ -91,7 +91,7 @@ module EDDEditable {
 			var id = EditableElement._uniqueIndex.toString();
 			EditableElement._uniqueIndex += 1;
 			this.id = id;
-			this.element.id = id;
+            this.elementJQ.data('edd', {'editableelementobj': this});
 
 			this.inputElement = null;
 			this.minimumRows = null;
@@ -528,7 +528,6 @@ module EDDEditable {
 		createAutoCompleteObject(opt?:EDDAuto.AutocompleteOptions):EDDAuto.BaseAuto {
 			// Create an input field that the user can edit with.
 			return new EDDAuto.User($.extend({}, opt));
-			//, 'editElem' + EditableElement._uniqueIndex, this.getValue());
 		}
 
 
@@ -639,7 +638,6 @@ module EDDEditable {
 			return new EDDAuto.User({
 				container:this.elementJQ
 			});
-			// null, 'editElem' + EditableElement._uniqueIndex, this.getValue()
 		}
 	}
 }
@@ -647,14 +645,10 @@ module EDDEditable {
 
 (function ($) { // immediately invoked function to bind jQuery to $
 
-$( window ).on("load", function() { // Shortcutting this to .load confuses jQuery
-    EDDEditable.EditableElement.initPreexisting();
-    // this makes the autocomplete work like a dropdown box
-    // fires off a search as soon as the element gains focus
-    $(document).on('focus', '.autocomp', function (ev) {
-        $(ev.target).addClass('autocomp_search').mcautocomplete('search');
-    })
-});
+// Not using this for now
+//$( window ).on("load", function() { // Shortcutting this to .load confuses jQuery
+//    EDDEditable.EditableElement.initPreexisting();
+//});
 
 }(jQuery));
 
