@@ -33,7 +33,7 @@ module StudyOverview {
 
         new EDDEditable.EditableElement($('#editable-study-name').get()[0]);
         new EDDEditable.EditableAutocomplete($('#editable-study-contact').get()[0]);
-        new EDDEditable.EditableElement($('#editable-study-description').get()[0]);
+        new EditableDescriptionElement($('#editable-study-description').get()[0]);
 
 
         // put the click handler at the document level, then filter to any link inside a .disclose
@@ -59,8 +59,8 @@ module StudyOverview {
     }
 
 
+    // Set up click-to-browse tabs
     function prepareTabs() {
-        // Set up click-to-browse tabs
         // put the click handler at the document level, then filter to any link inside a .disclose
         $(document).on('click', '.pageSectionTabs div:not(.active)', (e) => {
             var div = $(e.target).closest('div');
@@ -173,6 +173,26 @@ module StudyOverview {
             }
         };
         ui = new StudyMetabolicMapChooser(false, callback);
+    }
+
+
+    export class EditableDescriptionElement extends EDDEditable.EditableElement {
+
+        editAllowed(): boolean {
+            return EDDData.currentStudyWritable;
+        }
+
+        canCommit(value): boolean {
+            return EDDData.currentStudyWritable;
+        }
+
+        getValue():string {
+            return EDDData.Studies[EDDData.currentStudyID].description;
+        }
+
+        setValue(value) {
+            EDDData.Studies[EDDData.currentStudyID].description = value;
+        }
     }
 };
 

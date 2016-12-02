@@ -123,6 +123,11 @@ module EDDEditable {
 		}
 
 
+		canCommit(value): boolean {
+			return true;
+		}
+
+
 		getValue():string {
 			return '';
 		}
@@ -130,11 +135,6 @@ module EDDEditable {
 
 		setValue(value) {
 
-		}
-
-
-		canCommit(value): boolean {
-			return true;
 		}
 
 

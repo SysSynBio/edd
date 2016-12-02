@@ -11,7 +11,9 @@
     <script type="text/javascript">
 
         EDDData.currentStudyID = {{ study.id }};
-        EDDData.currentStudyWriteable = {% if writeable %}true{% else %}false{% endif %};
+        EDDData.currentStudyWritable = {% if writable %}true{% else %}false{% endif %};
+        EDDData.Studies = EDDData.Studies || {};
+        EDDData.Studies[{{ study.id }}] = {{ study.to_json_str|safe }};
 
     </script>
     <script type="text/javascript" src="{% static 'main/js/Utl.js' %}"></script>
@@ -62,7 +64,7 @@
             <td>
                 <div class="editable-field inactive" id="editable-study-contact">
                     {% if study.contact %}
-                        {% if writeable %}
+                        {% if writable %}
                             {{ study.contact.first_name }} {{ study.contact.last_name }}
                         {% else %}
                             <a href="mailto:{{ study.contact.email }}">
