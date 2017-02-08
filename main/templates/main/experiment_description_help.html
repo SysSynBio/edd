@@ -17,7 +17,8 @@
 {% endblock body_title %}
 
 {% block content %}
-<h2><span class="TODO">DRAFT</span></h2><p class="TODO">
+{# TODO #}
+<h2><span>DRAFT</span></h2><p>
     This document is a work-in-progress draft.  It should be helpful as-is, but expect an
     updated version soon based on review that's already underway.
 </p>
@@ -26,7 +27,7 @@
 An experiment description file is a simple Excel file that allows you to quickly enter the
 experimental conditions for your study.  EDD needs to know what the experimental conditions are for
 measurements you're importing, preferably before you import the data into EDD, or even measure it in
-    the lab (see <span class="TODO">here</span> for why). An experiment description file is
+    the lab (see <span>{# TODO #}here</span> for why). An experiment description file is
     normally the most efficient way to input that information.</p>
     <p>
 
@@ -72,7 +73,8 @@ about lines.</p>
 <div class="caption">Figure 1: EDD terms corresponding to parts of a sample laboratory experiment</div>
 <h3>Experiment description file format</h3>
 <p>
-<span class="TODO">TODO: re/verify examples here once ICE exception is resolved that prevents
+{# TODO #}
+<span>TODO: re/verify examples here once ICE exception is resolved that prevents
 communication with non-production instances.</span></p>
 <p>An experiment description file is an efficient way for you to add lines to your study with a minimum
 of data entry.  In the simplest case, each row of the file represents experimental conditions for a
@@ -376,8 +378,8 @@ using different media.
 </p>
 <p>Note that when using combinatorial input, EDD will insert the combinatorial values into the
     line names so that names are unique.  The relative order of metadata columns in your file will
-    dictate the ordering of those values within the resulting line names.  <span class="TODO">TODO:
-    verify or debunk/implement this claim.</span>
+    dictate the ordering of those values within the resulting line names.  {# TODO #}TODO:
+    verify or debunk/implement this claim.
 </p>
 <table class="figureTable">
     <thead>
@@ -506,8 +508,8 @@ You can also use experiment description files to combinatorially create assays a
        Many assays will only be performed once during the course of an experiment, and will be said
         to occur at a fixed point in time. In many cases.  However, automated platforms such as
         the BioHector [sic] may perform multiple assays on the same sample over time. An assay
-        can contain one or more measurements.   <span class="TODO">TODO: verify claim here regarding
-        assay time</span>
+        can contain one or more measurements. {# TODO #}TODO: verify claim here regarding
+        assay time
     </p></div>
 </div>
 <p>
@@ -542,7 +544,7 @@ You can also use experiment description files to combinatorially create assays a
         value in your file.
 </p>
 <h6>Special case: strain groups</h6>
-<span class="TODO">TODO: update following testing of this feature: line names should change</span>
+{# TODO #} TODO: update following testing of this feature: line names should change
 <p>
     EDD has limited support for creating lines that contain multiple strains (i.e. for
     experimenting with consortia).  To specify multiple strains to be used together as a group,
