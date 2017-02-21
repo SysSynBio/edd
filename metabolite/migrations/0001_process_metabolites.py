@@ -120,6 +120,15 @@ def _merge_metabolite(metabolite, update_list, second_pass=False):
     elif metabolite.measure_count == 0:
         # no match found in merged BIGG/PubChem dataset, and no measurements: delete
         metabolite.delete()
+    elif len(update_list) > 1:
+        # mark these for verification, in case heuristics are wrong
+        metabolite.tags.append('needs-verification') 
+        # choose the lowest PubChem cid
+        _merge_metabolite(
+            metabolite,
+            [min(update_list, key=lambda m: int(m['pubChemCid']))],
+            second_pass=True
+        )
     else:
         # no match found in merged BIGG/PubChem dataset: mark for validation
         metabolite.tags.append('needs-validation')
