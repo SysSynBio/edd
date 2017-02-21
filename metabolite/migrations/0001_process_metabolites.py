@@ -36,8 +36,8 @@ def update_metabolites(apps, schema_editor):
     # create Datasource to mark all metabolites
     global datasource
     datasource = Datasource(
-        name='BIGG and PubChem',
-        url='https://repo.jbei.org/users/tbackman/repos/edd-metabolites/browse',
+        name='BIGG and PubChem via TBackman',
+        url='https://repo.jbei.org/users/tbackman/repos/edd-metabolites/browse/?at=a408f643011bb2ee32694861bf15a0e0e61ba76c',
         created=_create_update(apps),
     )
     datasource.save()
