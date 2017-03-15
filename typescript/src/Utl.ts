@@ -685,7 +685,7 @@ module Utl {
 
 
 		// Helper function to create and set up a FileDropZone.
-		static create(options:any): void {
+		static create(options:any, ignoreIceRelatedErrors?): void {
 			var h = new FileDropZone(options);
 			h.setup();
 		}
@@ -706,7 +706,7 @@ module Utl {
 						skipProcessRaw: null,
 						skipUpload: null,
 						allWorkFinished: false
-					}
+					};
 
 					// callInitFile may set fileContainer's internal stopProcessing flag, or any of the others.
 					// So it's possible for callInitFile to act as a gatekeeper, rejecting the dropped file
@@ -734,7 +734,7 @@ module Utl {
 
 		// If processRawFn is defined, we read the entire file into a variable,
 		// then pass that to processRawFn along with the FileDropZoneFileContainer object.
-		// FileDropZoneFileContainer's contents might be modofied - specifically, the flags - so we check them afterwards
+		// FileDropZoneFileContainer's contents might be modified - specifically, the flags - so we check them afterwards
 		// to decide how to proceed.
 		callProcessRaw(fileContainer: FileDropZoneFileContainer) {
 			var t = this;
@@ -790,9 +790,17 @@ module Utl {
 
 			f.event('error', function(e, xhr) {
 				if (typeof t.processErrorFn === "function") {
-					t.processErrorFn(fileContainer, xhr.response);
+					t.processErrorFn(fileContainer, xhr.response, this.url);
 				}
-				fileContainer.allWorkFinished = true;
+				if($('#omitStrains').data('clicked')) {
+					// var result = jQuery.parseJSON(xhr.responseText);
+					fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
+					// t.callInitFile.call(t, fileContainer);
+					// t.callProcessRaw.call(t, fileContainer);
+				} else {
+					fileContainer.allWorkFinished = true;
+				}
+
 			});
 
 			f.event('xhrSetup', function(xhr) {

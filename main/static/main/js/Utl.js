@@ -597,7 +597,7 @@ var Utl;
             this.url = options.url;
         }
         // Helper function to create and set up a FileDropZone.
-        FileDropZone.create = function (options) {
+        FileDropZone.create = function (options, ignoreIceRelatedErrors) {
             var h = new FileDropZone(options);
             h.setup();
         };
@@ -640,7 +640,7 @@ var Utl;
         };
         // If processRawFn is defined, we read the entire file into a variable,
         // then pass that to processRawFn along with the FileDropZoneFileContainer object.
-        // FileDropZoneFileContainer's contents might be modofied - specifically, the flags - so we check them afterwards
+        // FileDropZoneFileContainer's contents might be modified - specifically, the flags - so we check them afterwards
         // to decide how to proceed.
         FileDropZone.prototype.callProcessRaw = function (fileContainer) {
             var t = this;
@@ -696,9 +696,15 @@ var Utl;
             });
             f.event('error', function (e, xhr) {
                 if (typeof t.processErrorFn === "function") {
-                    t.processErrorFn(fileContainer, xhr.response);
+                    t.processErrorFn(fileContainer, xhr.response, this.url);
                 }
-                fileContainer.allWorkFinished = true;
+                if ($('#omitStrains').data('clicked')) {
+                    // var result = jQuery.parseJSON(xhr.responseText);
+                    fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
+                }
+                else {
+                    fileContainer.allWorkFinished = true;
+                }
             });
             f.event('xhrSetup', function (xhr) {
                 // This ensures that the CSRF middleware in Django doesn't reject our HTTP request.

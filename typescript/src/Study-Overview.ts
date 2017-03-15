@@ -5,6 +5,7 @@
 
 declare var EDDData:EDDData;
 
+
 module StudyOverview {
     'use strict';
 
@@ -105,15 +106,37 @@ module StudyOverview {
 
     // This is called upon receiving an errror in a file upload operation, and
     // is passed an unprocessed result from the server as a second argument.
-    export function fileErrorReturnedFromServer(fileContainer, response): void {
+    export function fileErrorReturnedFromServer(fileContainer, response, url): void {
         // reset the drop zone here
-        clearDropZone();
         //parse xhr.response
-        var r = response.split('"'); //error response. split on "".
-        var errorMessage = "Error uploading! " + r[3];
-        // and create dismissible error alert
-        alertError(errorMessage);
+        var obj = JSON.parse(response);
+        var error = Object.keys(obj.errors)[0];
+        var warning = obj.errors[error][0];
+        var errorMessage = "Error uploading! " + error + ": " + warning;
+        if (error === "ICE-related error") {
+            // create dismissible error alert
+            alertError(error);
+            alertICEError(warning);
+        } else {
+            // create dismissible error alert
+            alertError(errorMessage);
+            clearDropZone();
+        }
+        $('#omitStrains').change(function(url) {
+            var f = fileContainer.file;
+            fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
+            f.sendTo("/study/44253/define/");
+    });
+
     }
+
+    function alertICEError(message): void {
+        $('#alert_placeholder').append('<div id="iceError" class="alert alert-warning alert-dismissible"><button type="button" ' +
+            'class="close" data-dismiss="alert">&times;</button>'+ message +'</div>');
+        $('#iceError').append('<input type="radio" style="margin-left:22px" id="omitStrains">   Omit Strains</input>');
+    }
+
+
 
     function alertError(message): void {
         $('#alert_placeholder').append('<div class="alert alert-danger alert-dismissible"><button type="button" ' +
@@ -137,9 +160,9 @@ module StudyOverview {
 
     // Here, we take a look at the type of the dropped file and decide whether to
     // send it to the server, or process it locally.
-    // We inform the FileDropZone of our decision by setting flags in the fileContiner object,
+    // We inform the FileDropZone of our decision by setting flags in the fileContainer object,
     // which will be inspected when this function returns.
-    export function fileDropped(fileContainer): void {
+    export function fileDropped(fileContainer, iceError?:boolean): void {
         this.haveInputData = true;
         //processingFileCallback();
         var ft = fileContainer.fileType;
@@ -150,7 +173,7 @@ module StudyOverview {
         }
         // HPLC reports need to be sent for server-side processing
         if (!fileContainer.skipProcessRaw || !fileContainer.skipUpload) {
-            this.showFileDropped(fileContainer);
+            this.showFileDropped(fileContainer, iceError);
         }
     }
 
@@ -173,7 +196,7 @@ module StudyOverview {
         $('#templateDropZone').addClass('off');
         $('#fileDropInfoArea').removeClass('off');
         $('#fileDropInfoSending').removeClass('off');
-        $('#fileDropInfoName').text(fileContainer.file.name)
+        $('#fileDropInfoName').text(fileContainer.file.name);
 
         if (!fileContainer.skipUpload) {
             processingMessage = 'Sending ' + Utl.JS.sizeToString(fileContainer.file.size) + ' To Server...';
