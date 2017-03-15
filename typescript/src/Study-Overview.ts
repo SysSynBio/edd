@@ -109,25 +109,31 @@ module StudyOverview {
     export function fileErrorReturnedFromServer(fileContainer, response, url): void {
         // reset the drop zone here
         //parse xhr.response
-        var obj = JSON.parse(response);
-        var error = Object.keys(obj.errors)[0];
-        var warning = obj.errors[error][0];
-        var errorMessage = "Error uploading! " + error + ": " + warning;
-        if (error === "ICE-related error") {
-            // create dismissible error alert
-            alertError(error);
-            alertICEError(warning);
-        } else {
-            // create dismissible error alert
-            alertError(errorMessage);
-            clearDropZone();
-        }
-        $('#omitStrains').change(function(url) {
-            var f = fileContainer.file;
-            fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
-            f.sendTo("/study/44253/define/");
-    });
-
+        try
+            {
+                var obj = JSON.parse(response);
+                var error = Object.keys(obj.errors)[0];
+                var warning = obj.errors[error][0];
+                var errorMessage = "Error uploading! " + error + ": " + warning;
+                if (error === "ICE-related error") {
+                    // create dismissible error alert
+                    alertError(error);
+                    alertICEError(warning);
+                } else {
+                    // create dismissible error alert
+                    alertError(errorMessage);
+                    clearDropZone();
+                }
+                $('#omitStrains').change(function(url) {
+                    var f = fileContainer.file;
+                    fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
+                    f.sendTo("/s/test-5a63/define/");
+                });
+            }
+            catch(e)
+            {
+               console.log('invalid json');
+            }
     }
 
     function alertICEError(message): void {
