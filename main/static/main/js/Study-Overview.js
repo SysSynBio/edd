@@ -98,14 +98,14 @@ var StudyOverview;
                 alertError(errorMessage);
                 clearDropZone();
             }
-            $('#omitStrains').change(function (url) {
+            $('#omitStrains').change(function () {
                 var f = fileContainer.file;
                 fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
-                f.sendTo("/s/test-5a63/define/");
+                f.sendTo(window.location.pathname.split('overview')[0] + 'describe');
             });
         }
         catch (e) {
-            console.log('invalid json');
+            alertError("There was a problem uploading your file. Please try again.");
         }
     }
     StudyOverview.fileErrorReturnedFromServer = fileErrorReturnedFromServer;
