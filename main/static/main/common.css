@@ -506,7 +506,16 @@ div.noLines {
     display: none;
 }
 
+span.allowError {
+    font-weight:bold;
+    margin-left:11px;
+    margin-right:10px
+}
 
+input.dontAllowError {
+    margin-right:10px;
+    margin-left: 10px;
+}
 /* Data tables and controls */
 
 table.dataTable {

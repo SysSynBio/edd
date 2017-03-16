@@ -120,9 +120,7 @@ module StudyOverview {
                     alertError(error);
                     alertICEError(warning);
                 } else if (error === "Duplicate assay names in the input" || "Duplicate line names in the input") {
-                    alertError(error);
                     alertDuplicateError(errorMessage);
-                    clearDropZone();
                 } else {
                     // create dismissible error alert
                     alertError(errorMessage);
@@ -138,6 +136,9 @@ module StudyOverview {
                     fileContainer.extraHeaders['ALLOWDUPLICATENAMES'] = 'true';
                     f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
                 });
+                $('#noDuplicates').change(function() {
+                    window.location.reload();
+                })
             }
             catch(e)
             {
@@ -148,13 +149,18 @@ module StudyOverview {
     function alertICEError(message): void {
         $('#alert_placeholder').append('<div id="iceError" class="alert alert-warning alert-dismissible"><button type="button" ' +
             'class="close" data-dismiss="alert">&times;</button>'+ message +'</div>');
-        $('#iceError').append('<input type="radio" style="margin-left:22px" id="omitStrains">   Omit Strains?</input>');
+        $('#iceError').append('<span class="allowError">Omit Strains?</span>' +
+            '<input type="radio" style="margin-right:10px" id="omitStrains">Yes</input>' +
+            '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>');
     }
 
     function alertDuplicateError(message): void {
         $('#alert_placeholder').append('<div id="duplicateError" class="alert alert-warning alert-dismissible"><button type="button" ' +
             'class="close" data-dismiss="alert">&times;</button>'+ message +'</div>');
-        $('#duplicateError').append('<input type="radio" style="margin-left:22px" id="allowDuplicates">   Allow Duplicates</input>');
+        $('#duplicateError').append('<span class="allowError">Allow Duplicates?</span>' +
+            '<input type="radio" style="margin-right:10px" id="allowDuplicates">Yes</input>' +
+            '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>'
+        );
     }
 
 
