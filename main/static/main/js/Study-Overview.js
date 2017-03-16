@@ -86,7 +86,7 @@ var StudyOverview;
         try {
             var obj = JSON.parse(response);
             var error = Object.keys(obj.errors)[0];
-            var warning = obj.errors[error][0];
+            var warning = obj.errors[error];
             var errorMessage = "Error uploading! " + error + ": " + warning;
             if (error === "ICE-related error") {
                 // create dismissible error alert
@@ -101,7 +101,7 @@ var StudyOverview;
             $('#omitStrains').change(function () {
                 var f = fileContainer.file;
                 fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
-                f.sendTo(window.location.pathname.split('overview')[0] + 'describe');
+                f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
             });
         }
         catch (e) {
