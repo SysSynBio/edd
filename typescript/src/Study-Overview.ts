@@ -119,6 +119,10 @@ module StudyOverview {
                     // create dismissible error alert
                     alertError(error);
                     alertICEError(warning);
+                } else if (error === "Duplicate assay names in the input" || "Duplicate line names in the input") {
+                    alertError(error);
+                    alertDuplicateError(errorMessage);
+                    clearDropZone();
                 } else {
                     // create dismissible error alert
                     alertError(errorMessage);
@@ -129,19 +133,29 @@ module StudyOverview {
                     fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
                     f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
                 });
+                $('#allowDuplicates').change(function() {
+                    var f = fileContainer.file;
+                    fileContainer.extraHeaders['ALLOWDUPLICATENAMES'] = 'true';
+                    f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
+                });
             }
             catch(e)
             {
-               alertError("There was a problem uploading your file. Please try again.");
+               alertError("There was an error. EDD administrators have been notified. Please try again later.");
             }
     }
 
     function alertICEError(message): void {
         $('#alert_placeholder').append('<div id="iceError" class="alert alert-warning alert-dismissible"><button type="button" ' +
             'class="close" data-dismiss="alert">&times;</button>'+ message +'</div>');
-        $('#iceError').append('<input type="radio" style="margin-left:22px" id="omitStrains">   Omit Strains</input>');
+        $('#iceError').append('<input type="radio" style="margin-left:22px" id="omitStrains">   Omit Strains?</input>');
     }
 
+    function alertDuplicateError(message): void {
+        $('#alert_placeholder').append('<div id="duplicateError" class="alert alert-warning alert-dismissible"><button type="button" ' +
+            'class="close" data-dismiss="alert">&times;</button>'+ message +'</div>');
+        $('#duplicateError').append('<input type="radio" style="margin-left:22px" id="allowDuplicates">   Allow Duplicates</input>');
+    }
 
 
     function alertError(message): void {
