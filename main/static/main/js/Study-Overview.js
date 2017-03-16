@@ -83,66 +83,92 @@ var StudyOverview;
     function fileErrorReturnedFromServer(fileContainer, response, url) {
         // reset the drop zone here
         //parse xhr.response
+        var obj, error, warning, errorMessage, warnings, id;
         try {
-            var obj = JSON.parse(response);
-            var error = Object.keys(obj.errors)[0];
-            var warning = obj.errors[error];
-            var errorMessage = "Error uploading! " + error + ": " + warning;
-            if (error === "ICE-related error") {
-                // create dismissible error alert
-                alertError(error);
-                alertICEError(warning);
+            obj = JSON.parse(response);
+            if (obj['errors']) {
+                generateErrors(obj['errors']);
             }
-            else if (error === "Duplicate assay names in the input" || "Duplicate line names in the input") {
-                alertDuplicateError(errorMessage);
+            if (obj['warnings']) {
+                generateWarnings(obj['warnings']);
             }
-            else {
-                // create dismissible error alert
-                alertError(errorMessage);
-                clearDropZone();
-            }
-            $('#omitStrains').change(function () {
-                var f = fileContainer.file;
-                fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
-                f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
-            });
-            $('#allowDuplicates').change(function () {
-                var f = fileContainer.file;
-                fileContainer.extraHeaders['ALLOWDUPLICATENAMES'] = 'true';
-                f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
-            });
-            $('#noDuplicates').change(function () {
-                window.location.reload();
-            });
         }
         catch (e) {
-            alertError("There was an error. EDD administrators have been notified. Please try again later.");
+            alertError("", "There was an error. EDD administrators have been notified. Please try again later.");
         }
+        //if there is more than one alert, add a dismiss all alerts button
+        if ($('.alert').length > 2) {
+            $('#alert_placeholder').prepend('<a href="" class="dismissAll" id="dismissAll">Dismiss all alerts</a>');
+        }
+        //set up click handler events
+        $('#omitStrains').change(function () {
+            var f = fileContainer.file;
+            fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
+            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
+        });
+        $('#allowDuplicates').change(function () {
+            var f = fileContainer.file;
+            fileContainer.extraHeaders['ALLOWDUPLICATENAMES'] = 'true';
+            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
+        });
+        $('#noDuplicates').change(function () {
+            window.location.reload();
+        });
+        //dismiss all alerts on click
+        $('#dismissAll').on('click', function () {
+            $('.close').click();
+            $('#dismissAll').remove();
+        });
     }
     StudyOverview.fileErrorReturnedFromServer = fileErrorReturnedFromServer;
-    function alertICEError(message) {
+    function generateWarnings(warnings) {
+        for (var key in warnings) {
+            alertWarning(key, warnings[key]);
+        }
+    }
+    function generateErrors(errors) {
+        for (var key in errors) {
+            if (key === "ICE-related error") {
+                // create dismissible error alert
+                alertError('', key);
+                alertICEError(key, errors[key]);
+            }
+            else if (key === "Duplicate assay names in the input" || key === "Duplicate line names in the input") {
+                if ($('#duplicateError').length === 0) {
+                    alertDuplicateError(key, errors[key]);
+                }
+            }
+            else {
+                alertError(key, errors[key]);
+            }
+        }
+    }
+    function alertICEError(subject, message) {
         $('#alert_placeholder').append('<div id="iceError" class="alert alert-warning alert-dismissible"><button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button>' + message + '</div>');
+            'class="close" data-dismiss="alert">&times;</button><span class="alertSubject">' + subject +
+            '</span> ' + message + '</div>');
         $('#iceError').append('<span class="allowError">Omit Strains?</span>' +
             '<input type="radio" style="margin-right:10px" id="omitStrains">Yes</input>' +
             '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>');
     }
-    function alertDuplicateError(message) {
+    function alertDuplicateError(subject, message) {
         $('#alert_placeholder').append('<div id="duplicateError" class="alert alert-warning alert-dismissible"><button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button>' + message + '</div>');
+            'class="close" data-dismiss="alert">&times;</button><span class="alertSubject">' + subject + '</span>' +
+            '<span> ' + message + '</span></div>');
         $('#duplicateError').append('<span class="allowError">Allow Duplicates?</span>' +
             '<input type="radio" style="margin-right:10px" id="allowDuplicates">Yes</input>' +
             '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>');
     }
-    function alertError(message) {
+    function alertError(subject, message) {
         $('#alert_placeholder').append('<div class="alert alert-danger alert-dismissible"><button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button>' + message + '</div>');
-        alertTimeout(5000);
+            'class="close" data-dismiss="alert">&times;</button><span class="alertSubject">Error uploading! ' + subject +
+            '</span><span> : ' + message + '</span></div>');
+        clearDropZone();
     }
-    function alertTimeout(wait) {
-        setTimeout(function () {
-            $('#alert_placeholder').children('.alert:first-child').remove();
-        }, wait);
+    function alertWarning(subject, message) {
+        $('#alert_placeholder').append('<div class="alert alert-warning alert-dismissible"><button type="button" ' +
+            'class="close" data-dismiss="alert">&times;</button><span class="alertSubject">' + subject +
+            '</span><span> : ' + message + '</span></div>');
     }
     function clearDropZone() {
         $('#templateDropZone').removeClass('off');

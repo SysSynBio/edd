@@ -516,6 +516,14 @@ input.dontAllowError {
     margin-right:10px;
     margin-left: 10px;
 }
+
+span.alertSubject {
+    font-weight: bold;
+}
+
+.dismissAll {
+    color: grey;
+}
 /* Data tables and controls */
 
 table.dataTable {
