@@ -66,18 +66,31 @@ var StudyOverview;
     function fileReturnedFromServer(fileContainer, result) {
         var currentPath = window.location.pathname;
         var linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
-        //display success message
         $('<p>', {
             text: 'Success! ' + result['lines_created'] + ' lines added!',
             style: 'margin:auto'
         }).appendTo('#linesAdded');
+        if (result.warnings) {
+            generateWarnings(result.warnings);
+            generateAcceptWarning();
+            //accept warnings for succesful upload of experiment description file.
+            $('#acceptWarnings').on('change', function (e) {
+                successfulUpload(linesPathName);
+            });
+        }
+        else {
+            successfulUpload(linesPathName);
+        }
+    }
+    StudyOverview.fileReturnedFromServer = fileReturnedFromServer;
+    function successfulUpload(linesPathName) {
+        //display success message
         $('#linesAdded').show();
         //redirect to lines page
         setTimeout(function () {
             window.location.pathname = linesPathName;
         }, 1000);
     }
-    StudyOverview.fileReturnedFromServer = fileReturnedFromServer;
     // This is called upon receiving an errror in a file upload operation, and
     // is passed an unprocessed result from the server as a second argument.
     function fileErrorReturnedFromServer(fileContainer, response, url) {
@@ -126,6 +139,10 @@ var StudyOverview;
             alertWarning(key, warnings[key]);
         }
     }
+    function generateAcceptWarning() {
+        $('#alert_placeholder').prepend('<span class="acceptWarnings">Accept Warnings?</span>' +
+            '<input type="radio" id="acceptWarnings"/>');
+    }
     function generateErrors(errors) {
         for (var key in errors) {
             if (key === "ICE-related error") {
@@ -148,7 +165,7 @@ var StudyOverview;
             'class="close" data-dismiss="alert">&times;</button><span class="alertSubject">' + subject +
             '</span> ' + message + '</div>');
         $('#iceError').append('<span class="allowError">Omit Strains?</span>' +
-            '<input type="radio" style="margin-right:10px" id="omitStrains">Yes</input>' +
+            '<input type="radio" class="yesAlertInput" id="omitStrains">Yes</input>' +
             '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>');
     }
     function alertDuplicateError(subject, message) {
@@ -156,7 +173,7 @@ var StudyOverview;
             'class="close" data-dismiss="alert">&times;</button><span class="alertSubject">' + subject + '</span>' +
             '<span> ' + message + '</span></div>');
         $('#duplicateError').append('<span class="allowError">Allow Duplicates?</span>' +
-            '<input type="radio" style="margin-right:10px" id="allowDuplicates">Yes</input>' +
+            '<input type="radio" class="yesAlertInput" id="allowDuplicates">Yes</input>' +
             '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>');
     }
     function alertError(subject, message) {
