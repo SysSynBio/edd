@@ -654,6 +654,7 @@ module Utl {
 		processRawFn: any;
 		processResponseFn: any;
 		processErrorFn: any;
+		processWarningFn: any;
 
 		static fileContainerIndexCounter: number = 0;
 
@@ -680,12 +681,13 @@ module Utl {
 			this.processRawFn = options.processRawFn;
 			this.processResponseFn = options.processResponseFn;
 			this.processErrorFn = options.processErrorFn;
+			this.processWarningFn = options.processWarningFn;
 			this.url = options.url;
 		}
 
 
 		// Helper function to create and set up a FileDropZone.
-		static create(options:any, ignoreIceRelatedErrors?): void {
+		static create(options:any): void {
 			var h = new FileDropZone(options);
 			h.setup();
 		}
@@ -788,19 +790,15 @@ module Utl {
 				fileContainer.allWorkFinished = true;
 			});
 
+			f.event('warning', function(e, xhr) {
+				var result = jQuery.parseJSON(xhr.responseText);
+				t.processWarningFn(fileContainer, result);
+			});
 			f.event('error', function(e, xhr) {
 				if (typeof t.processErrorFn === "function") {
 					t.processErrorFn(fileContainer, xhr.response, this.url);
 				}
-				if($('#omitStrains').data('clicked')) {
-					// var result = jQuery.parseJSON(xhr.responseText);
-					fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
-					// t.callInitFile.call(t, fileContainer);
-					// t.callProcessRaw.call(t, fileContainer);
-				} else {
-					fileContainer.allWorkFinished = true;
-				}
-
+				fileContainer.allWorkFinished = true;
 			});
 
 			f.event('xhrSetup', function(xhr) {

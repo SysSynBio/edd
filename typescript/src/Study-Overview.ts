@@ -73,6 +73,7 @@ module StudyOverview {
             url: '/study/' + EDDData.currentStudyID + '/describe/',
             processResponseFn: this.fileReturnedFromServer.bind(this),
             processErrorFn: this.fileErrorReturnedFromServer.bind(this),
+            processWarningFn: this.fileWarningReturnedFromServer.bind(this),
             progressBar: this.fileUploadProgressBar
         });
 
@@ -92,18 +93,20 @@ module StudyOverview {
         $('<p>', {
              text: 'Success! ' + result['lines_created'] + ' lines added!',
              style: 'margin:auto'
-         }).appendTo('#linesAdded');
+        }).appendTo('#linesAdded');
 
-        if (result.warnings) {
-            generateWarnings(result.warnings);
-            generateAcceptWarning();
-            //accept warnings for succesful upload of experiment description file.
-            $('#acceptWarnings').on('change', function(e) {
-                successfulUpload(linesPathName);
-            });
-        } else {
-            successfulUpload(linesPathName)
-        }
+        successfulUpload(linesPathName)
+    }
+
+    export function fileWarningReturnedFromServer(fileContainer, result): void {
+        var currentPath = window.location.pathname;
+        var linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
+        generateWarnings(result.warnings);
+        generateAcceptWarning();
+        //accept warnings for succesful upload of experiment description file.
+        $('#acceptWarnings').on('change', function(e) {
+            successfulUpload(linesPathName);
+        });
     }
 
     function successfulUpload(linesPathName):void {
@@ -135,7 +138,7 @@ module StudyOverview {
             }
             catch(e)
             {
-               alertError("", "", "There was an error. EDD administrators have been notified. Please try again later.");
+               alertError("", "There was an error", "EDD administrators have been notified. Please try again later.");
             }
             //if there is more than one alert, add a dismiss all alerts button
             if ($('.alert').length > 2) {
@@ -176,7 +179,7 @@ module StudyOverview {
 
     function generateErrors(errors) {
         errors.forEach(function(e) {
-            if (e['category'] === "ICE-related error") {
+            if (e['category'] === "ICE-related Error") {
                 // create dismissible error alert
                 alertIceWarning(e['category'], e['summary'], e['details']);
             } else if (e['category'] === "Duplicate assay names in the input" || e['category'] === "Duplicate " +
@@ -194,7 +197,7 @@ module StudyOverview {
         $('#alert_placeholder').append('<div id="iceError" role="alert" class="alert alert-warning alert-dismissible">' +
             '<button type="button" ' +
             'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">'+ header +
-            '</h4><p class="alertWarning">'+ subject +'</p><p class="alertWarning">'+ message +'</p></div>');
+            '</h4><p class="alertWarning">'+ subject +': '+ message +'</p></div>');
         $('#iceError').append('<span class="allowError">Omit Strains?</span>' +
             '<input type="radio" class="yesAlertInput" id="omitStrains">Yes</input>' +
             '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>');
@@ -219,14 +222,14 @@ module StudyOverview {
         }
         $('#alert_placeholder').append('<div class="alert alert-danger alert-dismissible"><button type="button" ' +
             'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">Error uploading! '+ header +
-            '</h4><p class="alertWarning">'+ subject +'</p><p class="alertWarning">'+ message + '</p></div>');
+            '</h4><p class="alertWarning">'+ subject + ': ' + message + '</p></div>');
         clearDropZone();
     }
 
     function alertWarning(header, subject, message): void {
         $('#alert_placeholder').append('<div class="alert alert-warning alert-dismissible"><button type="button" ' +
             'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">'+ header +
-            '</h4><p class="alertWarning">'+ subject +'</p><p class="alertWarning">' + message + '</p></div>');
+            '</h4><p class="alertWarning">'+ subject + ': ' + message + '</p></div>');
     }
 
     function clearDropZone(): void {

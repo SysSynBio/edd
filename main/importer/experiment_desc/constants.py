@@ -28,7 +28,7 @@ PART_NUMBER_NOT_FOUND = 'Part number(s) not found in ICE'
 
 
 # Experiment Description file-specific errors
-BAD_FILE_CATEGORY = 'Incorrect file'
+BAD_FILE_CATEGORY = 'Incorrect File'
 EMPTY_WORKBOOK = 'Empty workbook'
 DUPLICATE_ASSAY_METADATA = 'Several columns specify the same assay metadata'
 DUPLICATE_LINE_METADATA = 'Duplicate line metadata columns'
@@ -50,7 +50,7 @@ INTERNAL_EDD_ERROR_TITLE = 'Internal EDD error'
 
 # either user input error in Experiment Description/ICE part permissions, or an ICE error (known ICE
 # errors exist in ICE 5.2.2 as of 3-1-17)
-SINGLE_PART_ACCESS_ERROR_CATEGORY = 'ICE part access problem'
+SINGLE_PART_ACCESS_ERROR_CATEGORY = 'ICE Part Access Problem'
 FORBIDDEN_PART_KEY = 'Missing ICE read permission for part number(s)'
 
 # Experiment Description file-specific warnings
@@ -63,7 +63,7 @@ ASSAY_META_CAPITALIZATION_ONLY_DIFFERENCE = ('Found some assay metadata types th
                                              'arbitrarily choose one')
 UNSUPPORTED_LINE_METADATA = 'Unsupported line metadata'
 ROWS_MISSING_REPLICATE_COUNT = 'Missing replicate count (assumed 1 line)'
-IGNORED_INPUT_CATEGORY = 'User input ignored'
+IGNORED_INPUT_CATEGORY = 'User Input Ignored'
 
 ####################################################################################################
 # Self/client consistency checks.  Experiment Description code is written defensively to help to
@@ -86,7 +86,7 @@ INVALID_AUTO_NAMING_INPUT = 'Invalid element for automatic naming'
 
 # anticipated systemic (e.g. communication) error or error that isn't otherwise planned for /
 # handled separately (e.g. EDD/ICE configuration errors or ICE bugs)
-SYSTEMIC_ICE_ERROR_CATEGORY = 'ICE-related error'
+SYSTEMIC_ICE_ERROR_CATEGORY = 'ICE-related Error'
 GENERIC_ICE_RELATED_ERROR = ("ICE couldn't be contacted to find strains referenced in your "
                              "file, and EDD administrators have been notified of the problem.")
 
@@ -157,7 +157,7 @@ ERROR_PRIORITY_ORDER[BAD_FILE_CATEGORY] = (
         DUPLICATE_LINE_METADATA,    # TODO: check/rename these two to append "COLS"
         DUPLICATE_ASSAY_METADATA,
 )
-INVALID_FILE_VALUE_CATEGORY = 'Invalid cell values'
+INVALID_FILE_VALUE_CATEGORY = 'Invalid Cell Values'
 ERROR_PRIORITY_ORDER[INVALID_FILE_VALUE_CATEGORY] = (
     # cell-specific values
     MISSING_REQUIRED_LINE_NAME,
@@ -167,7 +167,7 @@ ERROR_PRIORITY_ORDER[INVALID_FILE_VALUE_CATEGORY] = (
 )
 
 # these apply equally to JSON or Excel
-BAD_GENERIC_INPUT_CATEGORY = 'Invalid values'
+BAD_GENERIC_INPUT_CATEGORY = 'Invalid Values'
 ERROR_PRIORITY_ORDER[BAD_GENERIC_INPUT_CATEGORY] = (
         NO_INPUT,
         INVALID_REPLICATE_COUNT,
@@ -193,7 +193,7 @@ ERROR_PRIORITY_ORDER[NON_STRAIN_TITLE] = (  # TODO: rename to NON_STRAIN_PART_CA
     NON_STRAIN_ICE_ENTRY
 )
 
-NAMING_OVERLAP_CATEGORY = 'Naming overlap'
+NAMING_OVERLAP_CATEGORY = 'Naming Overlap'
 
 # User-created naming overlaps (depend on prior ICE communication since strain names could be used
 # in line/assay naming)

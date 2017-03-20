@@ -594,10 +594,11 @@ var Utl;
             this.processRawFn = options.processRawFn;
             this.processResponseFn = options.processResponseFn;
             this.processErrorFn = options.processErrorFn;
+            this.processWarningFn = options.processWarningFn;
             this.url = options.url;
         }
         // Helper function to create and set up a FileDropZone.
-        FileDropZone.create = function (options, ignoreIceRelatedErrors) {
+        FileDropZone.create = function (options) {
             var h = new FileDropZone(options);
             h.setup();
         };
@@ -694,17 +695,15 @@ var Utl;
                 }
                 fileContainer.allWorkFinished = true;
             });
+            f.event('warning', function (e, xhr) {
+                var result = jQuery.parseJSON(xhr.responseText);
+                t.processWarningFn(fileContainer, result);
+            });
             f.event('error', function (e, xhr) {
                 if (typeof t.processErrorFn === "function") {
                     t.processErrorFn(fileContainer, xhr.response, this.url);
                 }
-                if ($('#omitStrains').data('clicked')) {
-                    // var result = jQuery.parseJSON(xhr.responseText);
-                    fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
-                }
-                else {
-                    fileContainer.allWorkFinished = true;
-                }
+                fileContainer.allWorkFinished = true;
             });
             f.event('xhrSetup', function (xhr) {
                 // This ensures that the CSRF middleware in Django doesn't reject our HTTP request.
