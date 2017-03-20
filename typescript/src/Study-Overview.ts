@@ -122,7 +122,7 @@ module StudyOverview {
     export function fileErrorReturnedFromServer(fileContainer, response, url): void {
         // reset the drop zone here
         //parse xhr.response
-        var obj, error, warning, errorMessage, warnings, id;
+        var obj, error, warnings, id;
         try
             {
                 obj = JSON.parse(response);
@@ -135,7 +135,7 @@ module StudyOverview {
             }
             catch(e)
             {
-               alertError("", "There was an error. EDD administrators have been notified. Please try again later.");
+               alertError("", "", "There was an error. EDD administrators have been notified. Please try again later.");
             }
             //if there is more than one alert, add a dismiss all alerts button
             if ($('.alert').length > 2) {
@@ -164,9 +164,9 @@ module StudyOverview {
     }
 
     function generateWarnings(warnings) {
-        for (var key in warnings) {
-            alertWarning(key, warnings[key])
-        }
+        warnings.forEach(function(warning) {
+            alertWarning(warning['category'], warning['summary'], warning['details'])
+        })
     }
 
     function generateAcceptWarning():void {
@@ -175,34 +175,35 @@ module StudyOverview {
     }
 
     function generateErrors(errors) {
-        for (var key in errors) {
-            if (key === "ICE-related error") {
+        errors.forEach(function(e) {
+            if (e['category'] === "ICE-related error") {
                 // create dismissible error alert
-                alertError('', key);
-                alertICEError(key, errors[key]);
-            } else if (key === "Duplicate assay names in the input" || key === "Duplicate line names in the input") {
+                alertIceWarning(e['category'], e['summary'], e['details']);
+            } else if (e['category'] === "Duplicate assay names in the input" || e['category'] === "Duplicate " +
+                "line names in the input") {
                 if ($('#duplicateError').length === 0) {
-                    alertDuplicateError(key, errors[key]);
+                    alertDuplicateError(e['category'], e['summary'], e['details']);
                 }
             } else {
-                alertError(key, errors[key])
+                alertError(e['category'], e['summary'], e['details'])
             }
-        }
+        })
     }
 
-    function alertICEError(subject, message): void {
-        $('#alert_placeholder').append('<div id="iceError" class="alert alert-warning alert-dismissible"><button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button><span class="alertSubject">'+ subject +
-            '</span> '+ message +'</div>');
+    function alertIceWarning(header, subject, message): void {
+        $('#alert_placeholder').append('<div id="iceError" role="alert" class="alert alert-warning alert-dismissible">' +
+            '<button type="button" ' +
+            'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">'+ header +
+            '</h4><p class="alertWarning">'+ subject +'</p><p class="alertWarning">'+ message +'</p></div>');
         $('#iceError').append('<span class="allowError">Omit Strains?</span>' +
             '<input type="radio" class="yesAlertInput" id="omitStrains">Yes</input>' +
             '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>');
     }
 
-    function alertDuplicateError(subject, message): void {
-        $('#alert_placeholder').append('<div id="duplicateError" class="alert alert-warning alert-dismissible"><button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button><span class="alertSubject">'+ subject + '</span>' +
-            '<span> '+ message +'</span></div>');
+    function alertDuplicateError(header, subject, message): void {
+        $('#alert_placeholder').append('<div id="duplicateError" role="alert" class="alert alert-warning alert-dismissible">' +
+            '<button type="button" class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">'+ header +
+            '</h4><p class="alertWarning">'+ subject +'</p><p class="alertWarning">'+ message +'</p></div>');
         $('#duplicateError').append('<span class="allowError">Allow Duplicates?</span>' +
             '<input type="radio" class="yesAlertInput" id="allowDuplicates">Yes</input>' +
             '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>'
@@ -210,17 +211,22 @@ module StudyOverview {
     }
 
 
-    function alertError(subject, message): void {
+    function alertError(header, subject, message): void {
+        if ($('#omitStrains').prop('checked')) {
+            $('#iceError').remove();
+        } else if ($('#allowDuplicates').prop('checked')) {
+            $('#allowDuplicates').remove();
+        }
         $('#alert_placeholder').append('<div class="alert alert-danger alert-dismissible"><button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button><span class="alertSubject">Error uploading! '+ subject +
-            '</span><span> : '+ message +'</span></div>');
+            'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">Error uploading! '+ header +
+            '</h4><p class="alertWarning">'+ subject +'</p><p class="alertWarning">'+ message + '</p></div>');
         clearDropZone();
     }
 
-    function alertWarning(subject, message): void {
+    function alertWarning(header, subject, message): void {
         $('#alert_placeholder').append('<div class="alert alert-warning alert-dismissible"><button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button><span class="alertSubject">'+ subject +
-            '</span><span> : '+ message +'</span></div>');
+            'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">'+ header +
+            '</h4><p class="alertWarning">'+ subject +'</p><p class="alertWarning">' + message + '</p></div>');
     }
 
     function clearDropZone(): void {

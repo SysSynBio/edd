@@ -508,7 +508,7 @@ div.noLines {
 
 span.allowError {
     font-weight:bold;
-    margin-left:11px;
+    margin-left:2px;
     margin-right:10px
 }
 
@@ -531,8 +531,12 @@ span.alertSubject {
     color: red;
     font-weight: bold;
 }
-.yesAlertInput {
+input.yesAlertInput {
     margin-right:10px
+}
+
+p.alertWarning {
+    margin: 0px;
 }
 /* Data tables and controls */
 
