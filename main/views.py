@@ -29,7 +29,7 @@ from rest_framework.exceptions import MethodNotAllowed
 from main.importer.experiment_desc.constants import (
     INTERNAL_SERVER_ERROR, UNPREDICTED_ERROR,
     ALLOW_DUPLICATE_NAMES_PARAM, IGNORE_ICE_RELATED_ERRORS_PARAM, BAD_REQUEST,
-    UNSUPPORTED_FILE_TYPE)
+    UNSUPPORTED_FILE_TYPE, BAD_FILE_CATEGORY)
 from main.importer.experiment_desc.importer import _build_response_content
 from . import autocomplete, models as edd_models, redis
 from .importer import (
@@ -1265,9 +1265,9 @@ def study_describe_experiment(request, pk=None, slug=None):
 
     # parse request parameter input to keep subsequent code relatively format-agnostic
     user = request.user
-    dry_run = 'dryRun' in request.META
-    allow_duplicate_names = ALLOW_DUPLICATE_NAMES_PARAM in request.META
-    ignore_ice_related_errors = IGNORE_ICE_RELATED_ERRORS_PARAM in request.META
+    dry_run = 'dryRun' in request.POST
+    allow_duplicate_names = ALLOW_DUPLICATE_NAMES_PARAM in request.POST
+    ignore_ice_related_errors = IGNORE_ICE_RELATED_ERRORS_PARAM in request.POST
 
     # detect the input format
     has_file_type = FILE_TYPE_HEADER in request.META
@@ -1279,8 +1279,10 @@ def study_describe_experiment(request, pk=None, slug=None):
             logger.info('Parsing template file "%s"' % file_name)
 
         else:
+            summary = ErrorSummary(BAD_FILE_CATEGORY, UNSUPPORTED_FILE_TYPE, file_type)
+            errors = { BAD_FILE_CATEGORY: summary}
             return JsonResponse(
-                    _build_response_content({UNSUPPORTED_FILE_TYPE: file_type}, {}),
+                    _build_response_content(errors, {}),
                     status=BAD_REQUEST)
     else:
         logger.info('Parsing request body as JSON input')
