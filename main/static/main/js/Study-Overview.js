@@ -195,19 +195,26 @@ var StudyOverview;
         });
     }
     function alertIceWarning(header, subject, message) {
-        var inputYesElem = $('<input>', {
+        var inputYesElem, inputNoElem, inputYesText, inputNoText, omitStrains;
+        inputYesElem = $('<input>', {
             type: "radio",
             class: 'yesAlertInput',
-            text: 'Yes',
+            value: 'Yes',
             id: 'omitStrains'
         });
-        var inputNoElem = $('<input>', {
+        inputNoElem = $('<input>', {
             type: "radio",
             class: 'dontAllowError',
-            text: 'No',
+            value: 'No',
             id: 'noDuplicates'
         });
-        var allowDuplicates = $('<span>', {
+        inputYesText = $('<span>', {
+            text: 'Yes'
+        });
+        inputNoText = $('<span>', {
+            text: 'No'
+        });
+        omitStrains = $('<span>', {
             class: 'allowError',
             text: 'Omit Strains?',
         });
@@ -215,29 +222,36 @@ var StudyOverview;
             '<button type="button" ' +
             'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">' + header +
             '</h4><p class="alertWarning">' + subject + ': ' + message + '</p></div>');
-        $('#iceError').append(allowDuplicates).append('inputYesElem').append('inputNoElem');
+        $('#iceError').append(omitStrains).append(inputYesElem).append(inputYesText).append(inputNoElem).append(inputNoText);
     }
     function alertDuplicateError(header, subject, message) {
-        var inputYesElem = $('<input>', {
+        var inputYesElem, inputNoElem, inputYesText, inputNoText, allowDuplicates;
+        inputYesElem = $('<input>', {
             type: "radio",
             class: 'yesAlertInput',
-            text: 'Yes',
+            placeholder: 'Yes',
             id: 'allowDuplicates'
         });
-        var inputNoElem = $('<input>', {
+        inputNoElem = $('<input>', {
             type: "radio",
             class: 'dontAllowError',
-            text: 'No',
             id: 'noDuplicates'
         });
-        var allowDuplicates = $('<span>', {
+        inputYesText = $('<span>', {
+            text: 'Yes'
+        });
+        inputNoText = $('<span>', {
+            text: 'No'
+        });
+        allowDuplicates = $('<span>', {
             class: 'allowError',
             text: 'Allow Duplicates?',
         });
         $('#alert_placeholder').append('<div id="duplicateError" role="alert" class="alert alert-warning alert-dismissible">' +
             '<button type="button" class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">' + header +
             '</h4><p class="alertWarning">' + subject + '</p><p class="alertWarning">' + message + '</p></div>');
-        $('#duplicateError').append(allowDuplicates).append(inputYesElem).append(inputNoElem);
+        $('#duplicateError').append(allowDuplicates).append(inputYesElem).append(inputYesText).append(inputNoElem)
+            .append(inputNoText);
     }
     function alertError(header, subject, message) {
         if ($('#omitStrains').prop('checked')) {
