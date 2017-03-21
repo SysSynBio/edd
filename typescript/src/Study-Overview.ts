@@ -103,6 +103,10 @@ module StudyOverview {
         var linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
         generateWarnings(result.warnings);
         generateAcceptWarning();
+        $('<p>', {
+             text: 'Success! ' + result['lines_created'] + ' lines added!',
+             style: 'margin:auto'
+        }).appendTo('#linesAdded');
         //accept warnings for succesful upload of experiment description file.
         $('#acceptWarnings').on('change', function(e) {
             successfulUpload(linesPathName);
@@ -167,50 +171,111 @@ module StudyOverview {
     }
 
     function generateWarnings(warnings) {
-        warnings.forEach(function(warning) {
-            alertWarning(warning['category'], warning['summary'], warning['details'])
-        })
+        var warningMessages = organizeMessages(warnings);
+        for (var key in warningMessages) {
+            alertWarning(key, warningMessages[key])
+        }
     }
 
     function generateAcceptWarning():void {
-         $('#alert_placeholder').prepend('<span class="acceptWarnings">Accept Warnings?</span>' +
-             '<input type="radio" id="acceptWarnings"/>')
+        var warningAlerts:any, warningAcceptMessage, warningInput
+        warningAlerts = $('.alert-warning');
+
+        warningAcceptMessage = $('<span>', {
+             text: "Accept Warnings?",
+             class: 'acceptWarnings',
+        });
+        warningInput = $('<input>', {
+            type: "radio",
+            id: "acceptWarnings"
+        });
+        if (warningAlerts.length === 1) {
+            $(warningAlerts).append(warningAcceptMessage).append(warningInput)
+        } else {
+             $('#alert_placeholder').prepend(warningAcceptMessage).append(warningInput)
+        }
+    }
+
+    function organizeMessages(warnings) {
+        var obj = {};
+        warnings.forEach(function(warning) {
+            var message = warning.summary + ": " + warning.details;
+            if (obj.hasOwnProperty(warning.category)) {
+                obj[warning.category].push(message);
+            } else {
+                obj[warning.category] = [message]
+            }
+        });
+        return obj;
     }
 
     function generateErrors(errors) {
         errors.forEach(function(e) {
             if (e['category'] === "ICE-related Error") {
                 // create dismissible error alert
-                alertIceWarning(e['category'], e['summary'], e['details']);
+                alertIceWarning(e.category, e.summary, e.details);
             } else if (e['category'] === "Duplicate assay names in the input" || e['category'] === "Duplicate " +
                 "line names in the input") {
                 if ($('#duplicateError').length === 0) {
-                    alertDuplicateError(e['category'], e['summary'], e['details']);
+                    alertDuplicateError(e.category, e.summary, e.details);
                 }
             } else {
-                alertError(e['category'], e['summary'], e['details'])
+                alertError(e.category, e.summary, e.details)
             }
         })
     }
 
     function alertIceWarning(header, subject, message): void {
+        var inputYesElem = $('<input>', {
+             type : "radio",
+             class: 'yesAlertInput',
+             text: 'Yes',
+             id: 'omitStrains'
+        });
+
+        var inputNoElem = $('<input>', {
+             type : "radio",
+             class: 'dontAllowError',
+             text: 'No',
+             id: 'noDuplicates'
+        });
+
+        var allowDuplicates = $('<span>', {
+             class: 'allowError',
+             text: 'Omit Strains?',
+        });
+
         $('#alert_placeholder').append('<div id="iceError" role="alert" class="alert alert-warning alert-dismissible">' +
             '<button type="button" ' +
             'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">'+ header +
             '</h4><p class="alertWarning">'+ subject +': '+ message +'</p></div>');
-        $('#iceError').append('<span class="allowError">Omit Strains?</span>' +
-            '<input type="radio" class="yesAlertInput" id="omitStrains">Yes</input>' +
-            '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>');
+        $('#iceError').append(allowDuplicates).append('inputYesElem').append('inputNoElem');
     }
 
     function alertDuplicateError(header, subject, message): void {
+        var inputYesElem = $('<input>', {
+             type : "radio",
+             class: 'yesAlertInput',
+             text: 'Yes',
+             id: 'allowDuplicates'
+        });
+
+        var inputNoElem = $('<input>', {
+             type : "radio",
+             class: 'dontAllowError',
+             text: 'No',
+             id: 'noDuplicates'
+        });
+
+        var allowDuplicates = $('<span>', {
+             class: 'allowError',
+             text: 'Allow Duplicates?',
+        });
+
         $('#alert_placeholder').append('<div id="duplicateError" role="alert" class="alert alert-warning alert-dismissible">' +
             '<button type="button" class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">'+ header +
             '</h4><p class="alertWarning">'+ subject +'</p><p class="alertWarning">'+ message +'</p></div>');
-        $('#duplicateError').append('<span class="allowError">Allow Duplicates?</span>' +
-            '<input type="radio" class="yesAlertInput" id="allowDuplicates">Yes</input>' +
-            '<input type="radio" class="dontAllowError" id="noDuplicates">No</input>'
-        );
+        $('#duplicateError').append(allowDuplicates).append(inputYesElem).append(inputNoElem);
     }
 
 
@@ -226,10 +291,21 @@ module StudyOverview {
         clearDropZone();
     }
 
-    function alertWarning(header, subject, message): void {
+    function alertWarning(subject, message): void {
+
         $('#alert_placeholder').append('<div class="alert alert-warning alert-dismissible"><button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">'+ header +
-            '</h4><p class="alertWarning">'+ subject + ': ' + message + '</p></div>');
+            'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">'+ subject +
+            '</h4>');
+
+        message.forEach(function(m) {
+            var summary = $('<p>', {
+                class: "alertWarning",
+                id: "acceptWarning",
+                text: m,
+        });
+            $('.alert-warning').append(summary)
+        });
+
     }
 
     function clearDropZone(): void {

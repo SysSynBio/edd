@@ -784,16 +784,16 @@ module Utl {
 					} else {
 						alert(result.python_error);
 					}
-				} else if (typeof t.processResponseFn === "function") {
+				}
+				else if (result.warnings) {
+					t.processWarningFn(fileContainer, result);
+				}
+				else if (typeof t.processResponseFn === "function") {
 					t.processResponseFn(fileContainer, result);
 				}
 				fileContainer.allWorkFinished = true;
 			});
 
-			f.event('warning', function(e, xhr) {
-				var result = jQuery.parseJSON(xhr.responseText);
-				t.processWarningFn(fileContainer, result);
-			});
 			f.event('error', function(e, xhr) {
 				if (typeof t.processErrorFn === "function") {
 					t.processErrorFn(fileContainer, xhr.response, this.url);
