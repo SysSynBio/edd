@@ -116,7 +116,7 @@ var StudyOverview;
             alertError("", "There was an error", "EDD administrators have been notified. Please try again later.");
         }
         //if there is more than one alert, add a dismiss all alerts button
-        if ($('.alert').length > 2) {
+        if ($('.alert').length > 5) {
             $('#alert_placeholder').prepend('<a href="" class="dismissAll" id="dismissAll">Dismiss all alerts</a>');
         }
         //set up click handler events
@@ -124,11 +124,13 @@ var StudyOverview;
             var f = fileContainer.file;
             fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
             f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
+            $('#iceError').hide();
         });
         $('#allowDuplicates').change(function () {
             var f = fileContainer.file;
             fileContainer.extraHeaders['ALLOWDUPLICATENAMES'] = 'true';
             f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
+            $('#duplicateError').hide();
         });
         $('#noDuplicates').change(function () {
             window.location.reload();
@@ -148,7 +150,7 @@ var StudyOverview;
     }
     function generateAcceptWarning() {
         var warningAlerts, warningAcceptMessage, warningInput;
-        warningAlerts = $('.alert-warning');
+        warningAlerts = $('.alert-warning:visible');
         warningAcceptMessage = $('<span>', {
             text: "Accept Warnings?",
             class: 'acceptWarnings',
@@ -195,63 +197,18 @@ var StudyOverview;
         });
     }
     function alertIceWarning(header, subject, message) {
-        var inputYesElem, inputNoElem, inputYesText, inputNoText, omitStrains;
-        inputYesElem = $('<input>', {
-            type: "radio",
-            class: 'yesAlertInput',
-            value: 'Yes',
-            id: 'omitStrains'
-        });
-        inputNoElem = $('<input>', {
-            type: "radio",
-            class: 'dontAllowError',
-            value: 'No',
-            id: 'noDuplicates'
-        });
-        inputYesText = $('<span>', {
-            text: 'Yes'
-        });
-        inputNoText = $('<span>', {
-            text: 'No'
-        });
-        omitStrains = $('<span>', {
-            class: 'allowError',
-            text: 'Omit Strains?',
-        });
-        $('#alert_placeholder').append('<div id="iceError" role="alert" class="alert alert-warning alert-dismissible">' +
-            '<button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">' + header +
-            '</h4><p class="alertWarning">' + subject + ': ' + message + '</p></div>');
-        $('#iceError').append(omitStrains).append(inputYesElem).append(inputYesText).append(inputNoElem).append(inputNoText);
+        var iceError = $('#iceError');
+        $(iceError).children('h4').text(header);
+        $(iceError).children('p').text(subject + " " + message);
+        $('#alert_placeholder').append(iceError);
+        $(iceError).show();
     }
     function alertDuplicateError(header, subject, message) {
-        var inputYesElem, inputNoElem, inputYesText, inputNoText, allowDuplicates;
-        inputYesElem = $('<input>', {
-            type: "radio",
-            class: 'yesAlertInput',
-            placeholder: 'Yes',
-            id: 'allowDuplicates'
-        });
-        inputNoElem = $('<input>', {
-            type: "radio",
-            class: 'dontAllowError',
-            id: 'noDuplicates'
-        });
-        inputYesText = $('<span>', {
-            text: 'Yes'
-        });
-        inputNoText = $('<span>', {
-            text: 'No'
-        });
-        allowDuplicates = $('<span>', {
-            class: 'allowError',
-            text: 'Allow Duplicates?',
-        });
-        $('#alert_placeholder').append('<div id="duplicateError" role="alert" class="alert alert-warning alert-dismissible">' +
-            '<button type="button" class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">' + header +
-            '</h4><p class="alertWarning">' + subject + '</p><p class="alertWarning">' + message + '</p></div>');
-        $('#duplicateError').append(allowDuplicates).append(inputYesElem).append(inputYesText).append(inputNoElem)
-            .append(inputNoText);
+        var duplicateElem = $('#duplicateError');
+        $(duplicateElem).children('h4').text(header);
+        $(duplicateElem).children('p').text(subject + ": " + message);
+        $('#alert_placeholder').append(duplicateElem);
+        $(duplicateElem).show();
     }
     function alertError(header, subject, message) {
         if ($('#omitStrains').prop('checked')) {
@@ -260,23 +217,25 @@ var StudyOverview;
         else if ($('#allowDuplicates').prop('checked')) {
             $('#allowDuplicates').remove();
         }
-        $('#alert_placeholder').append('<div class="alert alert-danger alert-dismissible"><button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">Error uploading! ' + header +
-            '</h4><p class="alertWarning">' + subject + ': ' + message + '</p></div>');
+        var newErrorAlert = $('.alert-danger').eq(0).clone();
+        $(newErrorAlert).children('h4').text('Error uploading! ' + header);
+        $(newErrorAlert).children('p').text(subject + ": " + message);
+        $('#alert_placeholder').append(newErrorAlert);
+        $(newErrorAlert).show();
         clearDropZone();
     }
     function alertWarning(subject, message) {
-        $('#alert_placeholder').append('<div class="alert alert-warning alert-dismissible"><button type="button" ' +
-            'class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject">' + subject +
-            '</h4>');
+        var newWarningAlert = $('.alert-warning').eq(0).clone();
+        $(newWarningAlert).children('h4').text('Error uploading! ' + subject);
         message.forEach(function (m) {
             var summary = $('<p>', {
                 class: "alertWarning",
-                id: "acceptWarning",
                 text: m,
             });
-            $('.alert-warning').append(summary);
+            $(newWarningAlert).append(summary);
         });
+        $('#alert_placeholder').append(newWarningAlert);
+        $(newWarningAlert).show();
     }
     function clearDropZone() {
         $('#templateDropZone').removeClass('off');
