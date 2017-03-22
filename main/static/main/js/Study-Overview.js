@@ -105,11 +105,11 @@ var StudyOverview;
         var obj, error, warnings, id;
         try {
             obj = JSON.parse(response);
-            if (obj['errors']) {
-                generateErrors(obj['errors']);
+            if (obj.errors) {
+                generateErrors(obj.errors);
             }
-            if (obj['warnings']) {
-                generateWarnings(obj['warnings']);
+            if (obj.warnings) {
+                generateWarnings(obj.warnings);
             }
         }
         catch (e) {
@@ -122,14 +122,12 @@ var StudyOverview;
         //set up click handler events
         $('#omitStrains').change(function () {
             var f = fileContainer.file;
-            fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
-            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
+            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?IGNOREICERELATEDERRORS=true');
             $('#iceError').hide();
         });
         $('#allowDuplicates').change(function () {
             var f = fileContainer.file;
-            fileContainer.extraHeaders['ALLOWDUPLICATENAMES'] = 'true';
-            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/');
+            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?ALLOWDUPLICATENAMES=true');
             $('#duplicateError').hide();
         });
         $('#noDuplicates').change(function () {
@@ -185,9 +183,9 @@ var StudyOverview;
                 // create dismissible error alert
                 alertIceWarning(e.category, e.summary, e.details);
             }
-            else if (e['category'] === "Duplicate assay names in the input" || e['category'] === "Duplicate " +
+            else if (e.summary === "Duplicate assay names in the input" || e.summary === "Duplicate " +
                 "line names in the input") {
-                if ($('#duplicateError').length === 0) {
+                if ($('#duplicateError').length === 1) {
                     alertDuplicateError(e.category, e.summary, e.details);
                 }
             }
