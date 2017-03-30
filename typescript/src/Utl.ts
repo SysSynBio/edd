@@ -21,14 +21,14 @@ module Utl {
 						compName = cRecord.sn + ' ';
 					}
 				}
-            	var mRecord = EDDData.MetaboliteTypes[measurementRecord.mt];
-            	mName = compName + mRecord.name;
-		    } else if (mst == 2) {	// Gene type.  EWW EWW
-            	mName = EDDData.GeneTypes[measurementRecord.mt].name;
-		    } else if (mst == 3) {	// Protein type.  EWW EWW
-            	mName = EDDData.ProteinTypes[measurementRecord.mt].name;
-		    }
-		    return mName;
+				var mRecord = EDDData.MetaboliteTypes[measurementRecord.mt];
+				mName = compName + mRecord.name;
+			} else if (mst == 2) {	// Gene type.  EWW EWW
+			mName = EDDData.GeneTypes[measurementRecord.mt].name;
+			} else if (mst == 3) {	// Protein type.  EWW EWW
+				mName = EDDData.ProteinTypes[measurementRecord.mt].name;
+			}
+			return mName;
 		}
 
 
@@ -37,18 +37,18 @@ module Utl {
 			var mUnits = '';
 			var mst = measurementRecord.mst;
 			if (mst == 1) {		// TODO: https://www.youtube.com/watch?v=JltEXpbGM8s
-            	if (measurementRecord.uid) {
-	            	var uRecord = EDDData.UnitTypes[measurementRecord.uid];
-	            	if (uRecord) {
-	            		mUnits = uRecord.name;
-	            	}
-		        }
+				if (measurementRecord.uid) {
+					var uRecord = EDDData.UnitTypes[measurementRecord.uid];
+					if (uRecord) {
+						mUnits = uRecord.name;
+					}
+				}
 		    } else if (mst == 2) {
-            	mUnits = '';	// Units for Proteomics?  Anyone?
-		    } else if (mst == 3) {
-            	mUnits = 'RPKM';
-		    }
-		    return mUnits;
+				mUnits = '';	// Units for Proteomics?  Anyone?
+			} else if (mst == 3) {
+				mUnits = 'RPKM';
+			}
+			return mUnits;
 		}
 
 
@@ -102,7 +102,7 @@ module Utl {
 							}
 						}, false);
 					}
-	                return xhr;
+					return xhr;
 				},
 				headers: headers,
 				type: type,
@@ -131,63 +131,63 @@ module Utl {
 
 
 	export class Tabs {
-	    // Set up click-to-browse tabs
-	    static prepareTabs() {
-	        // declare the click handler at the document level, then filter to any link inside a .tab
-	        $(document).on('click', '.tabBar span:not(.active)', (e) => {
-	            var targetTab = $(e.target).closest('span');
-	            var activeTabs = targetTab.closest('div.tabBar').children('span.active');
+		// Set up click-to-browse tabs
+		static prepareTabs() {
+		// declare the click handler at the document level, then filter to any link inside a .tab
+		$(document).on('click', '.tabBar span:not(.active)', (e) => {
+			var targetTab = $(e.target).closest('span');
+			var activeTabs = targetTab.closest('div.tabBar').children('span.active');
 
-	            activeTabs.removeClass('active');
-	            targetTab.addClass('active');
+			activeTabs.removeClass('active');
+			targetTab.addClass('active');
 
-	            var targetTabContentID = targetTab.attr('for');
-	            var activeTabEls = activeTabs.get();
+			var targetTabContentID = targetTab.attr('for');
+			var activeTabEls = activeTabs.get();
 
-	            if (targetTabContentID) {
-		            // Hide the content section for whatever tabs were active, then show the one selected
-		            for ( var i = 0; i < activeTabEls.length; i++ ) {
-		                var a = activeTabEls[i];
-		                var tabContentID = $(a).attr('for');
-		                if (tabContentID) {
-			                $('#'+tabContentID).addClass('off');
-			        	}
-		            }
-		            $('#'+targetTabContentID).removeClass('off');
-		    	}
-	        });
+			if (targetTabContentID) {
+				// Hide the content section for whatever tabs were active, then show the one selected
+				for ( var i = 0; i < activeTabEls.length; i++ ) {
+					var a = activeTabEls[i];
+					var tabContentID = $(a).attr('for');
+					if (tabContentID) {
+						$('#'+tabContentID).addClass('off');
+					}
+				}
+				$('#'+targetTabContentID).removeClass('off');
+			}
+		});
 	    }
 	}
 
 
 	// This is currently implemented almost exactly like Tabs above.
 	export class ButtonBar {
-	    // Set up click-to-browse tabs
-	    static prepareButtonBars() {
-	        // declare the click handler at the document level, then filter to any link inside a .tab
-	        $(document).on('click', '.buttonBar span:not(.active)', (e) => {
-	            var targetButton = $(e.target).closest('span');
-	            var activeButtons = targetButton.closest('div.buttonBar').children('span.active');
+		// Set up click-to-browse tabs
+		static prepareButtonBars() {
+			// declare the click handler at the document level, then filter to any link inside a .tab
+			$(document).on('click', '.buttonBar span:not(.active)', (e) => {
+				var targetButton = $(e.target).closest('span');
+				var activeButtons = targetButton.closest('div.buttonBar').children('span.active');
 
-	            activeButtons.removeClass('active');
-	            targetButton.addClass('active');
+				activeButtons.removeClass('active');
+				targetButton.addClass('active');
 
-	            var targetButtonContentID = targetButton.attr('for');
-	            var activeButtonEls = activeButtons.get();
+				var targetButtonContentID = targetButton.attr('for');
+				var activeButtonEls = activeButtons.get();
 
-	            if (targetButtonContentID) {
-		            // Hide the content section for whatever buttons were active, then show the one selected
-		            for ( var i = 0; i < activeButtonEls.length; i++ ) {
-		                var a = activeButtonEls[i];
-		                var ButtonContentID = $(a).attr('for');
-		                if (ButtonContentID) {
-			                $('#'+ButtonContentID).addClass('off');
-			        	}
-		            }
-		            $('#'+targetButtonContentID).removeClass('off');
-		    	}
-	        });
-	    }
+				if (targetButtonContentID) {
+				// Hide the content section for whatever buttons were active, then show the one selected
+					for ( var i = 0; i < activeButtonEls.length; i++ ) {
+						var a = activeButtonEls[i];
+						var ButtonContentID = $(a).attr('for');
+						if (ButtonContentID) {
+							$('#'+ButtonContentID).addClass('off');
+						}
+					}
+					$('#'+targetButtonContentID).removeClass('off');
+				}
+			});
+		}
 	}
 
 
@@ -342,10 +342,10 @@ module Utl {
 
 
 		static assert(condition:boolean, message:string):void {
-		    if (!condition) {
-                message = message || "Assertion failed";
-                if (typeof Error !== 'undefined') throw Error(message);
-                else throw message;
+			if (!condition) {
+				message = message || "Assertion failed";
+				if (typeof Error !== 'undefined') throw Error(message);
+				else throw message;
 		    }
 		}
 
@@ -501,21 +501,20 @@ module Utl {
 			return day_str + ', ' + hour + ':' + min + half_day;
 		}
 
-
-        static utcToTodayString(utc:string):string {
-            var m:any[];
-            var timestamp:number;
-            m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.?(\d{1,6})?Z$/.exec(utc);
-            if (m) {
-                m.shift(); // get rid of overall match, we don't care
-                m.map((v) => { return parseInt(v, 10); }); // convert strings to numbers
-                m[1]--; // Date uses 0-based months, so decrement month
-                timestamp = Date.UTC(m[0], m[1], m[2], m[3], m[4], m[5]);
-                timestamp /= 1000; // the timestampToTodayString expects seconds, not milliseconds
-                return Utl.JS.timestampToTodayString(timestamp);
-            }
-            return Utl.JS.timestampToTodayString(null);
-        }
+		static utcToTodayString(utc:string):string {
+			var m:any[];
+			var timestamp:number;
+			m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.?(\d{1,6})?Z$/.exec(utc);
+			if (m) {
+				m.shift(); // get rid of overall match, we don't care
+				m.map((v) => { return parseInt(v, 10); }); // convert strings to numbers
+				m[1]--; // Date uses 0-based months, so decrement month
+				timestamp = Date.UTC(m[0], m[1], m[2], m[3], m[4], m[5]);
+				timestamp /= 1000; // the timestampToTodayString expects seconds, not milliseconds
+				return Utl.JS.timestampToTodayString(timestamp);
+			}
+			return Utl.JS.timestampToTodayString(null);
+		}
 
 
 		// Remap a value from [inMin, inMax] to [outMin, outMax]
@@ -605,22 +604,20 @@ module Utl {
 
 	// Used by FileDropZone to pass around additional info for each dropped File object without
 	// messing with the filedrop-min.js internals.
-    interface FileDropZoneFileContainer {
-        file: any;					// The file object as created by filedrop-min.js
-        fileType: string;			// A guess at the file's type, expressed as a string, as returned by Utl.JS.guessFileType .
-        extraHeaders:{[id:string]: string};	// Any extra headers to send with the POST to the server.
+	interface FileDropZoneFileContainer {
+		file: any;					// The file object as created by filedrop-min.js
+		fileType: string;			// A guess at the file's type, expressed as a string, as returned by Utl.JS.guessFileType .
+		extraHeaders:{[id:string]: string};	// Any extra headers to send with the POST to the server.
+		progressBar: ProgressBar;	// The ProgressBar object used to track this file.  Can be altered after init by fileInitFn.
+		stopProcessing: boolean;	// If set, abandon any further action on the file.
+		skipProcessRaw: boolean;	// If set, skip the call to process the dropped file locally.
+		skipUpload: boolean;		// If set, skip the upload to the server (and subsequent call to processResponseFn)
+		allWorkFinished: boolean;	// If set, the file has finished all processing by the FileDropZone class.
 
-        progressBar: ProgressBar;	// The ProgressBar object used to track this file.  Can be altered after init by fileInitFn.
-
-        stopProcessing: boolean;	// If set, abandon any further action on the file.
-        skipProcessRaw: boolean;	// If set, skip the call to process the dropped file locally.
-        skipUpload: boolean;		// If set, skip the upload to the server (and subsequent call to processResponseFn)
-        allWorkFinished: boolean;	// If set, the file has finished all processing by the FileDropZone class.
-
-        // This is assigned by FileDropZone when the object is generated, and can be used to correlate the
-        // object with other information elsewhere.  (It is not used internally by FileDropZone.)
-        uniqueIndex: number;
-    }
+		// This is assigned by FileDropZone when the object is generated, and can be used to correlate the
+		// object with other information elsewhere.  (It is not used internally by FileDropZone.)
+		uniqueIndex: number;
+	}
 
 
 
@@ -630,12 +627,11 @@ module Utl {
 	//	elementId: ID of the element to be set up as a drop zone
 	//	fileInitFn: Called when a file has been dropped, but before any processing has started
 	//	processRawFn: Called when the file content has been read into a local variable, but before any communication with
-	//                the server.
+	//	the server.
 	//	url: The URL to upload the file.
 	//	progressBar: A ProgressBar object for tracking the upload progress.
 	//	processResponseFn: Called when the server sends back its results.
-	//  processErrorFn: Called as an alternative to processResponseFn if the server reports an error.
-	// }
+	//processErrorFn: Called as an alternative to processResponseFn if the server reports an error.
 	// All callbacks are given a FileDropZoneFileContainer object as their first argument.
 
 	// TODO:
@@ -662,7 +658,7 @@ module Utl {
 		// If url is provided and processRawFn returns false (or was not provided) the file will be sent to the given url.
 		// If processResponseFn is provided, it will be called with the returned result of the url call.
 		// If an error occurs, processErrorFn will be called with the result.
-        constructor(options:any) {
+		constructor(options:any) {
 
 			this.progressBar = options.progressBar || null;
 
@@ -807,7 +803,7 @@ module Utl {
 				// We want to pass along our own guess at the file type, since it's based on a more specific set of criteria.
 				xhr.setRequestHeader('X-EDD-File-Type', fileContainer.fileType);
 
-            	$.each(fileContainer.extraHeaders, (name: string, value: string): void => {
+				$.each(fileContainer.extraHeaders, (name: string, value: string): void => {
 					xhr.setRequestHeader('X-EDD-' + name, value)
 				});
 
@@ -855,17 +851,15 @@ module Utl {
 			var bottomY:number = Math.floor(yCoord + lineHeight/2);
 			var midX:number = Math.floor(xCoord + halfWidth);
 			var el = SVG.createLine( midX, topY, midX, bottomY, color, lineWidth);
-		    //$(el).css('stroke-linecap', 'round');
 
 			if (svgElement)
-		    	svgElement.appendChild(el);
-
-		    return el;
+				svgElement.appendChild(el);
+			return el;
 		}
 
 
 		static createLine(x1:number, y1:number, x2:number, y2:number, color?:Color, width?:number):SVGElement {
-    		var el = <SVGElement>document.createElementNS(SVG._namespace, 'line');
+			var el = <SVGElement>document.createElementNS(SVG._namespace, 'line');
 			
 			el.setAttribute('x1', x1.toString());
 			el.setAttribute('y1', y1.toString());
@@ -878,7 +872,7 @@ module Utl {
 			if (width)
 				$(el).css('stroke-width', width.toString());
 
-		    return el;
+			return el;
 		}
 
 
@@ -892,77 +886,76 @@ module Utl {
 
 			opacity = (typeof(opacity) !== 'undefined' ? opacity : 1);
 
-    		var el = <SVGElement>document.createElementNS(SVG._namespace, 'rect');
+			var el = <SVGElement>document.createElementNS(SVG._namespace, 'rect');
 
-    		// Make sure width and height are positive.
-    		if (height < 0) {
-    			y += height;
-    			height = -height;
-    		}
+			// Make sure width and height are positive.
+			if (height < 0) {
+				y += height;
+				height = -height;
+			}
 
-    		if (width < 0) {
-    			x += height;
-    			width = -width;
-    		}
+				if (width < 0) {
+				x += height;
+				width = -width;
+			}
 
-    		el.setAttribute('x', x.toString());
-    		el.setAttribute('y', y.toString());
-    		el.setAttribute('width', width.toString());
-    		el.setAttribute('height', height.toString());
+			el.setAttribute('x', x.toString());
+			el.setAttribute('y', y.toString());
+			el.setAttribute('width', width.toString());
+			el.setAttribute('height', height.toString());
 
-    		if (typeof(strokeWidth) !== 'undefined')
-    			$(el).css('stroke-width', strokeWidth);
+			if (typeof(strokeWidth) !== 'undefined')
+				$(el).css('stroke-width', strokeWidth);
 
-    		if (typeof(strokeColor) !== 'undefined')
-    			$(el).css('stroke', strokeColor.toString());
+			if (typeof(strokeColor) !== 'undefined')
+				$(el).css('stroke', strokeColor.toString());
 
-    		if (typeof(opacity) !== 'undefined')
-    			$(el).css('opacity', opacity);
+			if (typeof(opacity) !== 'undefined')
+				$(el).css('opacity', opacity);
 
-    		if (typeof(fillColor) !== 'undefined')
-    			$(el).css('fill', fillColor.toString());
+			if (typeof(fillColor) !== 'undefined')
+				$(el).css('fill', fillColor.toString());
 
-    		return el;
+			return el;
 
 		}
 
 
 		static createText(x:number, y:number, text:string, fontName?:string, fontSize?:number, centeredOnX?:boolean, color?:Color):SVGElement {
-    		var el = <SVGElement>document.createElementNS(SVG._namespace, 'text');
+			var el = <SVGElement>document.createElementNS(SVG._namespace, 'text');
 
-    		el.setAttribute('x', x.toString());
-    		el.setAttribute('y', y.toString());
+			el.setAttribute('x', x.toString());
+			el.setAttribute('y', y.toString());
 
-    		if (fontName)
-    			el.setAttribute('font-family', fontName);
-    		else
-    			el.setAttribute('font-family', "Verdana");
+			if (fontName)
+				el.setAttribute('font-family', fontName);
+			else
+				el.setAttribute('font-family', "Verdana");
 
-    		if (fontSize)
-    			el.setAttribute('font-size', fontSize.toString());
-    		else
-    			el.setAttribute('font-size', "12");
+			if (fontSize)
+				el.setAttribute('font-size', fontSize.toString());
+			else
+				el.setAttribute('font-size', "12");
 
-    		el.textContent = text;
+			el.textContent = text;
 
-    		// Center on X??
-    		if (centeredOnX)
-    			el.setAttribute('text-anchor', 'middle');
-    		else
-    			el.setAttribute('text-anchor', 'start');
+			// Center on X??
+			if (centeredOnX)
+				el.setAttribute('text-anchor', 'middle');
+			else
+				el.setAttribute('text-anchor', 'start');
 
-    		if (color) {
-    			$(el).css('fill', color.toString());
-    		}
-
-    		return el;
+			if (color) {
+				$(el).css('fill', color.toString());
+			}
+			return el;
 		}
 
 
 		// Modify a rect element to round its corners.
 		static makeRectRounded(rect, rx, ry) {
-    		rect.setAttribute('rx', rx);
-    		rect.setAttribute('ry', ry);
+			rect.setAttribute('rx', rx);
+			rect.setAttribute('ry', ry);
 		}
 
 		private static _namespace:string = "http://www.w3.org/2000/svg";

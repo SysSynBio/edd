@@ -561,12 +561,11 @@ var Utl;
     //	elementId: ID of the element to be set up as a drop zone
     //	fileInitFn: Called when a file has been dropped, but before any processing has started
     //	processRawFn: Called when the file content has been read into a local variable, but before any communication with
-    //                the server.
+    //	the server.
     //	url: The URL to upload the file.
     //	progressBar: A ProgressBar object for tracking the upload progress.
     //	processResponseFn: Called when the server sends back its results.
-    //  processErrorFn: Called as an alternative to processResponseFn if the server reports an error.
-    // }
+    //processErrorFn: Called as an alternative to processResponseFn if the server reports an error.
     // All callbacks are given a FileDropZoneFileContainer object as their first argument.
     // TODO:
     // * Rewrite this with an option to only accept the first file in a dropped set.
@@ -751,7 +750,6 @@ var Utl;
             var bottomY = Math.floor(yCoord + lineHeight / 2);
             var midX = Math.floor(xCoord + halfWidth);
             var el = SVG.createLine(midX, topY, midX, bottomY, color, lineWidth);
-            //$(el).css('stroke-linecap', 'round');
             if (svgElement)
                 svgElement.appendChild(el);
             return el;

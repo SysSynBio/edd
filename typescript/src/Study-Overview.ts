@@ -130,20 +130,17 @@ module StudyOverview {
         // reset the drop zone here
         //parse xhr.response
         var obj, error, warnings, id;
-        try
-            {
-                obj = JSON.parse(response);
-                if (obj.errors) {
-                    generateErrors(obj.errors)
-                }
-                if (obj.warnings) {
-                    generateWarnings(obj.warnings)
-                }
+        try {
+            obj = JSON.parse(response);
+            if (obj.errors) {
+                generateErrors(obj.errors)
             }
-            catch(e)
-            {
-               alertError("", "There was an error", "EDD administrators have been notified. Please try again later.");
+            if (obj.warnings) {
+                generateWarnings(obj.warnings)
             }
+        } catch(e) {
+            alertError("", "There was an error", "EDD administrators have been notified. Please try again later.");
+        }
             //if there is more than one alert, add a dismiss all alerts button
             if ($('.alert').length > 5) {
                 $('#alert_placeholder').prepend('<a href="" class="dismissAll" id="dismissAll">Dismiss all alerts</a>')
