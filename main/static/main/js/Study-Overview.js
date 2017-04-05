@@ -71,27 +71,27 @@ var StudyOverview;
             text: 'Success! ' + result['lines_created'] + ' lines added!',
             style: 'margin:auto'
         }).appendTo('#linesAdded');
-        successfulUpload(linesPathName);
+        successfulRedirect(linesPathName);
     }
     StudyOverview.fileReturnedFromServer = fileReturnedFromServer;
     function fileWarningReturnedFromServer(fileContainer, result) {
         var currentPath = window.location.pathname;
         var linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
-        generateWarnings(result.warnings);
-        generateAcceptWarning();
         $('<p>', {
             text: 'Success! ' + result['lines_created'] + ' lines added!',
             style: 'margin:auto'
         }).appendTo('#linesAdded');
+        //display success message
+        $('#linesAdded').show();
+        generateWarnings(result.warnings);
+        generateAcceptWarning();
         //accept warnings for succesful upload of experiment description file.
         $('#acceptWarnings').on('change', function (e) {
-            successfulUpload(linesPathName);
+            successfulRedirect(linesPathName);
         });
     }
     StudyOverview.fileWarningReturnedFromServer = fileWarningReturnedFromServer;
-    function successfulUpload(linesPathName) {
-        //display success message
-        $('#linesAdded').show();
+    function successfulRedirect(linesPathName) {
         //redirect to lines page
         setTimeout(function () {
             window.location.pathname = linesPathName;
@@ -99,12 +99,15 @@ var StudyOverview;
     }
     // This is called upon receiving an errror in a file upload operation, and
     // is passed an unprocessed result from the server as a second argument.
-    function fileErrorReturnedFromServer(fileContainer, response, url) {
+    function fileErrorReturnedFromServer(fileContainer, xhr, url) {
         // reset the drop zone here
         //parse xhr.response
-        var obj, error, warnings, id;
+        var obj, error, id;
         try {
-            obj = JSON.parse(response);
+            if (xhr.status === 504) {
+                generate504Error();
+            }
+            obj = JSON.parse(xhr.response);
             if (obj.errors) {
                 generateErrors(obj.errors);
             }
@@ -115,22 +118,22 @@ var StudyOverview;
         catch (e) {
             alertError("", "There was an error", "EDD administrators have been notified. Please try again later.");
         }
-        //if there is more than one alert, add a dismiss all alerts button
-        if ($('.alert').length > 5) {
+        //if there is more than one alert and no dismiss all alert button, add a dismiss all alerts button
+        if ($('.alert').length > 5 && $('#dismissAll').length === 0) {
             $('#alert_placeholder').prepend('<a href="" class="dismissAll" id="dismissAll">Dismiss all alerts</a>');
         }
         //set up click handler events
         $('#omitStrains').change(function () {
             var f = fileContainer.file;
-            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?IGNOREICERELATEDERRORS=true');
+            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?IGNORE_ICE_RELATED_ERRORS=true');
             $('#iceError').hide();
         });
         $('#allowDuplicates').change(function () {
             var f = fileContainer.file;
-            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?ALLOWDUPLICATENAMES=true');
+            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?ALLOW_DUPLICATE_NAMES=true');
             $('#duplicateError').hide();
         });
-        $('#noDuplicates').change(function () {
+        $('#noDuplicates, #noOmitStrains').change(function () {
             window.location.reload();
         });
         //dismiss all alerts on click
@@ -194,9 +197,12 @@ var StudyOverview;
             }
         });
     }
+    function generate504Error() {
+        alertError("", "EDD timed out", "Please reload page and reupload file or try again later");
+    }
     function alertIceWarning(header, subject, message) {
         var iceError = $('#iceError');
-        $(iceError).children('h4').text(header);
+        $(iceError).children('h4').text('Warning! ' + header);
         $(iceError).children('p').text(subject + " " + message);
         $('#alert_placeholder').append(iceError);
         $(iceError).show();
@@ -224,7 +230,7 @@ var StudyOverview;
     }
     function alertWarning(subject, message) {
         var newWarningAlert = $('.alert-warning').eq(0).clone();
-        $(newWarningAlert).children('h4').text('Error uploading! ' + subject);
+        $(newWarningAlert).children('h4').text('Warning - ' + subject);
         message.forEach(function (m) {
             var summary = $('<p>', {
                 class: "alertWarning",

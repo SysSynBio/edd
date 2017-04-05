@@ -699,7 +699,7 @@ var Utl;
             });
             f.event('error', function (e, xhr) {
                 if (typeof t.processErrorFn === "function") {
-                    t.processErrorFn(fileContainer, xhr.response, this.url);
+                    t.processErrorFn(fileContainer, xhr, this.url);
                 }
                 fileContainer.allWorkFinished = true;
             });
