@@ -411,7 +411,6 @@ var StudyLines;
         row = $('<p>').attr('id', 'row_' + id).addClass('line-meta').insertBefore(refRow);
         type = EDDData.MetaDataTypes[key];
         label = $('<label>').attr('for', 'id_' + id).text(type.name).appendTo(row);
-        // bulk checkbox?
         input = $('<input type="text">').attr('id', 'id_' + id).val(value).appendTo(row);
         postfixVal = $(refRow).find('.meta-postfix'); //returns array of postfix elems present
         prefixVal = $(refRow).find('.meta-prefix'); //returns array of prefix elems present
@@ -695,10 +694,6 @@ var DataGridSpecLines = (function (_super) {
                 'size': 's',
                 'sortBy': this.loadCarbonSourceLabeling,
                 'sortAfter': 0 }),
-            new DataGridHeaderSpec(6, 'hLinesCarbonBalance', {
-                'name': 'Carbon Balance',
-                'size': 's',
-                'sortBy': this.loadLineName })
         ];
         // map all metadata IDs to HeaderSpec objects
         var metaDataHeaders = this.metaDataIDsUsedInLines.map(function (id, index) {
@@ -861,8 +856,6 @@ var DataGridSpecLines = (function (_super) {
             new DataGridColumnSpec(3, this.generateStrainNameCells),
             new DataGridColumnSpec(4, this.generateCarbonSourceCells),
             new DataGridColumnSpec(5, this.generateCarbonSourceLabelingCells),
-            // The Carbon Balance cells are populated by a callback, triggered when first displayed
-            new DataGridColumnSpec(6, this.generateCarbonBalanceBlankCells)
         ];
         metaDataCols = this.metaDataIDsUsedInLines.map(function (id, index) {
             return new DataGridColumnSpec(6 + index, _this.makeMetaDataCellsGeneratorFunction(id));
@@ -881,11 +874,6 @@ var DataGridSpecLines = (function (_super) {
             new DataGridColumnGroupSpec('Strain'),
             new DataGridColumnGroupSpec('Carbon Source(s)'),
             new DataGridColumnGroupSpec('Labeling'),
-            this.carbonBalanceCol = new DataGridColumnGroupSpec('Carbon Balance', {
-                'showInVisibilityList': false,
-                'hiddenByDefault': true,
-                'revealedCallback': StudyLines.carbonBalanceColumnRevealedCallback
-            })
         ];
         var metaDataColGroups;
         metaDataColGroups = this.metaDataIDsUsedInLines.map(function (id, index) {

@@ -241,6 +241,7 @@ namespace StudyLines {
             });
             metaIn.val(JSON.stringify(meta));
         }).on('click', '.line-meta-add', (ev:JQueryMouseEventObject) => {
+
             // make metadata Add Value button work and not submit the form
             var addrow = $(ev.target).closest('.line-edit-meta'), type, value;
             type = addrow.find('.line-meta-type').val();
@@ -479,8 +480,9 @@ namespace StudyLines {
         row = $('<p>').attr('id', 'row_' + id).addClass('line-meta').insertBefore(refRow);
         type = EDDData.MetaDataTypes[key];
         label = $('<label>').attr('for', 'id_' + id).text(type.name).appendTo(row);
-        // bulk checkbox?
+
         input = $('<input type="text">').attr('id', 'id_' + id).val(value).appendTo(row);
+
         postfixVal = $(refRow).find('.meta-postfix'); //returns array of postfix elems present
         prefixVal = $(refRow).find('.meta-prefix'); //returns array of prefix elems present
         //if there is a meta postfix val, hide it.
@@ -791,10 +793,6 @@ class DataGridSpecLines extends DataGridSpecBase {
                 'size': 's',
                 'sortBy': this.loadCarbonSourceLabeling,
                 'sortAfter': 0 }),
-            new DataGridHeaderSpec(6, 'hLinesCarbonBalance', {
-                'name': 'Carbon Balance',
-                'size': 's',
-                'sortBy': this.loadLineName })
         ];
 
         // map all metadata IDs to HeaderSpec objects
@@ -974,7 +972,6 @@ class DataGridSpecLines extends DataGridSpecBase {
             new DataGridColumnSpec(4, this.generateCarbonSourceCells),
             new DataGridColumnSpec(5, this.generateCarbonSourceLabelingCells),
             // The Carbon Balance cells are populated by a callback, triggered when first displayed
-            new DataGridColumnSpec(6, this.generateCarbonBalanceBlankCells)
         ];
         metaDataCols = this.metaDataIDsUsedInLines.map((id, index) => {
             return new DataGridColumnSpec(6 + index, this.makeMetaDataCellsGeneratorFunction(id));
@@ -995,11 +992,6 @@ class DataGridSpecLines extends DataGridSpecBase {
             new DataGridColumnGroupSpec('Strain'),
             new DataGridColumnGroupSpec('Carbon Source(s)'),
             new DataGridColumnGroupSpec('Labeling'),
-            this.carbonBalanceCol = new DataGridColumnGroupSpec('Carbon Balance', {
-                'showInVisibilityList': false,    // Has its own header widget
-                'hiddenByDefault': true,
-                'revealedCallback': StudyLines.carbonBalanceColumnRevealedCallback
-            })
         ];
 
         var metaDataColGroups:DataGridColumnGroupSpec[];
