@@ -185,8 +185,7 @@ class ColumnLayout:
         # if we see it, log an error -- no clear/automated way for us to resolve which column
         #  has the correct values!
         if self.has_assay_metadata(upper_protocol_name, assay_meta_type.pk):
-            self.importer.add_error(BAD_FILE_CATEGORY, DUPLICATE_ASSAY_METADATA,
-                                    assay_meta_type.pk)
+            self.importer.add_error(BAD_FILE_CATEGORY, DUPLICATE_ASSAY_METADATA, assay_meta_type.pk)
 
         self.register_protocol(protocol)
 
@@ -309,25 +308,20 @@ class _ExperimentDescNamingStrategy(NamingStrategy):
             name_elts.append(strains_str)
             included_strain_names = True
 
+        # if creating more than one replicate, build a suffix to show replicate number so that
+        # line names are unique. Replicate number should always be last in the line name
+        if self.combinatorial_input.replicate_count > 1:
+            replicate_suffix = 'R%d' % replicate_num
+            name_elts.append(replicate_suffix)
+
         logger.debug('Building line name from elements: %s' % str(name_elts))
 
         # if making lines combinatorially based on line metadata, insert the combinatorial values
         # into the line name so that line names will be unique
         name = self.section_separator.join(name_elts)
 
-        # if creating more than one replicate, build a suffix to show replicate number so that
-        # line names are unique. Replicate number should always be last in the line name
-        replicate_suffix = ''
-        if self.combinatorial_input.replicate_count > 1:
-            replicate_suffix = '%(sep)sR%(replicate_num)d' % {
-                'sep': self.section_separator,
-                'replicate_num': replicate_num
-            }
-
-        return '%(name)s%(replicate_suffix)s' % {
-            'name': name,
-            'replicate_suffix': replicate_suffix,
-        }
+        logger.debug('Name is %s' % name)
+        return name
 
     def names_contain_strains(self):
         return self.col_layout.strain_ids_col in self.col_layout.combinatorial_col_indices
@@ -584,9 +578,8 @@ class ExperimentDescFileParser(CombinatorialInputParser):
         :param row: the row to inspect for column headers
         :return: the column layout if required columns were found, or None otherwise
         """
-        logger.debug('in read_column_layout()')  # TODO: remove
-        layout = ColumnLayout(self)
-        # TODO: add support for control column
+        logger.debug('in read_column_layout()')
+        layout = ColumnLayout(self.importer)
 
         ###########################################################################################
         # loop over columns in the current row, looking for labels that identify at least the
@@ -713,14 +706,6 @@ class ExperimentDescFileParser(CombinatorialInputParser):
 
                     # if we've found the assay metadata type for this column, stop looking
                     if suffix_meta_type is not None:
-                        layout = self.column_layout
-                        layout.register_assay_meta_column(
-                            col_index,
-                            upper_protocol_name,
-                            protocol,
-                            suffix_meta_type,
-                            is_combinatorial
-                        )
                         break
 
                     # if the column header didn't match the assay metadata type in its
