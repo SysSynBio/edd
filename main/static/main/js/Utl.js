@@ -48,6 +48,12 @@ var Utl;
             }
             return mUnits;
         };
+        EDD.findCSRFToken = function () {
+            if (jQuery.cookie) {
+                return jQuery.cookie('csrftoken');
+            }
+            return jQuery('input[name=csrfmiddlewaretoken]').val() || '';
+        };
         // Helper function to do a little more prep on objects when calling jQuery's Alax handler.
         // If options contains "data", it is assumed to be a constructed formData object.
         // If options contains a "rawdata" object, it is assumed to be a standard key-value collection
@@ -71,7 +77,7 @@ var Utl;
             }
             var headers = {};
             if (type == 'POST') {
-                headers["X-CSRFToken"] = jQuery.cookie('csrftoken');
+                headers["X-CSRFToken"] = EDD.findCSRFToken();
             }
             $.ajax({
                 xhr: function () {
@@ -558,14 +564,15 @@ var Utl;
     // A class wrapping filedrop-min.js (http://filedropjs.org) and providing some additional structure.
     // It's initialized with a single 'options' object:
     // {
-    //	elementId: ID of the element to be set up as a drop zone
-    //	fileInitFn: Called when a file has been dropped, but before any processing has started
-    //	processRawFn: Called when the file content has been read into a local variable, but before any communication with
-    //	the server.
-    //	url: The URL to upload the file.
-    //	progressBar: A ProgressBar object for tracking the upload progress.
-    //	processResponseFn: Called when the server sends back its results.
-    //processErrorFn: Called as an alternative to processResponseFn if the server reports an error.
+    //  elementId: ID of the element to be set up as a drop zone
+    //  fileInitFn: Called when a file has been dropped, but before any processing has started
+    //  processRawFn: Called when the file content has been read into a local variable, but before any communication with
+    //                the server.
+    //  url: The URL to upload the file.
+    //  progressBar: A ProgressBar object for tracking the upload progress.
+    //  processResponseFn: Called when the server sends back its results.
+    //  processErrorFn: Called as an alternative to processResponseFn if the server reports an error.
+    // }
     // All callbacks are given a FileDropZoneFileContainer object as their first argument.
     // TODO:
     // * Rewrite this with an option to only accept the first file in a dropped set.
@@ -582,7 +589,7 @@ var Utl;
             window.fd.logging = false;
             var z = new FileDrop(options.elementId, {}); // filedrop-min.js , http://filedropjs.org
             this.zone = z;
-            this.csrftoken = jQuery.cookie('csrftoken');
+            this.csrftoken = EDD.findCSRFToken();
             if (!(typeof options.multiple === "undefined")) {
                 z.multiple(options.multiple);
             }
@@ -593,7 +600,6 @@ var Utl;
             this.processRawFn = options.processRawFn;
             this.processResponseFn = options.processResponseFn;
             this.processErrorFn = options.processErrorFn;
-            this.processWarningFn = options.processWarningFn;
             this.url = options.url;
         }
         // Helper function to create and set up a FileDropZone.
@@ -640,7 +646,7 @@ var Utl;
         };
         // If processRawFn is defined, we read the entire file into a variable,
         // then pass that to processRawFn along with the FileDropZoneFileContainer object.
-        // FileDropZoneFileContainer's contents might be modified - specifically, the flags - so we check them afterwards
+        // FileDropZoneFileContainer's contents might be modofied - specifically, the flags - so we check them afterwards
         // to decide how to proceed.
         FileDropZone.prototype.callProcessRaw = function (fileContainer) {
             var t = this;
@@ -689,9 +695,6 @@ var Utl;
                         alert(result.python_error);
                     }
                 }
-                else if (result.warnings) {
-                    t.processWarningFn(fileContainer, result);
-                }
                 else if (typeof t.processResponseFn === "function") {
                     t.processResponseFn(fileContainer, result);
                 }
@@ -699,9 +702,15 @@ var Utl;
             });
             f.event('error', function (e, xhr) {
                 if (typeof t.processErrorFn === "function") {
-                    t.processErrorFn(fileContainer, xhr, this.url);
+                    t.processErrorFn(fileContainer, xhr.response, this.url);
                 }
-                fileContainer.allWorkFinished = true;
+                if ($('#omitStrains').data('clicked')) {
+                    // var result = jQuery.parseJSON(xhr.responseText);
+                    fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
+                }
+                else {
+                    fileContainer.allWorkFinished = true;
+                }
             });
             f.event('xhrSetup', function (xhr) {
                 // This ensures that the CSRF middleware in Django doesn't reject our HTTP request.
@@ -750,6 +759,7 @@ var Utl;
             var bottomY = Math.floor(yCoord + lineHeight / 2);
             var midX = Math.floor(xCoord + halfWidth);
             var el = SVG.createLine(midX, topY, midX, bottomY, color, lineWidth);
+            //$(el).css('stroke-linecap', 'round');
             if (svgElement)
                 svgElement.appendChild(el);
             return el;

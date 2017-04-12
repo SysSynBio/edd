@@ -1,7 +1,11 @@
 /// <reference path="typescript-declarations.d.ts" />
-/// <reference path="Utl.ts" />
+/// <reference path="BiomassCalculationUI.ts" />
 /// <reference path="Dragboxes.ts" />
 /// <reference path="DataGrid.ts" />
+/// <reference path="EDDAutocomplete.ts" />
+/// <reference path="EDDEditableElement.ts" />
+/// <reference path="Study.ts" />
+/// <reference path="Utl.ts" />
 
 declare var EDDData:EDDData;
 
@@ -9,79 +13,20 @@ declare var EDDData:EDDData;
 module StudyOverview {
     'use strict';
 
-    var attachmentIDs:any;
-    var attachmentsByID:any;
-    var prevDescriptionEditElement:any;
+    var attachmentIDs: any;
+    var attachmentsByID: any;
+    var prevDescriptionEditElement: any;
 
     var activeDraggedFile: any;
 
     var fileUploadProgressBar: Utl.ProgressBar;
 
     // We can have a valid metabolic map but no valid biomass calculation.
-    // If they try to show carbon balance in that case, we'll bring up the UI to 
+    // If they try to show carbon balance in that case, we'll bring up the UI to
     // calculate biomass for the specified metabolic map.
-    export var metabolicMapID:any;
-    export var metabolicMapName:any;
-    export var biomassCalculation:number;
-
-
-    // Called when the page loads.
-    export function prepareIt() {
-
-        this.attachmentIDs = null;
-        this.attachmentsByID = null;
-        this.prevDescriptionEditElement = null;
-
-        this.metabolicMapID = -1;
-        this.metabolicMapName = null;
-        this.biomassCalculation = -1;
-
-        new EditableStudyContact($('#editable-study-contact').get()[0]);
-        new EditableStudyDescription($('#editable-study-description').get()[0]);
-
-        // put the click handler at the document level, then filter to any link inside a .disclose
-        $(document).on('click', '.disclose .discloseLink', (e) => {
-            $(e.target).closest('.disclose').toggleClass('discloseHide');
-            return false;
-        });
-
-        $('#helpExperimentDescription').tooltip({
-            content: function () {
-                return $(this).prop('title');
-            },
-            position: { my: "left-10 center", at: "right center" },
-            show: null,
-            close: function (event, ui:any) {
-                ui.tooltip.hover(
-                function () {
-                    $(this).stop(true).fadeTo(400, 1);
-                },
-                function () {
-                    $(this).fadeOut("400", function () {
-                        $(this).remove();
-                    })
-                });
-            }
-        });
-
-        this.fileUploadProgressBar = new Utl.ProgressBar('fileUploadProgressBar');
-
-        Utl.FileDropZone.create({
-            elementId: "templateDropZone",
-            fileInitFn: this.fileDropped.bind(this),
-            processRawFn: this.fileRead.bind(this),
-            url: '/study/' + EDDData.currentStudyID + '/describe/',
-            processResponseFn: this.fileReturnedFromServer.bind(this),
-            processErrorFn: this.fileErrorReturnedFromServer.bind(this),
-            processWarningFn: this.fileWarningReturnedFromServer.bind(this),
-            progressBar: this.fileUploadProgressBar
-        });
-
-        Utl.Tabs.prepareTabs();
-
-        $(window).on('load', preparePermissions);
-    }
-
+    export var metabolicMapID: any;
+    export var metabolicMapName: any;
+    export var biomassCalculation: number;
 
     // This is called upon receiving a response from a file upload operation, and unlike
     // fileRead(), is passed a processed result from the server as a second argument,
@@ -91,8 +36,8 @@ module StudyOverview {
         var currentPath = window.location.pathname;
         var linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
         $('<p>', {
-             text: 'Success! ' + result['lines_created'] + ' lines added!',
-             style: 'margin:auto'
+            text: 'Success! ' + result['lines_created'] + ' lines added!',
+            style: 'margin:auto'
         }).appendTo('#linesAdded');
 
         successfulRedirect(linesPathName)
@@ -102,20 +47,20 @@ module StudyOverview {
         var currentPath = window.location.pathname;
         var linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
         $('<p>', {
-             text: 'Success! ' + result['lines_created'] + ' lines added!',
-             style: 'margin:auto'
+            text: 'Success! ' + result['lines_created'] + ' lines added!',
+            style: 'margin:auto'
         }).appendTo('#linesAdded');
         //display success message
         $('#linesAdded').show();
         generateWarnings(result.warnings);
         generateAcceptWarning();
         //accept warnings for succesful upload of experiment description file.
-        $('#acceptWarnings').on('change', function(e) {
+        $('#acceptWarnings').on('change', function (e) {
             successfulRedirect(linesPathName);
         });
     }
 
-    function successfulRedirect(linesPathName):void {
+    function successfulRedirect(linesPathName): void {
         //redirect to lines page
         setTimeout(function () {
             window.location.pathname = linesPathName;
@@ -140,33 +85,33 @@ module StudyOverview {
             if (obj.warnings) {
                 generateWarnings(obj.warnings)
             }
-        } catch(e) {
+        } catch (e) {
             alertError("", "There was an error", "EDD administrators have been notified. Please try again later.");
         }
-            //if there is more than one alert and no dismiss all alert button, add a dismiss all alerts button
-            if ($('.alert').length > 5 && $('#dismissAll').length === 0) {
-                $('#alert_placeholder').prepend('<a href="" class="dismissAll" id="dismissAll">Dismiss all alerts</a>')
-            }
+        //if there is more than one alert and no dismiss all alert button, add a dismiss all alerts button
+        if ($('.alert').length > 5 && $('#dismissAll').length === 0) {
+            $('#alert_placeholder').prepend('<a href="" class="dismissAll" id="dismissAll">Dismiss all alerts</a>')
+        }
 
-            //set up click handler events
-            $('#omitStrains').change(function() {
-                    var f = fileContainer.file;
-                    f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?IGNORE_ICE_RELATED_ERRORS=true');
-                    $('#iceError').hide();
-            });
-            $('#allowDuplicates').change(function() {
-                var f = fileContainer.file;
-                f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?ALLOW_DUPLICATE_NAMES=true');
-                $('#duplicateError').hide();
-            });
-            $('#noDuplicates, #noOmitStrains').change(function() {
-                window.location.reload();
-            });
-            //dismiss all alerts on click
-            $('#dismissAll').on('click', function() {
-                $('.close').click();
-                $('#dismissAll').remove();
-            })
+        //set up click handler events
+        $('#omitStrains').change(function () {
+            var f = fileContainer.file;
+            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?IGNORE_ICE_RELATED_ERRORS=true');
+            $('#iceError').hide();
+        });
+        $('#allowDuplicates').change(function () {
+            var f = fileContainer.file;
+            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?ALLOW_DUPLICATE_NAMES=true');
+            $('#duplicateError').hide();
+        });
+        $('#noDuplicates, #noOmitStrains').change(function () {
+            window.location.reload();
+        });
+        //dismiss all alerts on click
+        $('#dismissAll').on('click', function () {
+            $('.close').click();
+            $('#dismissAll').remove();
+        })
     }
 
     function generateWarnings(warnings) {
@@ -176,13 +121,13 @@ module StudyOverview {
         }
     }
 
-    function generateAcceptWarning():void {
-        var warningAlerts:any, warningAcceptMessage, warningInput;
+    function generateAcceptWarning(): void {
+        var warningAlerts: any, warningAcceptMessage, warningInput;
         warningAlerts = $('.alert-warning:visible');
 
         warningAcceptMessage = $('<span>', {
-             text: "Accept Warnings?",
-             class: 'acceptWarnings',
+            text: "Accept Warnings?",
+            class: 'acceptWarnings',
         });
         warningInput = $('<input>', {
             type: "radio",
@@ -191,13 +136,13 @@ module StudyOverview {
         if (warningAlerts.length === 1) {
             $(warningAlerts).append(warningAcceptMessage).append(warningInput)
         } else {
-             $('#alert_placeholder').prepend(warningAcceptMessage).append(warningInput)
+            $('#alert_placeholder').prepend(warningAcceptMessage).append(warningInput)
         }
     }
 
     function organizeMessages(warnings) {
         var obj = {};
-        warnings.forEach(function(warning) {
+        warnings.forEach(function (warning) {
             var message = warning.summary + ": " + warning.details;
             if (obj.hasOwnProperty(warning.category)) {
                 obj[warning.category].push(message);
@@ -209,7 +154,7 @@ module StudyOverview {
     }
 
     function generateErrors(errors) {
-        errors.forEach(function(e) {
+        errors.forEach(function (e) {
             if (e['category'] === "ICE-related Error") {
                 // create dismissible error alert
                 alertIceWarning(e.category, e.summary, e.details);
@@ -265,11 +210,11 @@ module StudyOverview {
 
         var newWarningAlert = $('.alert-warning').eq(0).clone();
         $(newWarningAlert).children('h4').text('Warning - ' + subject);
-        message.forEach(function(m) {
+        message.forEach(function (m) {
             var summary = $('<p>', {
                 class: "alertWarning",
                 text: m,
-        });
+            });
             $(newWarningAlert).append(summary)
         });
         $('#alert_placeholder').append(newWarningAlert);
@@ -288,7 +233,7 @@ module StudyOverview {
     // send it to the server, or process it locally.
     // We inform the FileDropZone of our decision by setting flags in the fileContainer object,
     // which will be inspected when this function returns.
-    export function fileDropped(fileContainer, iceError?:boolean): void {
+    export function fileDropped(fileContainer, iceError?: boolean): void {
         this.haveInputData = true;
         //processingFileCallback();
         var ft = fileContainer.fileType;
@@ -307,7 +252,7 @@ module StudyOverview {
     // Reset and show the info box that appears when a file is dropped,
     // and reveal the text entry area.
     export function showFileDropped(fileContainer): void {
-        var processingMessage:string = '';
+        var processingMessage: string = '';
         // Set the icon image properly
         $('#fileDropInfoIcon').removeClass('xml');
         $('#fileDropInfoIcon').removeClass('text');
@@ -346,30 +291,30 @@ module StudyOverview {
     function preparePermissions() {
         var user: EDDAuto.User, group: EDDAuto.Group;
         user = new EDDAuto.User({
-            container:$('#permission_user_box')
+            container: $('#permission_user_box')
         });
         group = new EDDAuto.Group({
-            container:$('#permission_group_box')
+            container: $('#permission_group_box')
         });
 
         //check public permission input on click
-        $('#set_everyone_permission').on('click', function() {
+        $('#set_everyone_permission').on('click', function () {
             $('#permission_public').prop('checked', true);
         });
-        $('#set_group_permission').on('click', function() {
+        $('#set_group_permission').on('click', function () {
             $('#permission_group').prop('checked', true);
         });
-        $('#set_user_permission').on('click', function() {
+        $('#set_user_permission').on('click', function () {
             $('#permission_user').prop('checked', true);
         });
 
         $('form#permissions')
-            .on('submit', (ev:JQueryEventObject): boolean => {
+            .on('submit', (ev: JQueryEventObject): boolean => {
                 var perm: any = {}, klass: string, auto: JQuery;
                 auto = $('form#permissions').find('[name=class]:checked');
                 klass = auto.val();
                 perm.type = $(auto).siblings('select').val();
-                perm[klass.toLowerCase()] = { 'id':  $(auto).siblings('input:hidden').val()};
+                perm[klass.toLowerCase()] = {'id': $(auto).siblings('input:hidden').val()};
                 $.ajax({
                     'url': '/study/' + EDDData.currentStudyID + '/permissions/',
                     'type': 'POST',
@@ -413,12 +358,12 @@ module StudyOverview {
             autoOpen: false
         });
 
-        $("#addPermission").click(function() {
-           $("#permissionsSection").removeClass('off').dialog( "open" );
+        $("#addPermission").click(function () {
+            $("#permissionsSection").removeClass('off').dialog("open");
             return false;
         });
         //TODO: remove this and fix bug
-        $( "#attachmentsSection a:contains('Delete')" ).hide()
+        $("#attachmentsSection a:contains('Delete')").hide()
     }
 
 
@@ -433,37 +378,36 @@ module StudyOverview {
 
 
     // They want to select a different metabolic map.
-    export function onClickedMetabolicMapName():void {
-        var ui:StudyMetabolicMapChooser,
-            callback:MetabolicMapChooserResult = (error:string,
-                metabolicMapID?:number,
-                metabolicMapName?:string,
-                finalBiomass?:number):void => {
-            if (!error) {
-                this.metabolicMapID = metabolicMapID;
-                this.metabolicMapName = metabolicMapName;
-                this.biomassCalculation = finalBiomass;
-                this.onChangedMetabolicMap();
-            } else {
-                console.log("onClickedMetabolicMapName error: " + error);
-            }
-        };
+    export function onClickedMetabolicMapName(): void {
+        var ui: StudyMetabolicMapChooser,
+            callback: MetabolicMapChooserResult = (error: string,
+                                                   metabolicMapID?: number,
+                                                   metabolicMapName?: string,
+                                                   finalBiomass?: number): void => {
+                if (!error) {
+                    this.metabolicMapID = metabolicMapID;
+                    this.metabolicMapName = metabolicMapName;
+                    this.biomassCalculation = finalBiomass;
+                    this.onChangedMetabolicMap();
+                } else {
+                    console.log("onClickedMetabolicMapName error: " + error);
+                }
+            };
         ui = new StudyMetabolicMapChooser(false, callback);
     }
 
 
     export class EditableStudyDescription extends StudyBase.EditableStudyElement {
 
-        constructor(inputElement: HTMLElement) {        
-            super(inputElement);
+        minimumRows: number;
+
+        constructor(inputElement: HTMLElement, style?: string) {
+            super(inputElement, style);
             this.minimumRows = 4;
+            this.formURL('/study/' + EDDData.currentStudyID + '/setdescription/')
         }
 
-        getFormURL(): string {
-            return '/study/' + EDDData.currentStudyID + '/setdescription/';
-        }
-
-        getValue():string {
+        getValue(): string {
             return EDDData.Studies[EDDData.currentStudyID].description;
         }
 
@@ -479,15 +423,21 @@ module StudyOverview {
 
     export class EditableStudyContact extends EDDEditable.EditableAutocomplete {
 
-        // Have to reproduce these here rather than using EditableStudyElement because the inheritance is different
-        editAllowed(): boolean { return EDDData.currentStudyWritable; }
-        canCommit(value): boolean { return EDDData.currentStudyWritable; }
-
-        getFormURL(): string {
-            return '/study/' + EDDData.currentStudyID + '/setcontact/';
+        constructor(inputElement: HTMLElement, style?: string) {
+            super(inputElement, style);
+            this.formURL('/study/' + EDDData.currentStudyID + '/setcontact/');
         }
 
-        getValue():string {
+        // Have to reproduce these here rather than using EditableStudyElement because the inheritance is different
+        editAllowed(): boolean {
+            return EDDData.currentStudyWritable;
+        }
+
+        canCommit(value): boolean {
+            return EDDData.currentStudyWritable;
+        }
+
+        getValue(): string {
             return EDDData.Studies[EDDData.currentStudyID].contact;
         }
 
@@ -495,8 +445,64 @@ module StudyOverview {
             EDDData.Studies[EDDData.currentStudyID].contact = value;
         }
     }
-};
 
 
+    // Called when the page loads.
+    export function prepareIt() {
+
+        this.attachmentIDs = null;
+        this.attachmentsByID = null;
+        this.prevDescriptionEditElement = null;
+
+        this.metabolicMapID = -1;
+        this.metabolicMapName = null;
+        this.biomassCalculation = -1;
+
+        new EditableStudyContact($('#editable-study-contact').get()[0]);
+        new EditableStudyDescription($('#editable-study-description').get()[0]);
+
+        // put the click handler at the document level, then filter to any link inside a .disclose
+        $(document).on('click', '.disclose .discloseLink', (e) => {
+            $(e.target).closest('.disclose').toggleClass('discloseHide');
+            return false;
+        });
+
+        $('#helpExperimentDescription').tooltip({
+            content: function () {
+                return $(this).prop('title');
+            },
+            position: {my: "left-10 center", at: "right center"},
+            show: null,
+            close: function (event, ui: any) {
+                ui.tooltip.hover(
+                    function () {
+                        $(this).stop(true).fadeTo(400, 1);
+                    },
+                    function () {
+                        $(this).fadeOut("400", function () {
+                            $(this).remove();
+                        })
+                    });
+            }
+        });
+
+        this.fileUploadProgressBar = new Utl.ProgressBar('fileUploadProgressBar');
+
+        Utl.FileDropZone.create({
+            elementId: "templateDropZone",
+            fileInitFn: this.fileDropped.bind(this),
+            processRawFn: this.fileRead.bind(this),
+            url: '/study/' + EDDData.currentStudyID + '/describe/',
+            processResponseFn: this.fileReturnedFromServer.bind(this),
+            processErrorFn: this.fileErrorReturnedFromServer.bind(this),
+            processWarningFn: this.fileWarningReturnedFromServer.bind(this),
+            progressBar: this.fileUploadProgressBar
+        });
+
+        Utl.Tabs.prepareTabs();
+
+        $(window).on('load', preparePermissions);
+    }
+}
 // use JQuery ready event shortcut to call prepareIt when page is ready
 $(() => StudyOverview.prepareIt());

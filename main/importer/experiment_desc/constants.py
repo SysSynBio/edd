@@ -70,6 +70,7 @@ UNSUPPORTED_LINE_METADATA = 'Unsupported line metadata'
 IGNORED_INPUT_CATEGORY = 'User Input Ignored'
 ROWS_MISSING_REPLICATE_COUNT = 'Rows missing replicate count (assumed 1 line)'
 
+
 ####################################################################################################
 # Self/client consistency checks.  Experiment Description code is written defensively to help to
 # detect coding errors in EDD's eventual Experiment Description GUI, an API client,
