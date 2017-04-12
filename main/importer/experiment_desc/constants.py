@@ -19,7 +19,7 @@ from requests import codes
 NO_INPUT = "No line description data were found in the input"
 DUPLICATE_INPUT_LINE_NAMES = 'Duplicate line names in the input'
 EXISTING_LINE_NAMES = 'Input would duplicate existing line names'
-DUPLICATE_INPUT_ASSAY_NAMES = 'Duplicate assay names in the input'
+DUPLICATE_INPUT_ASSAY_NAMES = 'Duplicate assay names within the input for a single protocol'
 EXISTING_ASSAY_NAMES = 'Inputs would duplicate existing assay names'
 
 NON_STRAIN_TITLE = 'Non-strain ICE entry'
@@ -43,7 +43,12 @@ INVALID_COLUMN_HEADER_TITLE = 'Invalid column headers'
 UNMATCHED_ASSAY_COL_HEADERS_KEY = 'Invalid column header(s) (Unmatched assay metadata suffix)'
 INVALID_COLUMN_HEADER = 'Invalid column header(s)'
 INCORRECT_TIME_FORMAT = 'Incorrect time format'
+# only supported for strains, since some metadata columns purposefully allow comma-delimited entry
+INCONSISTENT_COMBINATORIAL_VALUE = 'Combinatorial value provided for single-valued column'
 UNPARSEABLE_COMBINATORIAL_VALUE = 'Unparseable combinatorial value'
+DELIMETER_NOT_ALLOWED_VALUE = ("Semicolon character isn't allowed within part numbers. Use commas " 
+                               "to delimit part numbers, except strain group members "
+                               "during combinatorial line creation")
 
 INTERNAL_EDD_ERROR_TITLE = 'Internal EDD error'
 
@@ -62,8 +67,8 @@ ASSAY_META_CAPITALIZATION_ONLY_DIFFERENCE = ('Found some assay metadata types th
                                              'case. Case-insensitive matching in parsing code will '
                                              'arbitrarily choose one')
 UNSUPPORTED_LINE_METADATA = 'Unsupported line metadata'
-ROWS_MISSING_REPLICATE_COUNT = 'Missing replicate count (assumed 1 line)'
 IGNORED_INPUT_CATEGORY = 'User input ignored'
+ROWS_MISSING_REPLICATE_COUNT = 'Rows missing replicate count (assumed only 1 line)'
 
 ####################################################################################################
 # Self/client consistency checks.  Experiment Description code is written defensively to help to
@@ -88,14 +93,13 @@ INVALID_AUTO_NAMING_INPUT = 'Invalid element for automatic naming'
 # handled separately (e.g. EDD/ICE configuration errors or ICE bugs)
 SYSTEMIC_ICE_ERROR_CATEGORY = 'ICE-related error'
 GENERIC_ICE_RELATED_ERROR = ("ICE couldn't be contacted to find strains referenced in your "
-                             "file, and EDD administrators have been notified of the problem.")
+                             "file")
 
 # Proactively check for part numbers that don't match EDD's part number pattern. This will help
 # users detect bad data entry when diagnosing other parsing-related errors, and will also help
 # us keep EDD's pattern configuration data up to date with use
 PART_NUM_PATTERN_TITLE = 'Unrecognized part number pattern'
-PART_NUMBER_PATTERN_UNMATCHED_WARNING = ("One or more part numbers didn't match the expected "
-                                         "pattern. This probably indicates a data entry error:")
+PART_NUMBER_PATTERN_UNMATCHED_WARNING = "Part number(s) didn't match the expected pattern"
 
 ####################################################################################################
 # Generic errors... likely require admin investigation / determination re: cause
@@ -157,13 +161,15 @@ ERROR_PRIORITY_ORDER[BAD_FILE_CATEGORY] = (
         DUPLICATE_LINE_METADATA,    # TODO: check/rename these two to append "COLS"
         DUPLICATE_ASSAY_METADATA,
 )
-INVALID_FILE_VALUE_CATEGORY = 'Invalid cell values'
+INVALID_FILE_VALUE_CATEGORY = 'Invalid Cell Value(s)'
 ERROR_PRIORITY_ORDER[INVALID_FILE_VALUE_CATEGORY] = (
     # cell-specific values
     MISSING_REQUIRED_LINE_NAME,
     INVALID_CELL_TYPE,
+    INCONSISTENT_COMBINATORIAL_VALUE,
     INCORRECT_TIME_FORMAT,
     UNPARSEABLE_COMBINATORIAL_VALUE,
+    DELIMETER_NOT_ALLOWED_VALUE,
 )
 
 # these apply equally to JSON or Excel
@@ -244,4 +250,26 @@ WARNING_PRIORITY_ORDER[SINGLE_PART_ACCESS_ERROR_CATEGORY] = USER_CREATED_ICE_PAR
 WARNING_PRIORITY_ORDER[NAMING_OVERLAP_CATEGORY] = _NAMING_OVERLAPS
 WARNING_PRIORITY_ORDER[SYSTEMIC_ICE_ERROR_CATEGORY] = (GENERIC_ICE_RELATED_ERROR,)
 WARNING_PRIORITY_ORDER[INTERNAL_EDD_ERROR_TITLE] = (PART_NUMBER_PATTERN_UNMATCHED_WARNING,)
+
+####################################################################################################
+# Name elements for AutomatedNamingStrategy (used during JSON input implemented for eventual
+# combinatorial line creation GUI).
+####################################################################################################
+STRAIN_NAME_ELT = 'strain_name'
+REPLICATE_ELT = 'replicate'
+BASE_NAME_ELT = 'base_name'
+ELEMENTS_SECTION = 'elements'
+CUSTOM_ADDITIONS_SECTION = 'custom_additions'
+ABBREVIATIONS_SECTION = 'abbreviations'
+NAME_ELEMENTS_SECTION = 'name_elements'
+COMMON_LINE_METADATA_SECTION = 'common_line_metadata'
+COMBINATORIAL_LINE_METADATA_SECTION = 'combinatorial_line_metadata'
+PROTOCOL_TO_ASSAY_METADATA_SECTION = 'protocol_to_assay_metadata'
+PROTOCOL_TO_COMBINATORIAL_METADATA_SECTION = 'protocol_to_combinatorial_metadata'
+
+# TODO: flesh out other items that are doubly-defined based on database field / metadata
+# conflicts --
+# CARBON_SOURCE = 'carbon_source'
+# EXPERIMENTER = 'experimenter'
+# CONTACT = 'contact'
 
