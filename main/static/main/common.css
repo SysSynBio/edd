@@ -524,12 +524,6 @@ span.alertSubject {
     font-weight: bold;
 }
 
-.acceptWarnings {
-    margin-right: 10px;
-    margin-left: 2px;
-    color: red;
-    font-weight: bold;
-}
 input.yesAlertInput {
     margin-right:10px
 }
@@ -1458,12 +1452,11 @@ span.alertSubject {
 .dismissAll {
     margin-bottom: 10px;
 }
+
 .acceptWarnings {
-    margin-right: 10px;
-    margin-left: 2px;
-    color: red;
-    font-weight: bold;
+    margin: 10px 0px 10px 0px;
 }
+
 input.yesAlertInput {
     margin-right:10px
 }

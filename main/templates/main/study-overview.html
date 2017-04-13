@@ -47,7 +47,10 @@
             </button>
         </div>
         <div id="dismissAll">
-        <button class="btn btn-info dismissAll" style="display: none;">Dismiss</button>
+            <button class="btn btn-info dismissAll" style="display: none;">Dismiss</button>
+        </div>
+        <div id="acceptWarnings">
+            <button type="button" class="acceptWarnings btn btn-primary" style="display: none;">Accept Warnings</button>
         </div>
         <div id="alert_placeholder">
             <div class="alert alert-danger alert-dismissible" hidden>
@@ -59,11 +62,11 @@
                 <button type="button" class="close" data-dismiss="alert">&times;</button><h4 class="alertSubject"></h4>
             </div>
             <div id="actionWarningBar">
-            <div id="duplicateError" role="alert" class="alert alert-warning alert-dismissible" hidden>
+            <div id="duplicateError" role="alert" class="alert alert-warning alert-dismissible " hidden>
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
                 <h4 class="alertSubject"></h4>
                 <p class="alertWarning"></p>
-                <button type="button" class="btn btn-primary yesAlertInput allowDuplicates" >Allow Duplicates</button>
+                <button type="button" class="btn btn-warning yesAlertInput allowDuplicates" >Allow Duplicates</button>
                 <a href="" type="radio" class="dontAllowError noDuplicates">Cancel</a>
             </div>
             <div id="iceError" role="alert" class="alert alert-warning alert-dismissible" hidden>

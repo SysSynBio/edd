@@ -12,6 +12,7 @@ declare var EDDData:EDDData;
 
 module StudyOverview {
     'use strict';
+    import category10 = d3.scale.category10;
 
     var attachmentIDs: any;
     var attachmentsByID: any;
@@ -45,15 +46,26 @@ module StudyOverview {
     }
 
     export function fileWarningReturnedFromServer(fileContainer, result): void {
-        var currentPath = window.location.pathname;
-        var linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
+        let currentPath = window.location.pathname;
+        let linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
+        let newWarningAlert = $('.alert-warning').eq(0).clone();
+
+        copyActionButtons();
+        
+        $('#acceptWarnings').find('.acceptWarnings').on('click',(ev:JQueryMouseEventObject):boolean => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            window.location.reload();
+            return false;
+        });
+
         $('<p>', {
             text: 'Success! ' + result['lines_created'] + ' lines added!',
             style: 'margin:auto'
         }).appendTo('#linesAdded');
         //display success message
         $('#linesAdded').show();
-        generateWarnings(result.warnings);
+        generateMessages('warnings', result.warnings, newWarningAlert);
         generateAcceptWarning();
         //accept warnings for succesful upload of experiment description file.
         $('#acceptWarnings').on('change', function (e) {
@@ -70,7 +82,8 @@ module StudyOverview {
 
 
     export function copyActionButtons() {
-            let original:JQuery, copy:JQuery, originalDismiss:JQuery, copyDismiss:JQuery;
+            let original:JQuery, copy:JQuery, originalDismiss:JQuery, copyDismiss:JQuery,
+                originalAcceptWarnings: JQuery, copyAcceptWarnings: JQuery;
             if (!actionPanelIsCopied) {
                 original = $('#actionWarningBar');
                 copy = original.clone().appendTo('#bottomBar').hide();
@@ -83,6 +96,12 @@ module StudyOverview {
                 // forward click events on copy to the original button
                 copyDismiss.on('click', 'button', (e) => {
                     originalDismiss.trigger(e);
+                });
+                originalAcceptWarnings = $('#acceptWarnings').find('.acceptWarnings');
+                copyAcceptWarnings = originalAcceptWarnings.clone().appendTo('#bottomBar').hide();
+                // forward click events on copy to the original button
+                copyAcceptWarnings.on('click', 'button', (e) => {
+                    originalAcceptWarnings.trigger(e);
                 });
                 actionPanelIsCopied = true;
             }
@@ -103,17 +122,25 @@ module StudyOverview {
                 generate504Error();
             }
             obj = JSON.parse(xhr.response);
+            let newWarningAlert = $('.alert-warning').eq(0).clone();
+            let newErrorAlert = $('.alert-danger').eq(0).clone();
             if (obj.errors) {
-                generateErrors(obj.errors)
+                generateMessages('error', obj.errors, newErrorAlert)
             }
             if (obj.warnings) {
-                generateWarnings(obj.warnings)
+                generateMessages('error', obj.warnings, newWarningAlert)
             }
         } catch (e) {
-            alertError("", "There was an error", "EDD administrators have been notified. Please try again later.");
+            //if there is no backend error message or error (html response), show this
+            let defaultError = {
+                category: "",
+                summary: "There was an error",
+                details: "EDD administrators have been notified. Please try again later."
+            };
+            alertError(defaultError);
         }
         //if there is more than one alert and no dismiss all alert button, add a dismiss all alerts button
-        if ($('.alert').length > 5 && !dismissAll.is(":visible")) {
+        if ($('.alert').length > 8 && !dismissAll.is(":visible")) {
             dismissAll.show();
         }
 
@@ -142,121 +169,119 @@ module StudyOverview {
             window.location.reload();
             return false;
         });
-        //dismiss all alerts on click
+        //dismiss all alerts
         dismissAll.on('click',(ev:JQueryMouseEventObject):boolean => {
             ev.preventDefault();
             ev.stopPropagation();
             parent.find('.close').click();
             dismissAll.remove();
             return false;
-        })
+        });
+
+        $('#acceptWarnings').find('.acceptWarnings').on('click',(ev:JQueryMouseEventObject):boolean => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            window.location.reload();
+            return false;
+        });
     }
 
-    function generateWarnings(warnings) {
-        var warningMessages = organizeMessages(warnings);
-        for (var key in warningMessages) {
-            alertWarning(key, warningMessages[key])
+    function generateMessages(type, response, div) {
+        var responseMessages = organizeMessages(response);
+        for (var key in responseMessages) {
+            alertMessage(key, responseMessages[key], div, type)
         }
     }
+
 
     function generateAcceptWarning(): void {
-        var warningAlerts: any, warningAcceptMessage, warningInput;
+        var warningAlerts: JQuery, acceptWarningButton: JQuery, acceptWarningDiv: JQuery;
         warningAlerts = $('.alert-warning:visible');
-
-        warningAcceptMessage = $('<span>', {
-            text: "Accept Warnings?",
-            class: 'acceptWarnings',
-        });
-        warningInput = $('<input>', {
-            type: "radio",
-            id: "acceptWarnings"
-        });
+        acceptWarningDiv = $('#acceptWarnings').find('.acceptWarnings');
         if (warningAlerts.length === 1) {
-            $(warningAlerts).append(warningAcceptMessage).append(warningInput)
+            $(warningAlerts).append(acceptWarningDiv)
         } else {
-            $('#alert_placeholder').prepend(warningAcceptMessage).append(warningInput)
+            $('#alert_placeholder').prepend(acceptWarningDiv)
         }
+        acceptWarningDiv.show();
     }
 
-    function organizeMessages(warnings) {
+    function organizeMessages(responses) {
         var obj = {};
-        warnings.forEach(function (warning) {
-            var message = warning.summary + ": " + warning.details;
-            if (obj.hasOwnProperty(warning.category)) {
-                obj[warning.category].push(message);
-            } else {
-                obj[warning.category] = [message]
+        responses.forEach(function (response) {
+             if (response.category === "ICE-related Error") {
+                // create dismissible error alert
+                alertIceWarning(response);
+            } else if (response.summary === "Duplicate assay names in the input" || response.summary === "Duplicate " +
+                "line names in the input") {
+                if ($('#duplicateError').length === 1) {
+                    alertDuplicateError(response);
+                }
             }
+            else {
+                 var message = response.summary + ": " + response.details;
+
+                 if (obj.hasOwnProperty(response.category)) {
+                     obj[response.category].push(message);
+                 } else {
+                     obj[response.category] = [message]
+                 }
+             }
         });
         return obj;
     }
 
-    function generateErrors(errors) {
-        errors.forEach(function (e) {
-            if (e['category'] === "ICE-related Error") {
-                // create dismissible error alert
-                alertIceWarning(e.category, e.summary, e.details);
-            } else if (e.summary === "Duplicate assay names in the input" || e.summary === "Duplicate " +
-                "line names in the input") {
-                if ($('#duplicateError').length === 1) {
-                    alertDuplicateError(e.category, e.summary, e.details);
-                }
-            } else {
-                alertError(e.category, e.summary, e.details)
-            }
-        })
-    }
-
     function generate504Error() {
-        alertError("", "EDD timed out", "Please reload page and reupload file or try again later")
+        let response = {
+            category: "",
+            summary: "EDD timed out",
+            details: "Please reload page and reupload file or try again later"
+        };
+        alertError(response)
     }
 
-    function alertIceWarning(header, subject, message): void {
-        var iceError = $('#iceError');
-
-        $(iceError).children('h4').text('Warning! ' + header);
-        $(iceError).children('p').text(subject + " " + message);
-        $('#alert_placeholder').append(iceError);
-        $(iceError).show();
+    function alertIceWarning(response): void {
+        let iceError = $('#iceError');
+        response.category = "Warning! " + response.category;
+        createAlertMessage(iceError, response);
     }
 
-    function alertDuplicateError(header, subject, message): void {
+    function alertDuplicateError(response): void {
         var duplicateElem = $('#duplicateError');
-
-        $(duplicateElem).children('h4').text(header);
-        $(duplicateElem).children('p').text(subject + ": " + message);
-        $('#alert_placeholder').append(duplicateElem);
-        $(duplicateElem).show();
+        createAlertMessage(duplicateElem, response)
     }
 
 
-    function alertError(header, subject, message): void {
-        if ($('#omitStrains').prop('checked')) {
-            $('#iceError').remove();
-        } else if ($('#allowDuplicates').prop('checked')) {
-            $('#allowDuplicates').remove();
-        }
+    function alertError(response): void {
         var newErrorAlert = $('.alert-danger').eq(0).clone();
-        $(newErrorAlert).children('h4').text('Error uploading! ' + header);
-        $(newErrorAlert).children('p').text(subject + ": " + message);
-        $('#alert_placeholder').append(newErrorAlert);
-        $(newErrorAlert).show();
+        createAlertMessage(newErrorAlert, response);
         clearDropZone();
     }
 
-    function alertWarning(subject, message): void {
+    function createAlertMessage(alertClone, response) {
+        $(alertClone).children('h4').text(response.category);
+        $(alertClone).children('p').text(response.summary + ": " + response.details);
+        $('#alert_placeholder').append(alertClone);
+        $(alertClone).show();
+    }
 
-        var newWarningAlert = $('.alert-warning').eq(0).clone();
-        $(newWarningAlert).children('h4').text('Warning - ' + subject);
-        message.forEach(function (m) {
+
+
+    function alertMessage(subject, messages, newAlert, type): void {
+        if (type === "warnings") {
+            $(newAlert).children('h4').text("Warning! " + subject);
+        } else {
+            $(newAlert).children('h4').text("Error! " + subject);
+            clearDropZone();
+        }
+        messages.forEach(function (m) {
             var summary = $('<p>', {
-                class: "alertWarning",
                 text: m,
             });
-            $(newWarningAlert).append(summary)
+            $(newAlert).append(summary)
         });
-        $('#alert_placeholder').append(newWarningAlert);
-        $(newWarningAlert).show();
+        $('#alert_placeholder').append(newAlert);
+        $(newAlert).show();
     }
 
     function clearDropZone(): void {
