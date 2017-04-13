@@ -47,7 +47,6 @@ module StudyOverview {
 
     export function fileWarningReturnedFromServer(fileContainer, result): void {
         let currentPath = window.location.pathname;
-        let linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
         let newWarningAlert = $('.alert-warning').eq(0).clone();
 
         copyActionButtons();
@@ -67,10 +66,6 @@ module StudyOverview {
         $('#linesAdded').show();
         generateMessages('warnings', result.warnings, newWarningAlert);
         generateAcceptWarning();
-        //accept warnings for succesful upload of experiment description file.
-        $('#acceptWarnings').on('change', function (e) {
-            successfulRedirect(linesPathName);
-        });
     }
 
     function successfulRedirect(linesPathName): void {
@@ -113,7 +108,10 @@ module StudyOverview {
 
         copyActionButtons();
 
-        let parent: JQuery = $('#alert_placeholder'), dismissAll: JQuery = $('#dismissAll').find('.dismissAll');
+        let parent: JQuery = $('#alert_placeholder'), dismissAll: JQuery = $('#dismissAll').find('.dismissAll'),
+            linesPathName: string, currentPath: string;
+        currentPath = window.location.pathname
+        linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
         // reset the drop zone here
         //parse xhr.response
         var obj, error, id;
@@ -149,7 +147,7 @@ module StudyOverview {
             ev.preventDefault();
             ev.stopPropagation();
             var f = fileContainer.file;
-            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?IGNORE_ICE_RELATED_ERRORS=true');
+            f.sendTo(currentPath.split('overview')[0] + 'describe/?IGNORE_ICE_RELATED_ERRORS=true');
             $('#iceError').hide();
             return false;
         });
@@ -158,7 +156,7 @@ module StudyOverview {
             ev.preventDefault();
             ev.stopPropagation();
             var f = fileContainer.file;
-            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?ALLOW_DUPLICATE_NAMES=true');
+            f.sendTo(currentPath.split('overview')[0] + 'describe/?ALLOW_DUPLICATE_NAMES=true');
             $('#duplicateError').hide();
             return false;
         });
@@ -174,14 +172,14 @@ module StudyOverview {
             ev.preventDefault();
             ev.stopPropagation();
             parent.find('.close').click();
-            dismissAll.remove();
+            window.location.reload();
             return false;
         });
 
         $('#acceptWarnings').find('.acceptWarnings').on('click',(ev:JQueryMouseEventObject):boolean => {
             ev.preventDefault();
             ev.stopPropagation();
-            window.location.reload();
+            successfulRedirect(linesPathName);
             return false;
         });
     }
@@ -277,6 +275,7 @@ module StudyOverview {
         messages.forEach(function (m) {
             var summary = $('<p>', {
                 text: m,
+                class: 'alertWarning',
             });
             $(newAlert).append(summary)
         });

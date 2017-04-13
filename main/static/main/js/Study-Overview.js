@@ -35,7 +35,6 @@ var StudyOverview;
     StudyOverview.fileReturnedFromServer = fileReturnedFromServer;
     function fileWarningReturnedFromServer(fileContainer, result) {
         var currentPath = window.location.pathname;
-        var linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
         var newWarningAlert = $('.alert-warning').eq(0).clone();
         copyActionButtons();
         $('#acceptWarnings').find('.acceptWarnings').on('click', function (ev) {
@@ -52,10 +51,6 @@ var StudyOverview;
         $('#linesAdded').show();
         generateMessages('warnings', result.warnings, newWarningAlert);
         generateAcceptWarning();
-        //accept warnings for succesful upload of experiment description file.
-        $('#acceptWarnings').on('change', function (e) {
-            successfulRedirect(linesPathName);
-        });
     }
     StudyOverview.fileWarningReturnedFromServer = fileWarningReturnedFromServer;
     function successfulRedirect(linesPathName) {
@@ -93,7 +88,9 @@ var StudyOverview;
     // is passed an unprocessed result from the server as a second argument.
     function fileErrorReturnedFromServer(fileContainer, xhr, url) {
         copyActionButtons();
-        var parent = $('#alert_placeholder'), dismissAll = $('#dismissAll').find('.dismissAll');
+        var parent = $('#alert_placeholder'), dismissAll = $('#dismissAll').find('.dismissAll'), linesPathName, currentPath;
+        currentPath = window.location.pathname;
+        linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 'experiment-description';
         // reset the drop zone here
         //parse xhr.response
         var obj, error, id;
@@ -129,7 +126,7 @@ var StudyOverview;
             ev.preventDefault();
             ev.stopPropagation();
             var f = fileContainer.file;
-            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?IGNORE_ICE_RELATED_ERRORS=true');
+            f.sendTo(currentPath.split('overview')[0] + 'describe/?IGNORE_ICE_RELATED_ERRORS=true');
             $('#iceError').hide();
             return false;
         });
@@ -137,7 +134,7 @@ var StudyOverview;
             ev.preventDefault();
             ev.stopPropagation();
             var f = fileContainer.file;
-            f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?ALLOW_DUPLICATE_NAMES=true');
+            f.sendTo(currentPath.split('overview')[0] + 'describe/?ALLOW_DUPLICATE_NAMES=true');
             $('#duplicateError').hide();
             return false;
         });
@@ -152,13 +149,13 @@ var StudyOverview;
             ev.preventDefault();
             ev.stopPropagation();
             parent.find('.close').click();
-            dismissAll.remove();
+            window.location.reload();
             return false;
         });
         $('#acceptWarnings').find('.acceptWarnings').on('click', function (ev) {
             ev.preventDefault();
             ev.stopPropagation();
-            window.location.reload();
+            successfulRedirect(linesPathName);
             return false;
         });
     }
@@ -245,6 +242,7 @@ var StudyOverview;
         messages.forEach(function (m) {
             var summary = $('<p>', {
                 text: m,
+                class: 'alertWarning',
             });
             $(newAlert).append(summary);
         });
