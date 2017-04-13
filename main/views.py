@@ -25,36 +25,29 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from messages_extends import constants as msg_constants
 from rest_framework.exceptions import MethodNotAllowed
 
-from main.importer.experiment_desc.constants import (
-    INTERNAL_SERVER_ERROR, UNPREDICTED_ERROR,
-    ALLOW_DUPLICATE_NAMES_PARAM, IGNORE_ICE_RELATED_ERRORS_PARAM, BAD_REQUEST,
-    UNSUPPORTED_FILE_TYPE, BAD_FILE_CATEGORY)
-from main.importer.experiment_desc.importer import _build_response_content
+from main.importer.experiment_desc.constants import (INTERNAL_SERVER_ERROR, UNPREDICTED_ERROR,
+                                                     BAD_REQUEST, UNSUPPORTED_FILE_TYPE,
+                                                     BAD_FILE_CATEGORY)
+from main.importer.experiment_desc.importer import _build_response_content, ImportErrorSummary
 from . import autocomplete, models as edd_models, redis
-from .importer import (
-    import_rna_seq, import_rnaseq_edgepro, interpret_edgepro_data,
-    interpret_raw_rna_seq_data,
-)
+from .export.forms import ExportOptionForm, ExportSelectionForm, WorklistForm
+from .export.sbml import SbmlExport
+from .export.table import ExportSelection, TableExport, WorklistExport
+from .forms import (AssayForm, CreateAttachmentForm, CreateCommentForm, CreateStudyForm, LineForm,
+                    MeasurementForm, MeasurementValueFormSet, )
+from .importer import (import_rna_seq, import_rnaseq_edgepro, interpret_edgepro_data,
+                       interpret_raw_rna_seq_data, )
 from .importer.experiment_desc import CombinatorialCreationImporter
 from .importer.parser import find_parser
 from .importer.table import import_task
-from .export.forms import ExportOptionForm, ExportSelectionForm,  WorklistForm
-from .export.sbml import SbmlExport
-from .export.table import ExportSelection, TableExport, WorklistExport
-from .forms import (
-    AssayForm, CreateAttachmentForm, CreateCommentForm, CreateStudyForm, LineForm, MeasurementForm,
-    MeasurementValueFormSet,
-)
-from .models import (
-    Assay, Attachment, Line, Measurement, MeasurementType, MeasurementValue, Metabolite,
-    MetaboliteSpecies, MetadataType, Protocol, SBMLTemplate, Study, StudyPermission, Update,
-)
+from .models import (Assay, Attachment, Line, Measurement, MeasurementType, MeasurementValue,
+                     Metabolite, MetaboliteSpecies, MetadataType, Protocol, SBMLTemplate, Study,
+                     StudyPermission, Update, )
 from .signals import study_modified
 from .solr import StudySearch
-from .utilities import (
-    JSONDecimalEncoder, get_edddata_carbon_sources, get_edddata_measurement,
-    get_edddata_misc, get_edddata_strains, get_edddata_study, get_edddata_users,
-)
+from .utilities import (JSONDecimalEncoder, get_edddata_carbon_sources, get_edddata_measurement,
+                        get_edddata_misc, get_edddata_strains, get_edddata_study,
+                        get_edddata_users, )
 
 
 logger = logging.getLogger(__name__)
@@ -1076,6 +1069,7 @@ class SbmlView(EDDExportView):
                 return response
         return super(SbmlView, self).render_to_response(context, **kwargs)
 
+
 # /study/<study_id>/measurements/<protocol_id>/
 def study_measurements(request, pk=None, slug=None, protocol=None):
     """ Request measurement data in a study. """
@@ -1383,8 +1377,8 @@ def study_describe_experiment(request, pk=None, slug=None):
             logger.info('Parsing experiment description file "%s"' % file_name)
 
         else:
-            summary = ErrorSummary(BAD_FILE_CATEGORY, UNSUPPORTED_FILE_TYPE, file_type)
-            errors = { BAD_FILE_CATEGORY: summary}
+            summary = ImportErrorSummary(BAD_FILE_CATEGORY, UNSUPPORTED_FILE_TYPE, file_type)
+            errors = {BAD_FILE_CATEGORY: summary}
             return JsonResponse(
                     _build_response_content(errors, {}),
                     status=BAD_REQUEST)

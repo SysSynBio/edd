@@ -13,8 +13,7 @@ from main.models import Strain, MetadataType, Line, Assay
 from .constants import (INVALID_ASSAY_META_PK, INVALID_AUTO_NAMING_INPUT, INVALID_LINE_META_PK,
                         INVALID_PROTOCOL_META_PK, NON_UNIQUE_STRAIN_UUIDS, SUSPECTED_MATCH_STRAINS,
                         UNMATCHED_PART_NUMBER, INTERNAL_EDD_ERROR_TITLE, ZERO_REPLICATES,
-                        BAD_GENERIC_INPUT_CATEGORY, STRAIN_NAME_ELT, REPLICATE_ELT,
-                        STRAIN_NAME_ELT, REPLICATE_ELT)
+                        BAD_GENERIC_INPUT_CATEGORY, STRAIN_NAME_ELT, REPLICATE_ELT)
 
 
 logger = logging.getLogger(__name__)
@@ -37,9 +36,9 @@ class NamingStrategy(object):
     def get_line_name(self, line_strain_ids, line_metadata, replicate_num, line_metadata_types,
                       combinatorial_metadata_types, is_control, strains_by_pk):
         """
-        :param strains_by_pk: 
+        :param strains_by_pk:
         :raises ValueError if some required input isn't available for creating the name (either
-            via this method or from other properties). Note that even if required for line name 
+            via this method or from other properties). Note that even if required for line name
             uniqueness, strain names may be omitted.
         """
         raise NotImplementedError()  # require subclasses to implement
@@ -57,10 +56,10 @@ class NamingStrategy(object):
     def _build_strains_names_list(self, line_strain_ids, strains_by_pk):
         """
         Computes the line name segment for strain names, if needed to make the line name unique
-        :param line_strain_ids: 
-        :param strains_by_pk: 
-        :return: the line name segment for strain names, or an empty string if unneeded or if unable
-        to compute
+        :param line_strain_ids:
+        :param strains_by_pk:
+        :return: the line name segment for strain names, or an empty string if unneeded or if
+                 unable to compute
         """
 
         # avoid problems when ICE-related errors prevent some/all strains from being found
@@ -239,7 +238,7 @@ class AutomatedNamingStrategy(NamingStrategy):
         self._valid_items = valid_items
 
     def names_contain_strains(self):
-        return self.STRAIN_NAME_ELT in self.elements
+        return STRAIN_NAME_ELT in self.elements
 
     @property
     def valid_items(self, valid_items):
@@ -344,9 +343,6 @@ class AutomatedNamingStrategy(NamingStrategy):
             raise ValueError('No time value was found -- unable to generate an assay name')
         return self.section_separator.join((line.name, '%sh' % str(assay_time)))
 
-    def names_contain_strains(self):
-        raise NotImplementedError()
-
 
 class CombinatorialDescriptionInput(object):
     """
@@ -429,7 +425,9 @@ class CombinatorialDescriptionInput(object):
     def fractional_time_digits(self, count):
         self.naming_strategy.fractional_time_digits = count
 
-    def replace_strain_part_numbers_with_pks(self, edd_strains_by_part_number, ice_parts_by_number,
+    def replace_strain_part_numbers_with_pks(self, importer,
+                                             edd_strains_by_part_number,
+                                             ice_parts_by_number,
                                              ignore_integer_values=False):
         """
         Replaces part-number-based strain entries with pk-based entries and converts any
@@ -456,14 +454,15 @@ class CombinatorialDescriptionInput(object):
                 # should already have resulted in error/warning messages
                 # during the preceding ICE queries, and we don't need to track two errors for
                 # the same problem.
-                elif part_number in ice_parts_by_number:
-                    self.add_error(UNMATCHED_PART_NUMBER, part_number)
+                elif part_number in ice_parts_by_number and importer:
+                    importer.add_error(UNMATCHED_PART_NUMBER, part_number)
 
     def get_unique_strain_ids(self, unique_strain_ids):
         """
         Gets a list of unique strain identifiers for this CombinatorialDescriptionInput. Note that
         the type of identifier in use depends on client code.
-
+        :param unique_strain_ids: an existing iterable of strain ids to be included in the result
+        even if not present in this CombinatorialDescriptionInput.
         :return: a list of unique strain identifiers
         """
         unique_strain_ids = set(unique_strain_ids)
@@ -648,7 +647,7 @@ class CombinatorialDescriptionInput(object):
                 # TODO: improve consistency in this and other similar checks by pulling out
                 # single-item elements into lists during the parsing step, then consistently
                 # assuming they're lists in subsequent code
-                unique_strain_ids = self.get_unique_strain_ids()
+                unique_strain_ids = self.get_unique_strain_ids({})
                 strains_by_pk = {
                     strain.pk: strain
                     for strain in Strain.objects.filter(pk__in=unique_strain_ids)

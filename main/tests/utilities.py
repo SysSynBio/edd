@@ -3,14 +3,15 @@ from __future__ import unicode_literals
 
 import json
 import os
+
 from builtins import str
 from django.test import TestCase
 from openpyxl import load_workbook
 
+from main.importer.experiment_desc import CombinatorialCreationImporter
 from main.importer.experiment_desc.constants import (STRAIN_NAME_ELT, REPLICATE_ELT,
                                                      ELEMENTS_SECTION, ABBREVIATIONS_SECTION,
                                                      BASE_NAME_ELT)
-from main.importer.experiment_desc import CombinatorialCreationImporter
 from main.importer.experiment_desc.parsers import ExperimentDescFileParser, JsonInputParser
 from main.models import (CarbonSource, MetadataType, Protocol, Strain, Study, User)
 
@@ -412,7 +413,10 @@ class CombinatorialCreationTests(TestCase):
         # strains
         if strains_by_part_number:
             for input_item in combinatorial_inputs:
-                input_item.replace_strain_part_numbers_with_pks(strains_by_part_number, importer)
+                input_item.replace_strain_part_numbers_with_pks(importer,
+                                                                strains_by_part_number,
+                                                                # TODO: revisit empty dict here
+                                                                ice_parts_by_number={})
 
         self.assertEqual(
             len(combinatorial_inputs),
