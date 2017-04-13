@@ -774,77 +774,77 @@ module Utl {
 
 
 
-		uploadFile(fileContainer: FileDropZoneFileContainer) {
+        uploadFile(fileContainer: FileDropZoneFileContainer) {
 
-			var t = this;
-			var f = fileContainer.file;
-			// If no url has been defined, we have to stop here.
-			if (typeof this.url !== 'string') { fileContainer.allWorkFinished = true; return; }
+            var t = this;
+            var f = fileContainer.file;
+            // If no url has been defined, we have to stop here.
+            if (typeof this.url !== 'string') { fileContainer.allWorkFinished = true; return; }
 
-			// From this point on we assume we're uploading the file,
-			// so we set up the progressBar and callback events before triggering the call to upload.
-			f.event('done', function(xhr) {
-				var result = jQuery.parseJSON(xhr.responseText);
+            // From this point on we assume we're uploading the file,
+            // so we set up the progressBar and callback events before triggering the call to upload.
+            f.event('done', function(xhr) {
+                var result = jQuery.parseJSON(xhr.responseText);
 
-				if (result.python_error) {
-					// If we were given a function to process the error, use it.
-					if (typeof t.processErrorFn === "function") {
-						t.processErrorFn(fileContainer, xhr);
-					} else {
-						alert(result.python_error);
-					}
-				} else if (result.warnings) {
-					t.processWarningFn(fileContainer, result);
-				} else if (typeof t.processResponseFn === "function") {
-					t.processResponseFn(fileContainer, result);
-				}
-				fileContainer.allWorkFinished = true;
-			});
+                if (result.python_error) {
+                    // If we were given a function to process the error, use it.
+                    if (typeof t.processErrorFn === "function") {
+                        t.processErrorFn(fileContainer, xhr);
+                    } else {
+                        alert(result.python_error);
+                    }
+                } else if (result.warnings) {
+                    t.processWarningFn(fileContainer, result);
+                } else if (typeof t.processResponseFn === "function") {
+                    t.processResponseFn(fileContainer, result);
+                }
+                fileContainer.allWorkFinished = true;
+            });
 
-			f.event('error', function(e, xhr) {
-				if (typeof t.processErrorFn === "function") {
-					t.processErrorFn(fileContainer, xhr, this.url);
-				}
-				if($('#omitStrains').data('clicked')) {
-					// var result = jQuery.parseJSON(xhr.responseText);
-					fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
-					// t.callInitFile.call(t, fileContainer);
-					// t.callProcessRaw.call(t, fileContainer);
-				} else {
-					fileContainer.allWorkFinished = true;
-				}
+            f.event('error', function(e, xhr) {
+                if (typeof t.processErrorFn === "function") {
+                    t.processErrorFn(fileContainer, xhr, this.url);
+                }
+                if($('#omitStrains').data('clicked')) {
+                    // var result = jQuery.parseJSON(xhr.responseText);
+                    fileContainer.extraHeaders['ignoreIceRelatedErrors'] = 'true';
+                    // t.callInitFile.call(t, fileContainer);
+                    // t.callProcessRaw.call(t, fileContainer);
+                } else {
+                    fileContainer.allWorkFinished = true;
+                }
 
-			});
+            });
 
-			f.event('xhrSetup', function(xhr) {
-				// This ensures that the CSRF middleware in Django doesn't reject our HTTP request.
-				xhr.setRequestHeader("X-CSRFToken", t.csrftoken);
-				// We want to pass along our own guess at the file type, since it's based on a more specific set of criteria.
-				xhr.setRequestHeader('X-EDD-File-Type', fileContainer.fileType);
+            f.event('xhrSetup', function(xhr) {
+                // This ensures that the CSRF middleware in Django doesn't reject our HTTP request.
+                xhr.setRequestHeader("X-CSRFToken", t.csrftoken);
+                // We want to pass along our own guess at the file type, since it's based on a more specific set of criteria.
+                xhr.setRequestHeader('X-EDD-File-Type', fileContainer.fileType);
 
-            	$.each(fileContainer.extraHeaders, (name: string, value: string): void => {
-					xhr.setRequestHeader('X-EDD-' + name, value)
-				});
+                $.each(fileContainer.extraHeaders, (name: string, value: string): void => {
+                    xhr.setRequestHeader('X-EDD-' + name, value)
+                });
 
-			});
+            });
 
-			f.event('sendXHR', function() {
-				if (fileContainer.progressBar) {
-					fileContainer.progressBar.setProgress(0);
-				}
-			});
+            f.event('sendXHR', function() {
+                if (fileContainer.progressBar) {
+                    fileContainer.progressBar.setProgress(0);
+                }
+            });
 
-			// Update progress when browser reports it:
-			f.event('progress', function(current, total) {
-				if (fileContainer.progressBar) {
-					var width = current / total * 100;
-					fileContainer.progressBar.setProgress(width);
-				}
-			});
+            // Update progress when browser reports it:
+            f.event('progress', function(current, total) {
+                if (fileContainer.progressBar) {
+                    var width = current / total * 100;
+                    fileContainer.progressBar.setProgress(width);
+                }
+            });
 
-			f.sendTo(this.url);
-		}
-	}
+            f.sendTo(this.url);
+        }
+    }
 
 
 
