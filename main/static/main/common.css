@@ -524,9 +524,6 @@ span.alertSubject {
     font-weight: bold;
 }
 
-.dismissAll {
-    color: grey;
-}
 .acceptWarnings {
     margin-right: 10px;
     margin-left: 2px;
@@ -1459,7 +1456,7 @@ span.alertSubject {
 }
 
 .dismissAll {
-    color: grey;
+    margin-bottom: 10px;
 }
 .acceptWarnings {
     margin-right: 10px;

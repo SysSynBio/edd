@@ -18,6 +18,7 @@ module StudyOverview {
     var prevDescriptionEditElement: any;
 
     var activeDraggedFile: any;
+    var actionPanelIsCopied = false;
 
     var fileUploadProgressBar: Utl.ProgressBar;
 
@@ -68,9 +69,32 @@ module StudyOverview {
     }
 
 
+    export function copyActionButtons() {
+            let original:JQuery, copy:JQuery, originalDismiss:JQuery, copyDismiss:JQuery;
+            if (!actionPanelIsCopied) {
+                original = $('#actionWarningBar');
+                copy = original.clone().appendTo('#bottomBar').hide();
+                // forward click events on copy to the original button
+                copy.on('click', 'button', (e) => {
+                    original.find('#' + e.target.id).trigger(e);
+                });
+                originalDismiss = $('#dismissAll').find('.dismissAll');
+                copyDismiss = originalDismiss.clone().appendTo('#bottomBar').hide();
+                // forward click events on copy to the original button
+                copyDismiss.on('click', 'button', (e) => {
+                    originalDismiss.trigger(e);
+                });
+                actionPanelIsCopied = true;
+            }
+        }
+
     // This is called upon receiving an errror in a file upload operation, and
     // is passed an unprocessed result from the server as a second argument.
     export function fileErrorReturnedFromServer(fileContainer, xhr, url): void {
+
+        copyActionButtons();
+
+        let parent: JQuery = $('#alert_placeholder'), dismissAll: JQuery = $('#dismissAll').find('.dismissAll');
         // reset the drop zone here
         //parse xhr.response
         var obj, error, id;
@@ -89,28 +113,42 @@ module StudyOverview {
             alertError("", "There was an error", "EDD administrators have been notified. Please try again later.");
         }
         //if there is more than one alert and no dismiss all alert button, add a dismiss all alerts button
-        if ($('.alert').length > 5 && $('#dismissAll').length === 0) {
-            $('#alert_placeholder').prepend('<a href="" class="dismissAll" id="dismissAll">Dismiss all alerts</a>')
+        if ($('.alert').length > 5 && !dismissAll.is(":visible")) {
+            dismissAll.show();
         }
 
         //set up click handler events
-        $('#omitStrains').change(function () {
+        parent.find('.omitStrains').on('click', (ev:JQueryMouseEventObject):boolean => {
+            ev.preventDefault();
+            ev.stopPropagation();
             var f = fileContainer.file;
             f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?IGNORE_ICE_RELATED_ERRORS=true');
             $('#iceError').hide();
+            return false;
         });
-        $('#allowDuplicates').change(function () {
+
+        parent.find('.allowDuplicates').on('click',(ev:JQueryMouseEventObject):boolean => {
+            ev.preventDefault();
+            ev.stopPropagation();
             var f = fileContainer.file;
             f.sendTo(window.location.pathname.split('overview')[0] + 'describe/?ALLOW_DUPLICATE_NAMES=true');
             $('#duplicateError').hide();
+            return false;
         });
-        $('#noDuplicates, #noOmitStrains').change(function () {
+
+        $('.noDuplicates, .noOmitStrains').on('click',(ev:JQueryMouseEventObject):boolean => {
+            ev.preventDefault();
+            ev.stopPropagation();
             window.location.reload();
+            return false;
         });
         //dismiss all alerts on click
-        $('#dismissAll').on('click', function () {
-            $('.close').click();
-            $('#dismissAll').remove();
+        dismissAll.on('click',(ev:JQueryMouseEventObject):boolean => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            parent.find('.close').click();
+            dismissAll.remove();
+            return false;
         })
     }
 

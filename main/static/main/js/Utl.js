@@ -689,7 +689,7 @@ var Utl;
                 if (result.python_error) {
                     // If we were given a function to process the error, use it.
                     if (typeof t.processErrorFn === "function") {
-                        t.processErrorFn(fileContainer, xhr.response);
+                        t.processErrorFn(fileContainer, xhr);
                     }
                     else {
                         alert(result.python_error);
@@ -702,7 +702,7 @@ var Utl;
             });
             f.event('error', function (e, xhr) {
                 if (typeof t.processErrorFn === "function") {
-                    t.processErrorFn(fileContainer, xhr.response, this.url);
+                    t.processErrorFn(fileContainer, xhr, this.url);
                 }
                 if ($('#omitStrains').data('clicked')) {
                     // var result = jQuery.parseJSON(xhr.responseText);
