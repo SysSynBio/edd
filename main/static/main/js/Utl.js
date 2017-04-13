@@ -600,6 +600,7 @@ var Utl;
             this.processRawFn = options.processRawFn;
             this.processResponseFn = options.processResponseFn;
             this.processErrorFn = options.processErrorFn;
+            this.processWarningFn = options.processWarningFn;
             this.url = options.url;
         }
         // Helper function to create and set up a FileDropZone.
@@ -694,6 +695,9 @@ var Utl;
                     else {
                         alert(result.python_error);
                     }
+                }
+                else if (result.warnings) {
+                    t.processWarningFn(fileContainer, result);
                 }
                 else if (typeof t.processResponseFn === "function") {
                     t.processResponseFn(fileContainer, result);
