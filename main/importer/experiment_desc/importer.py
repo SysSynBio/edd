@@ -19,16 +19,15 @@ from jbei.rest.clients import IceApi
 from jbei.rest.clients.ice.api import Strain as IceStrain
 from jbei.rest.clients.ice.utils import make_entry_url
 from main.models import Protocol, MetadataType, Strain, Assay, Line
-from .constants import (
-    FOUND_PART_NUMBER_DOESNT_MATCH_QUERY,
-    NON_STRAIN_ICE_ENTRY,
-    PART_NUMBER_NOT_FOUND, BAD_REQUEST, INTERNAL_SERVER_ERROR, OK, FORBIDDEN,
-    FORBIDDEN_PART_KEY, GENERIC_ICE_RELATED_ERROR, IGNORE_ICE_RELATED_ERRORS_PARAM,
-    ALLOW_DUPLICATE_NAMES_PARAM, NO_INPUT, DUPLICATE_INPUT_LINE_NAMES, DUPLICATE_INPUT_ASSAY_NAMES,
-    ZERO_REPLICATES, EXISTING_LINE_NAMES, EXISTING_ASSAY_NAMES,
-    SYSTEMIC_ICE_ERROR_CATEGORY, NON_STRAIN_TITLE,
-    INTERNAL_EDD_ERROR_TITLE, SINGLE_PART_ACCESS_ERROR_CATEGORY, NAMING_OVERLAP_CATEGORY,
-    ERROR_PRIORITY_ORDER, WARNING_PRIORITY_ORDER, BAD_GENERIC_INPUT_CATEGORY)
+from .constants import (FOUND_PART_NUMBER_DOESNT_MATCH_QUERY, NON_STRAIN_ICE_ENTRY,
+                        PART_NUMBER_NOT_FOUND, BAD_REQUEST, INTERNAL_SERVER_ERROR, OK, FORBIDDEN,
+                        FORBIDDEN_PART_KEY, GENERIC_ICE_RELATED_ERROR,
+                        IGNORE_ICE_RELATED_ERRORS_PARAM, ALLOW_DUPLICATE_NAMES_PARAM, NO_INPUT,
+                        DUPLICATE_INPUT_LINE_NAMES, DUPLICATE_INPUT_ASSAY_NAMES, ZERO_REPLICATES,
+                        EXISTING_LINE_NAMES, EXISTING_ASSAY_NAMES, SYSTEMIC_ICE_ERROR_CATEGORY,
+                        INTERNAL_EDD_ERROR_TITLE, SINGLE_PART_ACCESS_ERROR_CATEGORY,
+                        NAMING_OVERLAP_CATEGORY, ERROR_PRIORITY_ORDER, WARNING_PRIORITY_ORDER,
+                        BAD_GENERIC_INPUT_CATEGORY)
 from .parsers import ExperimentDescFileParser, JsonInputParser, _ExperimentDescriptionFileRow
 from .utilities import (CombinatorialCreationPerformance, find_existing_strains)
 
@@ -150,8 +149,6 @@ def _build_prioritized_issue_list(src_dict, priority_reference):
                                 'category': category,
                                 'title': title,
                            })
-
-
     return result
 
 
@@ -262,9 +259,9 @@ class CombinatorialCreationImporter(object):
         :return: a json dict with a summary of import results (for success or failure)
         """
 
-        ############################################################################################
+        ###########################################################################################
         # Clear out state from previous import attempts using this importer
-        ############################################################################################
+        ###########################################################################################
         self.performance.reset()
         self._input_summary = None
         self.errors.clear()
@@ -334,7 +331,6 @@ class CombinatorialCreationImporter(object):
         line_metadata_types = self.line_metadata_types_by_pk
         assay_metadata_types = self.assay_metadata_types_by_pk
         performance = self.performance
-        user = self.user
         study = self.study
 
         # TODO: to support JSON with possible mixed known/unknown strains for the combinatorial
@@ -349,7 +345,8 @@ class CombinatorialCreationImporter(object):
         # build a list of unique part numbers found in the input file. we'll query ICE to get
         # references to them. Note: ideally we'd do this externally to the @atomic block, but other
         # EDD queries have to precede this one
-        # TODO: restore keeping part numbers in the order found for readability in user err messages
+        # TODO: restore keeping part numbers in the order found for readability in user err
+        # messages
         unique_part_numbers = set()
         ice_parts_by_number = OrderedDict()
 
@@ -417,7 +414,7 @@ class CombinatorialCreationImporter(object):
         # to create Line entries in EDD's database
         ###########################################################################################
         for input_set in combinatorial_inputs:
-            input_set.replace_strain_part_numbers_with_pks(edd_strains_by_part_number,
+            input_set.replace_strain_part_numbers_with_pks(self, edd_strains_by_part_number,
                                                            ice_parts_by_number)
 
         ###########################################################################################
@@ -600,8 +597,8 @@ class CombinatorialCreationImporter(object):
 
         # aggregate/add error messages for duplicate assay names that indicate that the input isn't
         # self-consistent. Note that though it isn't all used yet, we purposefully organize the
-        # intermediate data in two ways: one for convenient display in the current UI, the other for
-        # eventual JSON generation for the following one...see comments in EDD-626.
+        # intermediate data in two ways: one for convenient display in the current UI, the other
+        # for eventual JSON generation for the following one...see comments in EDD-626.
         duplicate_input_assay_to_cells = defaultdict(set)
         for protocol_pk, duplicates in protocol_to_duplicate_new_assay_names.iteritems():
             for duplicate_name in duplicates:
@@ -636,7 +633,7 @@ class CombinatorialCreationImporter(object):
         # TODO: we can do some additional work to provide better (e.g. cell-number based) feedback,
         # but this should be a good stopgap.
         duplicate_existing_assay_names = set()
-        for protocol_pk, assay_names_list in protocol_to_unique_input_assay_names.iteritems():
+        for protocol_pk, assay_names_list in protocol_to_unique_input_assay_names.items():
             existing_assays = Assay.objects.filter(
                 name__in=assay_names_list,
                 line__study__pk=study.pk,
@@ -773,7 +770,7 @@ class CombinatorialCreationImporter(object):
         # and force the user to acknowledge / override the problem rather than silently working
         # around it. In this unlikely case, this approach is slightly more work for users,
         # but also allows them to prevent creating inconsistencies that they'll have to resolve
-        # later using more labor-intensive processes (e.g. potentially expensive manual line edits).
+        # later using more labor-intensive processes (e.g. potentially expensive manual line edits)
         if not ignore_ice_related_errors:
             self.add_error(SYSTEMIC_ICE_ERROR_CATEGORY, GENERIC_ICE_RELATED_ERROR,
                            "EDD administrators have been notified of the problem.  You can try "
@@ -813,9 +810,9 @@ class CombinatorialCreationImporter(object):
                                                       ice_parts_by_number):
         """
         If configured, builds and sends a time-saving notification email re: ICE communication
-        problems to EDD admins. The email informs admins of problems that should be resolved without
-        user involvement, and aggregates/captures relevant context that will be hard to remember
-        and extract from log content and complex related code.
+        problems to EDD admins. The email informs admins of problems that should be resolved
+        without user involvement, and aggregates/captures relevant context that will be hard to
+        remember and extract from log content and complex related code.
         """
 
         # even though users may be able to work around the error, email EDD admins since they
@@ -840,7 +837,7 @@ class CombinatorialCreationImporter(object):
         not_found_part_count = len(part_numbers_not_found)
         desired_part_count = len(unique_part_numbers)
         not_found_part_percent = 100 * ((float(not_found_part_count) / desired_part_count)
-                                 if desired_part_count else 0)
+                                        if desired_part_count else 0)
 
         message = (admin_email_format % {
                         'study_pk': self.study.pk,
@@ -867,4 +864,3 @@ class CombinatorialCreationImporter(object):
                         })
 
         mail_admins(subject=subject, message=message, fail_silently=True)
-
