@@ -8,6 +8,8 @@ from edd.branding.views import favicon as favicon_view
 
 from main import views
 
+from graphene_django.views import GraphQLView
+
 
 # These are the URL endpoints nested under a link to a specific Study, for use with include() in
 #   the two URL paths for study below. Because this list is included twice, there should be no
@@ -121,7 +123,7 @@ urlpatterns = [
     url(r'^search/(?P<model>\w+)/$', login_required(views.model_search)),
 
     url(r'^health/$', lambda request: HttpResponse()),
-
+    url(r'^graphql/$', GraphQLView.as_view(graphiql=True)),
     # Call-out for the favicon, which would normally only be accessible via a URL like:
     #   https://edd.example.org/static/favicon.ico
     # This way, browsers can load the favicon from the standard link.
