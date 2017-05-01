@@ -2,81 +2,9 @@ import graphene
 
 from graphene import relay, ObjectType, AbstractType
 from graphene_django import DjangoObjectType
-from graphene_django.filter import DjangoFilterConnectionField
 
 from main.models import Study, Line, Assay, Measurement, MeasurementUnit, Strain
 from .redis import LatestViewedStudies
-
-
-# class StudyNode(DjangoObjectType):
-#     class Meta:
-#         model = Study
-#         filter_fields = {
-#             'name': ['exact', 'istartswith'],
-#             'id': ['exact']
-#         }
-#         interfaces = (relay.Node, )
-#
-#
-# class LineNode(DjangoObjectType):
-#     class Meta:
-#         model = Line
-#
-#         filter_fields = {
-#             'name': ['exact', 'icontains', 'istartswith'],
-#             'strains': ['exact', 'icontains'],
-#             'study': ['exact'],
-#             'study__name': ['exact','icontains'],
-#         }
-#         interfaces = (relay.Node, )
-#
-#
-# class AssayNode(DjangoObjectType):
-#     class Meta:
-#         model = Assay
-#         filter_fields = ['name', 'id']
-#         interfaces = (relay.Node, )
-#
-#
-# class MeasurementNode(DjangoObjectType):
-#     class Meta:
-#         model = Measurement
-#         filter_fields = ['id']
-#         interfaces = (relay.Node,)
-#
-#
-# class MeasurementUnitNode(DjangoObjectType):
-#     class Meta:
-#         model = MeasurementUnit
-#         filter_fields = ['id']
-#         interfaces = (relay.Node,)
-#
-#
-# class StrainNode(DjangoObjectType):
-#     class Meta:
-#         model = Strain
-#         filter_fields = ['id', 'line__name']
-#         interfaces = (relay.Node,)
-#
-#
-# class Query(AbstractType):
-#     study = relay.Node.Field(StudyNode)
-#     all_studies = DjangoFilterConnectionField(StudyNode)
-#
-#     line = relay.Node.Field(LineNode)
-#     all_lines = DjangoFilterConnectionField(LineNode)
-#
-#     assay = relay.Node.Field(AssayNode)
-#     all_assays = DjangoFilterConnectionField(AssayNode)
-#
-#     measurement = relay.Node.Field(MeasurementNode)
-#     all_measurements = DjangoFilterConnectionField(MeasurementNode)
-#
-#     measurement_unit = relay.Node.Field(MeasurementUnitNode)
-#     all_measurement_units = DjangoFilterConnectionField(MeasurementUnitNode)
-#
-#     strain = relay.Node.Field(StrainNode)
-#     all_strains = DjangoFilterConnectionField(StrainNode)
 
 
 class StudyType(DjangoObjectType):
@@ -108,6 +36,7 @@ class StrainType(DjangoObjectType):
     class Meta:
         model = Strain
 
+
 class Query(AbstractType):
     study = graphene.Field(StudyType,
                            id=graphene.Int())
@@ -131,6 +60,8 @@ class Query(AbstractType):
                           id=graphene.Int()
                           )
 
+    latest_viewed_study = graphene.List(StudyType)
+
     all_strains = graphene.List(StrainType)
 
     strain_type = graphene.Field(StrainType,
@@ -139,7 +70,7 @@ class Query(AbstractType):
     def resolve_all_studies(self, args, context, info):
         return Study.objects.all()
 
-    def resolve_latest_viewed_studies(self, args, context, info):
+    def resolve_latest_viewed_study(self, args, context, info):
         redis = LatestViewedStudies(self.user)
         return Study.objects.filter(pk__in=redis)
 
