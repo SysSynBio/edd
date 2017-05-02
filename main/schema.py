@@ -3,7 +3,7 @@ import graphene
 from graphene import relay, ObjectType, AbstractType
 from graphene_django import DjangoObjectType
 
-from main.models import Study, Line, Assay, Measurement, MeasurementUnit, Strain
+from main.models import Study, Line, Assay, Measurement, MeasurementUnit, Strain, MeasurementValue
 from .redis import LatestViewedStudies
 
 
@@ -30,6 +30,11 @@ class MeasurementType(DjangoObjectType):
 class MeasurementUnitType(DjangoObjectType):
     class Meta:
         model = MeasurementUnit
+
+
+class MeasurementValueType(DjangoObjectType):
+    class Meta:
+        model = MeasurementValue
 
 
 class StrainType(DjangoObjectType):
@@ -60,7 +65,15 @@ class Query(AbstractType):
                           id=graphene.Int()
                           )
 
-    latest_viewed_study = graphene.List(StudyType)
+    measurement_value = graphene.Field(MeasurementValueType,
+                                       id=graphene.Int())
+
+    all_measurement_values = graphene.List(MeasurementValueType)
+
+    # this isn't working..
+    latest_viewed_study = graphene.Field(StudyType,
+                          name=graphene.String()
+                          )
 
     all_strains = graphene.List(StrainType)
 
