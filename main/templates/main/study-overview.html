@@ -8,6 +8,8 @@
     <script type="text/javascript" src="{% static 'main/js/lib/jquery/jquery.cookie.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/DataGrid.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/Study-Overview.js' %}"></script>
+    <script src="https://cloud.tinymce.com/stable/tinymce.min.js?apiKey=kubxp8v3il92pgho9as7rp025fgxbfmy1cizvs3vlaq6cs8o"></script>
+
 {% endblock js_css %}
 
 {% block head_title %}
@@ -84,7 +86,7 @@
                 <td style="width:260px;">
                     {{ edit_study.description.errors }}
                     <div class="editable-field inactive" id="editable-study-description">
-                        {% firstof study.description "<i>(Click to add description)</i>"|safe %}
+                        {% firstof study.description|safe "<i>(Click to add description)</i>"|safe %}
                         {{ edit_study.description }}
                     </div>
                 </td>
@@ -229,7 +231,7 @@
 {% if writable %}
 <div class="disclose discloseHide">
     <div class="pageDivider" for="permissionsSection">
-        <span class="discloseLink">{% trans "Manage Study" %}</span>
+        <span class="discloseLink">{% trans " Manage Study" %}</span>
     </div>
     <div class="discloseBody">
         <div class="sectionContent indent">
