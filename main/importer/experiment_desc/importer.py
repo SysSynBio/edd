@@ -20,7 +20,9 @@ from jbei.rest.auth import HmacAuth
 from jbei.rest.clients import IceApi
 from jbei.rest.clients.ice.api import Strain as IceStrain
 from jbei.rest.clients.ice.utils import make_entry_url
+from main.constants import ICE_HMAC_SETTING, ICE_URL_SETTING
 from main.models import Protocol, MetadataType, Strain, Assay, Line
+from main.utilities import is_ice_configured, create_ice_connection
 from .constants import (FOUND_PART_NUMBER_DOESNT_MATCH_QUERY, NON_STRAIN_ICE_ENTRY,
                         PART_NUMBER_NOT_FOUND, BAD_REQUEST, INTERNAL_SERVER_ERROR, OK, FORBIDDEN,
                         FORBIDDEN_PART_KEY, GENERIC_ICE_RELATED_ERROR,
@@ -29,7 +31,7 @@ from .constants import (FOUND_PART_NUMBER_DOESNT_MATCH_QUERY, NON_STRAIN_ICE_ENT
                         EXISTING_LINE_NAMES, EXISTING_ASSAY_NAMES, SYSTEMIC_ICE_ERROR_CATEGORY,
                         INTERNAL_EDD_ERROR_CATEGORY, SINGLE_PART_ACCESS_ERROR_CATEGORY,
                         NAMING_OVERLAP_CATEGORY, ERROR_PRIORITY_ORDER, WARNING_PRIORITY_ORDER,
-                        BAD_GENERIC_INPUT_CATEGORY, DRY_RUN_PARAM)
+                        BAD_GENERIC_INPUT_CATEGORY, DRY_RUN_PARAM, ICE_NOT_CONFIGURED)
 from .parsers import ExperimentDescFileParser, JsonInputParser, _ExperimentDescriptionFileRow
 from .utilities import (CombinatorialCreationPerformance, find_existing_strains)
 
@@ -685,10 +687,28 @@ class CombinatorialCreationImporter(object):
             will be removed for those that aren't found in ICE.
         """
 
-        # get an ICE connection to look up strain UUID's from part number user input
-        ice = IceApi(auth=HmacAuth(key_id=settings.ICE_KEY_ID, username=self._ice_username),
-                     verify_ssl_cert=settings.VERIFY_ICE_CERT)
-        ice.timeout = settings.ICE_REQUEST_TIMEOUT
+        # return early if there's no need to query ICE
+        if not part_numbers:
+            return
+
+        # test for required ICE connection parameters before querying ICE.
+        # return early if ICE isn't configured.
+        if not is_ice_configured():
+            if not ignore_ice_related_errors:
+                self.add_error(SYSTEMIC_ICE_ERROR_CATEGORY, ICE_NOT_CONFIGURED,
+                               "Your file contains %(part_id_count)d unique ICE part numbers, "
+                               "but EDD's configuration doesn't include the %(url_key)s and %("
+                               "hmac_key)s settings required to connect with ICE. \n\nYou can "
+                               "proceed with using this file, but strain data will be omitted from "
+                               "your study, and you'll have to manually add strain links to your "
+                               "lines later after correcting the problem." % {
+                                   'part_id_count': len(part_numbers),
+                                   'url_key': ICE_URL_SETTING,
+                                   'hmac_key': ICE_HMAC_SETTING,
+                               })
+            return
+
+        ice = create_ice_connection(self._ice_username)
 
         list_position = 0
 

@@ -23,17 +23,11 @@ from ..models import (
     Line, MetaboliteExchange, MetaboliteSpecies, SBMLTemplate, Strain, Study, Update,
 )
 from ..solr import StudySearch, UserSearch
-from ..utilities import get_absolute_url
-
+from ..utilities import get_absolute_url, is_ice_configured, create_ice_connection
 
 solr_study_index = StudySearch()
 solr_users_index = UserSearch()
 logger = logging.getLogger(__name__)
-
-if settings.USE_CELERY:
-    from edd.remote_tasks import link_ice_entry_to_study, unlink_ice_entry_from_study
-else:
-    from jbei.rest.clients.ice import IceApi
 
 ###################################################################################################
 # Define custom signals
@@ -228,8 +222,8 @@ def log_update_warning_msg(study_id):
 
 @receiver(pre_save, sender=Study, dispatch_uid="main.signals.handlers.handle_study_pre_save")
 def handle_study_pre_save(sender, instance, raw, using, **kwargs):
-    if not settings.ICE_URL:
-        logger.warning('ICE URL is not configured. Skipping ICE experiment link updates.')
+    if not is_ice_configured():
+        logger.warning('ICE is not configured. Skipping ICE experiment link updates.')
         return
     elif raw:
         return
@@ -250,8 +244,8 @@ def handle_study_post_save(sender, instance, created, raw, using, **kwargs):
     handle_study_pre_save. If it has, and if the study is associated with any ICE strains, updates
     the corresponding ICE entry(ies) to label links to this study with its new name.
     """
-    if not settings.ICE_URL:
-        logger.warning('ICE URL is not configured. Skipping ICE experiment link updates.')
+    if not is_ice_configured():
+        logger.warning('ICE is not configured. Skipping ICE experiment link updates.')
         return
     elif raw:
         return
@@ -309,8 +303,8 @@ def handle_line_pre_delete(sender, instance, **kwargs):
     """
     logger.debug("Start %s()", handle_line_pre_delete.__name__)
 
-    if not settings.ICE_URL:
-        logger.warning('ICE URL is not configured. Skipping ICE experiment link updates.')
+    if not is_ice_configured():
+        logger.warning('ICE is not configured. Skipping ICE experiment link updates.')
         return
 
     line = instance
@@ -334,8 +328,8 @@ def handle_line_post_delete(sender, instance, **kwargs):
     """
     logger.debug("Start %s()", handle_line_post_delete.__name__)
 
-    if not settings.ICE_URL:
-        logger.warning('ICE URL is not configured. Skipping ICE experiment link updates.')
+    if not is_ice_configured():
+        logger.warning('ICE is not configured. Skipping ICE experiment link updates.')
         return
 
     line = instance
@@ -402,11 +396,7 @@ def _post_commit_unlink_ice_entry_from_study(user_email, study, study_creation_d
     """
     logger.info('Start %s()', _post_commit_unlink_ice_entry_from_study.__name__)
 
-    ice = None
-    if not settings.USE_CELERY:
-        ice = IceApi(auth=HmacAuth(key_id=settings.ICE_KEY_ID, username=user_email),
-                     verify_ssl_cert=settings.VERIFY_ICE_CERT)
-        ice.timeout = settings.ICE_REQUEST_TIMEOUT
+    ice = create_ice_connection(user_email)
 
     study_url = get_abs_study_url(study)
     index = 0
@@ -472,11 +462,7 @@ def _post_commit_link_ice_entry_to_study(user_email, study, linked_strains):
     django-commit-hooks limitation that a no-arg method be passed to the post-commit hook.
     :param linked_strains cached strain information
     """
-    ice = None
-    if not settings.USE_CELERY:
-        ice = IceApi(auth=HmacAuth(key_id=settings.ICE_KEY_ID, username=user_email),
-                     verify_ssl_cert=settings.VERIFY_ICE_CERT)
-        ice.timeout = settings.ICE_REQUEST_TIMEOUT
+    ice = create_ice_connection(user_email)
 
     index = 0
 

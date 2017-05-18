@@ -7,6 +7,7 @@ from django.core.management.base import CommandError
 
 from jbei.rest.auth import HmacAuth
 from jbei.rest.clients.ice import IceApi
+from main.utilities import create_ice_connection
 
 
 class Command(BaseCommand):
@@ -27,9 +28,7 @@ class Command(BaseCommand):
 
         # get ICE authentication configured via EDD's config files (secrets.env and / or
         # settings/local.py)
-        auth = HmacAuth(key_id=settings.ICE_KEY_ID, username=username)
-        ice = IceApi(auth, verify_ssl_cert=settings.VERIFY_ICE_CERT)
-        ice.timeout = settings.ICE_REQUEST_TIMEOUT
+        ice = create_ice_connection(username)
 
         try:
             print('Contacting ICE at %s' % ice.base_url)

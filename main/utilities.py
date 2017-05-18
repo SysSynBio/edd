@@ -14,6 +14,9 @@ from six import string_types
 from threadlocals.threadlocals import get_current_request
 
 from edd.utilities import JSONEncoder
+from jbei.rest.auth import HmacAuth
+from jbei.rest.clients import IceApi
+from main.constants import ICE_REQUEST_TIMEOUT_SETTING, ICE_URL_SETTING, ICE_HMAC_SETTING
 from . import models
 
 import logging
@@ -52,6 +55,36 @@ media_types = {
     'M9': 'M9 (M9 salts minimal media)',
     'EZ': 'EZ (EZ Rich)',
 }
+
+
+def is_ice_configured():
+    return (hasattr(settings, ICE_URL_SETTING) and hasattr(settings, ICE_HMAC_SETTING) and
+            settings.ICE_URL_SETTING and settings.ICE_HMAC_SETTING)
+
+
+def create_ice_connection(user):
+    """
+    Creates and configures an IceApi insance from EDD's settings.
+    :param user: either a django.contrib.auth.User object, or a string that contains the ICE
+        username. If a User object, the assumption is that the user's ICE username is the email
+        address configured in the EDD account.
+    :return: a configured IceApi instance if EDD's settings contain the required settings, 
+        None otherwise
+    """
+    if not is_ice_configured():
+        return None
+
+    ice_username = user if isinstance(user, basestring) else user.email
+
+    auth = HmacAuth(key_id=settings.ICE_KEY_ID, username=ice_username)
+    verify_ice_cert = settings.VERIFY_ICE_CERT if hasattr(settings, 'VERIFY_ICE_CERT') else True
+
+    ice = IceApi(auth=auth, verify_ssl_cert=verify_ice_cert)
+
+    if hasattr(settings, ICE_REQUEST_TIMEOUT_SETTING):
+        ice.timeout = settings.ICE_REQUEST_TIMEOUT
+    ice.write_enabled = True
+    return ice
 
 
 def flatten_json(source):

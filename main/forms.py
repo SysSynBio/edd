@@ -23,6 +23,7 @@ from functools import partial
 
 from jbei.rest.auth import HmacAuth
 from jbei.rest.clients.ice import IceApi
+from main.utilities import create_ice_connection
 from .models import (
     Assay, Attachment, CarbonSource, Comment, Line, Measurement, MeasurementType,
     MeasurementValue, MetaboliteExchange, MetaboliteSpecies, MetadataType, Protocol, Strain,
@@ -148,9 +149,7 @@ class RegistryValidator(object):
         update = Update.load_update()
         user_email = update.mod_by.email
         try:
-            ice = IceApi(auth=HmacAuth(key_id=settings.ICE_KEY_ID, username=user_email),
-                         verify_ssl_cert=settings.VERIFY_ICE_CERT)
-            ice.timeout = settings.ICE_REQUEST_TIMEOUT
+            ice = create_ice_connection(user_email)
             self.entry = ice.get_entry(registry_id)
             self.entry.url = ''.join((ice.base_url, '/entry/', str(self.entry.id),))
         except Exception:
