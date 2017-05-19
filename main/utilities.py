@@ -59,7 +59,7 @@ media_types = {
 
 def is_ice_configured():
     return (hasattr(settings, ICE_URL_SETTING) and hasattr(settings, ICE_HMAC_SETTING) and
-            settings.ICE_URL_SETTING and settings.ICE_HMAC_SETTING)
+            settings.ICE_URL and settings.ICE_KEY_ID)
 
 
 def create_ice_connection(user):
