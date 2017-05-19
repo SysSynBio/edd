@@ -29,6 +29,11 @@ solr_study_index = StudySearch()
 solr_users_index = UserSearch()
 logger = logging.getLogger(__name__)
 
+if settings.USE_CELERY:
+    from edd.remote_tasks import link_ice_entry_to_study, unlink_ice_entry_from_study
+else:
+    from jbei.rest.clients.ice import IceApi
+
 ###################################################################################################
 # Define custom signals
 ###################################################################################################
