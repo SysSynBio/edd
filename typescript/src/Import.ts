@@ -3463,7 +3463,6 @@ module EDDTableImport {
 
             this.metaAuto = new EDDAuto.AssayLineMetadataType({
                 container: $(this.row.insertCell()),
-                visibleValue: name,
                 cache: MetadataDisambiguationRow.autoCache
             });
             this.metaAuto.visibleInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
@@ -3471,6 +3470,8 @@ module EDDTableImport {
                 .addClass('autocomp_altype');
             this.metaAuto.hiddenInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
                 .attr('name', 'disamMetaHidden' + i);
+
+            EDD_auto.initial_search(this.metaAuto, name);
         }
     }
 

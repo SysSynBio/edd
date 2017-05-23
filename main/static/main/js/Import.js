@@ -2782,7 +2782,6 @@ var EDDTableImport;
         MetadataDisambiguationRow.prototype.build = function (body, name, i) {
             this.metaAuto = new EDDAuto.AssayLineMetadataType({
                 container: $(this.row.insertCell()),
-                visibleValue: name,
                 cache: MetadataDisambiguationRow.autoCache
             });
             this.metaAuto.visibleInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
@@ -2790,6 +2789,7 @@ var EDDTableImport;
                 .addClass('autocomp_altype');
             this.metaAuto.hiddenInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS)
                 .attr('name', 'disamMetaHidden' + i);
+            EDD_auto.initial_search(this.metaAuto, name);
         };
         // Cache for re-use of autocomplete objects
         MetadataDisambiguationRow.autoCache = {};
