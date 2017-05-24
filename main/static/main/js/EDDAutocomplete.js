@@ -28,6 +28,7 @@ var EDDAuto;
         function NonValueItem(label) {
             this.label = label;
             this.value = {};
+            this.name = '';
         }
         NonValueItem.NO_RESULT = new NonValueItem('No Results Found');
         NonValueItem.ERROR = new NonValueItem('Server Error');

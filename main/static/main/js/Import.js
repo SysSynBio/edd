@@ -1952,8 +1952,8 @@ var EDDTableImport;
             // many times.
             reDoStepOnChange = ['#masterAssay', '#masterLine', '#masterMComp', '#masterMType', '#masterMUnits'];
             $(reDoStepOnChange.join(',')).on('input', this.changedAnyMasterPulldown.bind(this));
-            //toggle matched assay section
-            $('#matchedAssaysSection .discloseLink').on('click', function (e) {
+            //toggle matched assay and matched metadata section
+            $('#matchedAssaysSection .discloseLink, #matchedMetadataSection .discloseLink').on('click', function (e) {
                 $(e.target).closest('.disclose').toggleClass('discloseHide');
             });
             masterInputSelectors = ['#masterTimestamp'].concat(reDoStepOnChange);
@@ -1974,6 +1974,22 @@ var EDDTableImport;
             $('#masterMUnitsValue').addClass(TypeDisambiguationStep.STEP_4_REQUIRED_INPUT_CLASS);
             // enable autocomplete on statically defined fields
             EDDAuto.BaseAuto.initPreexisting($('#typeDisambiguationStep'));
+            //once all ajax calls have completed, separate matched metadata from unmatched
+            $(document).ajaxStop(function () {
+                if (!$('#disambiguateMetadataSection').hasClass('off')) {
+                    var hiddenAttrs = $('#disambiguateMetadataTable td input[type=hidden]');
+                    _.each(hiddenAttrs, function (input) {
+                        if ($(input).val()) {
+                            var row = $(input).closest('tr');
+                            $('#matchedMetadataSection').removeClass('off');
+                            $('#matchedMetadataTable').append(row);
+                        }
+                        else {
+                            $(input).closest('tr').find('[type=checkbox]').prop('checked', false);
+                        }
+                    });
+                }
+            });
         }
         TypeDisambiguationStep.prototype.setAllInputsEnabled = function (enabled) {
             var allUserInputs = $("." + TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
@@ -2362,9 +2378,6 @@ var EDDTableImport;
             }
             $('#disambiguateMetadataTable').remove();
             parentDiv = $('#disambiguateMetadataSection');
-            if (uniqueMetadataNames.length > this.TOGGLE_ALL_THREASHOLD) {
-                this.addToggleAllButton(parentDiv, 'Metadata Types');
-            }
             // put together a disambiguation section for metadata
             table = $('<table>')
                 .attr({ 'id': 'disambiguateMetadataTable', 'cellspacing': 0 })

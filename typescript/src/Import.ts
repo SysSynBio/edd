@@ -2418,8 +2418,8 @@ module EDDTableImport {
             reDoStepOnChange = ['#masterAssay', '#masterLine', '#masterMComp', '#masterMType', '#masterMUnits'];
             $(reDoStepOnChange.join(',')).on('input', this.changedAnyMasterPulldown.bind(this));
 
-            //toggle matched assay section
-            $('#matchedAssaysSection .discloseLink').on('click', function(e) {
+            //toggle matched assay and matched metadata section
+            $('#matchedAssaysSection .discloseLink, #matchedMetadataSection .discloseLink').on('click', function(e) {
                 $(e.target).closest('.disclose').toggleClass('discloseHide');
             });
 
@@ -2443,6 +2443,22 @@ module EDDTableImport {
 
             // enable autocomplete on statically defined fields
             EDDAuto.BaseAuto.initPreexisting($('#typeDisambiguationStep'));
+
+            //once all ajax calls have completed, separate matched metadata from unmatched
+              $(document).ajaxStop(() => {
+                  if (!$('#disambiguateMetadataSection').hasClass('off')) {
+                      let hiddenAttrs = $('#disambiguateMetadataTable td input[type=hidden]');
+                      _.each(hiddenAttrs, function (input) {
+                          if ($(input).val()) {
+                              let row = $(input).closest('tr');
+                              $('#matchedMetadataSection').removeClass('off');
+                              $('#matchedMetadataTable').append(row);
+                          } else {
+                              $(input).closest('tr').find('[type=checkbox]').prop('checked', false);
+                          }
+                      })
+                  }
+              })
         }
 
         setAllInputsEnabled(enabled: boolean) {
@@ -2946,10 +2962,6 @@ module EDDTableImport {
 
             parentDiv = $('#disambiguateMetadataSection');
 
-            if (uniqueMetadataNames.length > this.TOGGLE_ALL_THREASHOLD) {
-                this.addToggleAllButton(parentDiv, 'Metadata Types');
-            }
-
             // put together a disambiguation section for metadata
             table = <HTMLTableElement>$('<table>')
                 .attr({ 'id': 'disambiguateMetadataTable', 'cellspacing': 0 })
@@ -2976,7 +2988,6 @@ module EDDTableImport {
             if (uniqueMetadataNames.length > this.DUPLICATE_CONTROLS_THRESHOLD) {
                 this.addToggleAllButton(parentDiv, 'Metadata Types');
             }
-
         }
 
 
@@ -3314,6 +3325,8 @@ module EDDTableImport {
         getUserErrors():ImportMessage[] {
             return this.errorMessages;
         }
+
+
 
         requiredInputsProvided():boolean {
             var subsection: JQuery, requiredInputSubsectionSelectors: string[],
