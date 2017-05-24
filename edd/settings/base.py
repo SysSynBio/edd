@@ -138,6 +138,7 @@ INSTALLED_APPS = (
     'allauth.account',
     'allauth.socialaccount',
     'django.contrib.flatpages',
+    'graphene_django',
     # 'allauth.socialaccount.providers.github',
     # 'allauth.socialaccount.providers.google',
     # 'allauth.socialaccount.providers.linkedin_oauth2',
@@ -162,6 +163,13 @@ MIDDLEWARE_CLASSES = (
     'edd.profile.middleware.TaskNotification',
 )
 
+###################################################################################################
+# Graphene Schema
+###################################################################################################
+
+GRAPHENE = {
+    'SCHEMA': 'edd.schema.schema'
+}
 
 ###################################################################################################
 # Template configuration
