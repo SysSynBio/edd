@@ -2386,6 +2386,21 @@ var EDDTableImport;
                 // should there be event handling here ?
             })[0];
             body = $('<tbody>').appendTo(table)[0];
+            //make first letter up
+            // / var uniqueMetadataNames2 = _.map(uniqueMetadataNames, function(m) {return m.charAt(0).toUpperCase() + m.slice(1);})
+            $.ajax({
+                'url': '/data/metadata2/',
+                'type': 'GET',
+                'data': {
+                    'type': uniqueMetadataNames,
+                },
+                'success': function (data) {
+                    console.log(data);
+                },
+                'error': function (xhr, status, err) {
+                    console.log(['Unable to get metadata: ', status, ';', err].join(''));
+                }
+            });
             uniqueMetadataNames.forEach(function (name, i) {
                 var cell, disam, ignoreLabel, ignoreChkbx, typeDisambiguationStep;
                 disam = _this.metadataObjSets[name];
@@ -2747,6 +2762,8 @@ var EDDTableImport;
         // Empty base implementation for children to override
         DisambiguationRow.prototype.build = function (body, name, i) {
         };
+        DisambiguationRow.prototype.get = function (name) {
+        };
         DisambiguationRow.prototype.detach = function () {
             this.rowElementJQ.detach();
         };
@@ -2839,7 +2856,7 @@ var EDDTableImport;
                 // only watch for changes on the hidden portion, let autocomplete work
                 EDDTableImport.typeDisambiguationStep.userChangedMeasurementDisam(ev.target);
             });
-            EDD_auto.initial_search(this.typeAuto, name);
+            // EDD_auto.initial_search(this.typeAuto, name);
         };
         // Caches for re-use of autocomplete fields
         MeasurementDisambiguationRow.compAutoCache = {};

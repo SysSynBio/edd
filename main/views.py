@@ -1812,3 +1812,19 @@ def model_search(request, model_name):
         return autocomplete.search_metadata(request, match.group(1))
     else:
         return autocomplete.search_generic(request, model_name)
+
+
+# /metadata/list/
+def metadata_search(request):
+    # return JsonResponse(
+    #     {
+    #         "EDDData": {
+    #             "MetadataTypes":
+    #                 {m.id: m.to_json() for m in MetadataType.objects.all()},
+    #         }
+    #     },
+    #     encoder=JSONDecimalEncoder)
+    message = request.POST.getlist("type[]")
+    return MetadataType.objects.filter(type_name__in=message)
+
+

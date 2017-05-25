@@ -2970,6 +2970,26 @@ module EDDTableImport {
                     // should there be event handling here ?
                 })[0];
             body = <HTMLTableElement>$('<tbody>').appendTo(table)[0];
+
+
+            //make first letter up
+
+            // / var uniqueMetadataNames2 = _.map(uniqueMetadataNames, function(m) {return m.charAt(0).toUpperCase() + m.slice(1);})
+
+            $.ajax({
+                'url': '/data/metadata2/',
+                'type': 'GET',
+                'data': {
+                    'type': uniqueMetadataNames,
+                },
+                'success': (data): void => {
+                    console.log(data)
+                },
+                'error': (xhr, status, err): void => {
+                    console.log(['Unable to get metadata: ', status, ';', err].join(''));
+                }
+            });
+
             uniqueMetadataNames.forEach((name: string, i: number): void => {
                 var cell: HTMLTableCellElement, disam: any, ignoreLabel: JQuery,
                     ignoreChkbx: JQuery, typeDisambiguationStep: TypeDisambiguationStep;
@@ -3410,6 +3430,11 @@ module EDDTableImport {
 
         }
 
+        get(name) {
+
+
+        }
+
 
         detach() {
             this.rowElementJQ.detach();
@@ -3529,7 +3554,9 @@ module EDDTableImport {
                 // only watch for changes on the hidden portion, let autocomplete work
                 EDDTableImport.typeDisambiguationStep.userChangedMeasurementDisam(ev.target);
             });
-            EDD_auto.initial_search(this.typeAuto, name);
+
+            // EDD_auto.initial_search(this.typeAuto, name);
+
         }
     }
 

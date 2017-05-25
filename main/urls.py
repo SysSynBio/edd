@@ -119,14 +119,15 @@ urlpatterns = [
         login_required(views.ExperimentDescriptionHelp.as_view()),
         name='experiment_description_help',
     ),
+    url(r'^metadata/list/$', login_required(views.metadata_search)),
     url(r'^search/$', login_required(views.search)),
     url(r'^search/(?P<model>\w+)/$', login_required(views.model_search)),
 
     url(r'^health/$', lambda request: HttpResponse()),
-    url(r'^graphql/$', GraphQLView.as_view(graphiql=True)),
     # Call-out for the favicon, which would normally only be accessible via a URL like:
     #   https://edd.example.org/static/favicon.ico
     # This way, browsers can load the favicon from the standard link.
     url(r'^favicon\.ico$', favicon_view, name='favicon'),
+    url(r'^graphql/$', GraphQLView.as_view(graphiql=True)),
     url(r'^pages/', include('django.contrib.flatpages.urls', namespace='edd-flatpages')),
 ]
