@@ -1001,8 +1001,8 @@ class DataGridSpecLines extends DataGridSpecBase {
             new DataGridColumnGroupSpec('Line Name', { 'showInVisibilityList': false }),
             new DataGridColumnGroupSpec('Description'),
             new DataGridColumnGroupSpec('Strain'),
-            new DataGridColumnGroupSpec('Carbon Source(s)'),
-            new DataGridColumnGroupSpec('Labeling'),
+            new DataGridColumnGroupSpec('Carbon Source(s)', { 'hiddenByDefault': true }),
+            new DataGridColumnGroupSpec('Labeling', { 'hiddenByDefault': true }),
             this.carbonBalanceCol = new DataGridColumnGroupSpec('Carbon Balance', {
                 'showInVisibilityList': false,    // Has its own header widget
                 'hiddenByDefault': true,

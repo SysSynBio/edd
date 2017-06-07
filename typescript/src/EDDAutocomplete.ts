@@ -1,4 +1,4 @@
-// requires: jQuery, jQuery-UI
+    // requires: jQuery, jQuery-UI
 //
 // XXX obtained from http://jsfiddle.net/alforno/g4stL/
 // see copyright notice below
@@ -92,10 +92,12 @@ module EDDAuto {
         // anything without those properties gets converted to a plain object that does
         label: string;
         value: Object;
+        name: string;
 
         constructor(label: string) {
             this.label = label;
             this.value = {};
+            this.name = '';
         }
     }
 

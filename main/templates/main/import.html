@@ -495,13 +495,11 @@
           <td>
             <label for="masterAssay">
               <select name="masterAssay" id="masterAssay">
-                <option value="new">(Create New)</option>
               </select>
             </label>
             <label for="masterAssayLine" id="masterLineSpan">
               <span>for Line:</span>
               <select name="masterAssayLine" id="masterAssayLine">
-                <option value="new">(Create New)</option>
                 {% for line in study.line_set.all %}
                 <option value="{{ line.pk }}">{{ line.name }}</option>
                 {% endfor %}
@@ -574,7 +572,7 @@
         <div class="discloseBody" id="matchedAssaysSectionBody">
         </div>
     </div>
-    <div class="sectionContent off" id="disambiguateAssaysSection">
+    <div class="sectionContent off" id="unmatchedAssaysSection">
         <div class="alert alert-warning alert-dismissible" role="alert">
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
@@ -584,7 +582,7 @@
                 here</a>.</div>
         </div>
         <h3 class="noMatch"> Unmatched Inputs </h3>
-        <table id="disambiguateAssaysTable" cellspacing="0">
+        <table id="unmatchedAssaysTable" cellspacing="0">
             <thead>
               <th></th>
               <th>Input Name</th>
@@ -592,6 +590,26 @@
             <tbody></tbody>
         </table>
     </div>
+{#  <div class="sectionContent off" id="disambiguateAssaysSection">#}
+{#        <div class="alert alert-warning alert-dismissible" role="alert">#}
+{#            <button type="button" class="close" data-dismiss="alert" aria-label="Close">#}
+{#            <span aria-hidden="true">&times;</span>#}
+{#            </button>#}
+{#            <div>Warning! The following inputs were not matched exactly to an experiment#}
+{#                description line but are best matched.#}
+{#            </div>#}
+{#        </div>#}
+{#        <h3 class="noMatch"> Unmatched Inputs </h3>#}
+{#        <table id="disambiguateAssaysTable" cellspacing="0">#}
+{#            <thead>#}
+{#              <th colspan="2">{# Empty placeholder for checkbox and label columns </th>#}
+{#              <th>Input Name</th>#}
+{#              <th>Possible Assay</th>#}
+{#              <th>Possible Line</th>#}
+{#            </thead>#}
+{#            <tbody></tbody>#}
+{#        </table>#}
+{#    </div>#}
 
       <div class="sectionContent off" id="disambiguateMeasurementsSection">
           <h3>Measurement Types</h3>
