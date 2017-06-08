@@ -294,6 +294,11 @@ div.disambiguationSections > div table tr > td input[type="text"] {
 	margin:0px 2px 0px 0px;
 }
 
+p.warningUnmatched {
+	color: red;
+	padding-bottom: 10px;
+}
+
 .step4SubsectionToggle {
     margin-top: 7px;
     margin-bottom: 7px;

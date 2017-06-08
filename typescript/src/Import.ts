@@ -2483,10 +2483,7 @@ module EDDTableImport {
                             line = EDDData.Lines[assay.lid],
                             protocol = EDDData.Protocols[assay.pid];
                         $('<option>').appendTo(assayIn).val('' + id).text([
-                            line.name, protocol.name, assay.name].join('-'));
-                        if (index === 0) {
-
-                        }
+                            line.name, protocol.name, assay.name].join('-'))
                     });
                  }
                 // Always reveal this, since the default for the Assay pulldown is always 'new'.
@@ -2822,7 +2819,6 @@ module EDDTableImport {
                     this.currentlyVisibleAssayObjSets.push(disam);
                 }
             });
-            let lineNames = _.map(EDDData.Lines, function(val) {return val.name})
 
             if (uniqueAssayNames.length - 1) {
 

@@ -2009,8 +2009,6 @@ var EDDTableImport;
                         var assay = EDDData.Assays[id], line = EDDData.Lines[assay.lid], protocol = EDDData.Protocols[assay.pid];
                         $('<option>').appendTo(assayIn).val('' + id).text([
                             line.name, protocol.name, assay.name].join('-'));
-                        if (index === 0) {
-                        }
                     });
                 }
                 // Always reveal this, since the default for the Assay pulldown is always 'new'.
@@ -2297,17 +2295,6 @@ var EDDTableImport;
             return $('<div>').text(text)
                 .addClass(adding.join(' '))
                 .appendTo(parentDiv);
-        };
-        TypeDisambiguationStep.prototype.findMatchedAssays = function (inputAssays) {
-            var uniqueAssays = [];
-            for (var key in EDDData.Assays) {
-                for (var i = 0; i < inputAssays.length; i++) {
-                    if (EDDData.Assays[key].name === inputAssays[i]) {
-                        uniqueAssays.push(inputAssays[i]);
-                    }
-                }
-            }
-            return uniqueAssays;
         };
         TypeDisambiguationStep.prototype.remakeMeasurementSection = function () {
             var _this = this;
