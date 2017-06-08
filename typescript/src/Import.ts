@@ -2778,6 +2778,11 @@ module EDDTableImport {
             //if there's already a table, remove it
             if ($('#matchedAssaysTable')) { $('#matchedAssaysTable').remove()}
 
+            //first if there are current rows, remove them and start over.
+            if ($('#unmatchedAssaysSection tr').length > 1 ) {
+                $('#unmatchedAssaysSection tr').remove('tr');
+            }
+
             tableMatched = <HTMLTableElement>$('<table>')
                 .attr({ 'id': 'matchedAssaysTable', 'cellspacing': 0 })
                 .appendTo(childDivMatched)
@@ -2795,6 +2800,8 @@ module EDDTableImport {
             $(tr).append('<th>Assay Name</th>');
 
             tableBodyMatched = <HTMLTableElement>$('<tbody>').appendTo(tableMatched)[0];
+
+
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // Create a table row for each unique assay name
@@ -2815,8 +2822,10 @@ module EDDTableImport {
                     this.currentlyVisibleAssayObjSets.push(disam);
                 }
             });
+            let lineNames = _.map(EDDData.Lines, function(val) {return val.name})
 
             if (uniqueAssayNames.length - 1) {
+
                 let matched:number = $('#matchedAssaysSectionBody tr').length -1;
                 let matchedLines:number = $('#matchedAssaysSectionBody tr option:selected')
                                             .text().split('Create New Assay').length -1;
@@ -2844,19 +2853,6 @@ module EDDTableImport {
                 .addClass(adding.join(' '))
                 .appendTo(parentDiv);
         }
-
-        findMatchedAssays(inputAssays) {
-            let uniqueAssays = []
-             for (var key in EDDData.Assays) {
-              for (var i = 0; i < inputAssays.length; i++) {
-                if (EDDData.Assays[key].name === inputAssays[i]) {
-                  uniqueAssays.push(inputAssays[i])
-                }
-              }
-            }
-            return uniqueAssays
-        }
-
 
         remakeMeasurementSection(): void {
             var body: HTMLTableElement,
@@ -3510,7 +3506,7 @@ module EDDTableImport {
             [this.compAuto, this.typeAuto, this.unitsAuto].forEach((auto: EDDAuto.BaseAuto): void => {
                 var cell: JQuery = $(this.row.insertCell()).addClass('disamDataCell');
                 auto.container.addClass('disamDataCell');
-                auto.visibleInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
+                auto.visibleInput.addClass('form-control');
                 auto.hiddenInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
             });
 
@@ -3589,23 +3585,6 @@ module EDDTableImport {
                     // An exact-case match with the Assay name fragment alone is second-best.
                     highest = 0.8;
                     selections.assayID = id;
-                } else if (highest < 0.7 && assay.name.indexOf(assayOrLine) >= 0) {
-                    // Finding the whole string inside the Assay name fragment is pretty good
-                    highest = 0.7;
-                    selections.match = true;
-                } else if (highest < 0.6 && line.name.indexOf(assayOrLine) >= 0) {
-                    // Finding the whole string inside the originating Line name is good too.
-                    // It means that the user may intend to pair with this Assay even though the
-                    // Assay name is different.
-                    highest = 0.6;
-                    selections.assayID = id;
-                    selections.match = false;
-                } else if (highest < 0.4 &&
-                    (new RegExp('(^|\\W)' + assay.name + '(\\W|$)', 'g')).test(assayOrLine)) {
-                    // Finding the Assay name fragment within the whole string, as a whole word, is our
-                    // last option.
-                    highest = 0.4;
-                    selections.match = false;
                 }
                 return true;
             });
@@ -3621,16 +3600,6 @@ module EDDTableImport {
                 } else if (highest < 0.8 && assayOrLine.toLowerCase() === line.n.toLowerCase()) {
                     // The same thing case-insensitive is second best.
                     highest = 0.8;
-                    selections.lineID = line.id;
-                    selections.name = line.n;
-                } else if (highest < 0.7 && assayOrLine.indexOf(line.n) >= 0) {
-                    // Finding the Line name within the string is odd, but good.
-                    highest = 0.7;
-                    selections.lineID = line.id;
-                    selections.name = line.n;
-                } else if (highest < 0.6 && line.n.indexOf(assayOrLine) >= 0) {
-                    // Finding the string within the Line name is also good.
-                    highest = 0.6;
                     selections.lineID = line.id;
                     selections.name = line.n;
                 }
@@ -3655,13 +3624,8 @@ module EDDTableImport {
             // Set up an autocomplete for the line (autocomplete is important for
             // efficiency for studies with many lines). Also add rows to disambiguated section
             /////////////////////////////////////////////////////////////////////////////
+
             if (!defaultSel.name) {
-                var parentDiv = $('#unmatchedAssaysSection');
-                var table = $('#unmatchedAssaysSection table');
-                $(parentDiv).removeClass('off');
-                $(this.row).find('input[type=checkbox]').prop('checked', false);
-                $(table).append(this.row);
-            } else if (!defaultSel.matched){
                 var parentDiv = $('#unmatchedAssaysSection');
                 var table = $('#unmatchedAssaysSection table');
                 $(parentDiv).removeClass('off');

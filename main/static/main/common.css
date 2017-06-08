@@ -521,6 +521,10 @@ input.yesAlertInput {
     margin-right:10px
 }
 
+.alert-trim {
+    display: inline-block;
+}
+
 .bulkNote {
     color: blue;
 }

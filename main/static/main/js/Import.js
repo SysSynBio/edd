@@ -2000,13 +2000,19 @@ var EDDTableImport;
             if (this.masterAssaysOptionsDisplayedForProtocol != masterP) {
                 this.masterAssaysOptionsDisplayedForProtocol = masterP;
                 assayIn = $('#masterAssay').empty();
-                $('<option>').text('(Create New)').appendTo(assayIn).val('named_or_new').prop('selected', true);
                 currentAssays = ATData.existingAssays[masterP] || [];
-                currentAssays.forEach(function (id) {
-                    var assay = EDDData.Assays[id], line = EDDData.Lines[assay.lid], protocol = EDDData.Protocols[assay.pid];
-                    $('<option>').appendTo(assayIn).val('' + id).text([
-                        line.name, protocol.name, assay.name].join('-'));
-                });
+                if (currentAssays.length === 0) {
+                    $('<option>').text('(Create New)').appendTo(assayIn).val('named_or_new').prop('selected', true);
+                }
+                else {
+                    currentAssays.forEach(function (id, index) {
+                        var assay = EDDData.Assays[id], line = EDDData.Lines[assay.lid], protocol = EDDData.Protocols[assay.pid];
+                        $('<option>').appendTo(assayIn).val('' + id).text([
+                            line.name, protocol.name, assay.name].join('-'));
+                        if (index === 0) {
+                        }
+                    });
+                }
                 // Always reveal this, since the default for the Assay pulldown is always 'new'.
                 $('#masterLineSpan').removeClass('off');
             }
@@ -2055,7 +2061,7 @@ var EDDTableImport;
             $('#masterMTypeDiv').addClass('off');
             $('#masterUnitDiv').addClass('off');
             $('#disambiguateLinesSection').addClass('off');
-            $('#disambiguateAssaysSection').addClass('off');
+            $('#unmatchedAssaysSection').addClass('off');
             $('#matchedAssaysSection').addClass('off');
             $('#disambiguateMeasurementsSection').addClass('off');
             $('#disambiguateMetadataSection').addClass('off');
@@ -2226,6 +2232,10 @@ var EDDTableImport;
             if ($('#matchedAssaysTable')) {
                 $('#matchedAssaysTable').remove();
             }
+            //first if there are current rows, remove them and start over.
+            if ($('#unmatchedAssaysSection tr').length > 1) {
+                $('#unmatchedAssaysSection tr').remove('tr');
+            }
             tableMatched = $('<table>')
                 .attr({ 'id': 'matchedAssaysTable', 'cellspacing': 0 })
                 .appendTo(childDivMatched)
@@ -2287,6 +2297,17 @@ var EDDTableImport;
             return $('<div>').text(text)
                 .addClass(adding.join(' '))
                 .appendTo(parentDiv);
+        };
+        TypeDisambiguationStep.prototype.findMatchedAssays = function (inputAssays) {
+            var uniqueAssays = [];
+            for (var key in EDDData.Assays) {
+                for (var i = 0; i < inputAssays.length; i++) {
+                    if (EDDData.Assays[key].name === inputAssays[i]) {
+                        uniqueAssays.push(inputAssays[i]);
+                    }
+                }
+            }
+            return uniqueAssays;
         };
         TypeDisambiguationStep.prototype.remakeMeasurementSection = function () {
             var _this = this;
@@ -2812,7 +2833,7 @@ var EDDTableImport;
             [this.compAuto, this.typeAuto, this.unitsAuto].forEach(function (auto) {
                 var cell = $(_this.row.insertCell()).addClass('disamDataCell');
                 auto.container.addClass('disamDataCell');
-                auto.visibleInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
+                auto.visibleInput.addClass('form-control');
                 auto.hiddenInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
             });
             $(this.row).on('change', 'input[type=hidden]', function (ev) {
@@ -2864,7 +2885,8 @@ var EDDTableImport;
             var selections, highest, assays;
             selections = {
                 lineID: 'new',
-                assayID: 'named_or_new'
+                assayID: 'named_or_new',
+                match: false
             };
             highest = 0;
             // ATData.existingAssays is type {[index: string]: number[]}
@@ -2874,7 +2896,7 @@ var EDDTableImport;
                 assay = EDDData.Assays[id];
                 line = EDDData.Lines[assay.lid];
                 protocol = EDDData.Protocols[assay.pid];
-                name = [line.name, protocol.name, assay.name].join('-');
+                name = assay.name;
                 if (assayOrLine.toLowerCase() === name.toLowerCase()) {
                     // The full Assay name, even case-insensitive, is the best match
                     selections.assayID = id;
@@ -2883,30 +2905,6 @@ var EDDTableImport;
                 else if (highest < 0.8 && assayOrLine === assay.name) {
                     // An exact-case match with the Assay name fragment alone is second-best.
                     highest = 0.8;
-                    selections.assayID = id;
-                }
-                else if (highest < 0.7 && assay.name.indexOf(assayOrLine) >= 0) {
-                    // Finding the whole string inside the Assay name fragment is pretty good
-                    highest = 0.7;
-                    selections.assayID = id;
-                }
-                else if (highest < 0.6 && line.name.indexOf(assayOrLine) >= 0) {
-                    // Finding the whole string inside the originating Line name is good too.
-                    // It means that the user may intend to pair with this Assay even though the
-                    // Assay name is different.
-                    highest = 0.6;
-                    selections.assayID = id;
-                }
-                else if (highest < 0.4 &&
-                    (new RegExp('(^|\\W)' + assay.name + '(\\W|$)', 'g')).test(assayOrLine)) {
-                    // Finding the Assay name fragment within the whole string, as a whole word, is our
-                    // last option.
-                    highest = 0.4;
-                    selections.assayID = id;
-                }
-                else if (highest < 0.3 && currentIndex === i) {
-                    // If all else fails, choose Assay of current index in sorted order.
-                    highest = 0.3;
                     selections.assayID = id;
                 }
                 return true;
@@ -2924,18 +2922,6 @@ var EDDTableImport;
                 else if (highest < 0.8 && assayOrLine.toLowerCase() === line.n.toLowerCase()) {
                     // The same thing case-insensitive is second best.
                     highest = 0.8;
-                    selections.lineID = line.id;
-                    selections.name = line.n;
-                }
-                else if (highest < 0.7 && assayOrLine.indexOf(line.n) >= 0) {
-                    // Finding the Line name within the string is odd, but good.
-                    highest = 0.7;
-                    selections.lineID = line.id;
-                    selections.name = line.n;
-                }
-                else if (highest < 0.6 && line.n.indexOf(assayOrLine) >= 0) {
-                    // Finding the string within the Line name is also good.
-                    highest = 0.6;
                     selections.lineID = line.id;
                     selections.name = line.n;
                 }
@@ -2959,8 +2945,8 @@ var EDDTableImport;
             // efficiency for studies with many lines). Also add rows to disambiguated section
             /////////////////////////////////////////////////////////////////////////////
             if (!defaultSel.name) {
-                var parentDiv = $('#disambiguateAssaysSection');
-                var table = $('#disambiguateAssaysSection table');
+                var parentDiv = $('#unmatchedAssaysSection');
+                var table = $('#unmatchedAssaysSection table');
                 $(parentDiv).removeClass('off');
                 $(this.row).find('input[type=checkbox]').prop('checked', false);
                 $(table).append(this.row);

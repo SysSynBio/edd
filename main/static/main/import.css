@@ -276,6 +276,7 @@ div.disambiguationSections > div table tr > th {
 }
 div.disambiguationSections > div table tr > td > div {
 	padding-left:10px;
+	padding-right:10px;
 }
 div.disambiguationSections > div table tr > td select {
 	margin:0px 3px 0px 3px;
