@@ -1,4 +1,4 @@
-    // requires: jQuery, jQuery-UI
+// requires: jQuery, jQuery-UI
 //
 // XXX obtained from http://jsfiddle.net/alforno/g4stL/
 // see copyright notice below
