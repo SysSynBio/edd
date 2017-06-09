@@ -2007,8 +2007,7 @@ var EDDTableImport;
                 else {
                     currentAssays.forEach(function (id, index) {
                         var assay = EDDData.Assays[id], line = EDDData.Lines[assay.lid], protocol = EDDData.Protocols[assay.pid];
-                        $('<option>').appendTo(assayIn).val('' + id).text([
-                            line.name, protocol.name, assay.name].join('-'));
+                        $('<option>').appendTo(assayIn).val('' + id).text(assay.name);
                     });
                 }
                 // Always reveal this, since the default for the Assay pulldown is always 'new'.
