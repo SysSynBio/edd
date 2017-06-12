@@ -2479,9 +2479,7 @@ module EDDTableImport {
                     $('<option>').text('(Create New)').appendTo(assayIn).val('named_or_new').prop('selected', true);
                 } else {
                     currentAssays.forEach((id: number, index:number): void => {
-                        var assay = EDDData.Assays[id],
-                            line = EDDData.Lines[assay.lid],
-                            protocol = EDDData.Protocols[assay.pid];
+                        var assay = EDDData.Assays[id];
                         $('<option>').appendTo(assayIn).val('' + id).text(assay.name)
                     });
                  }

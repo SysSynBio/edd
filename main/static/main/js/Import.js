@@ -2006,7 +2006,7 @@ var EDDTableImport;
                 }
                 else {
                     currentAssays.forEach(function (id, index) {
-                        var assay = EDDData.Assays[id], line = EDDData.Lines[assay.lid], protocol = EDDData.Protocols[assay.pid];
+                        var assay = EDDData.Assays[id];
                         $('<option>').appendTo(assayIn).val('' + id).text(assay.name);
                     });
                 }
