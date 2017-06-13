@@ -1340,7 +1340,7 @@ def study_import_table(request, pk=None, slug=None):
         return HttpResponseRedirect(reverse('main:detail', kwargs={'slug': study.slug}))
     return render(
         request,
-        "main/import.html",
+        "main/import2.html",
         context={
             "study": study,
             "protocols": protocols,

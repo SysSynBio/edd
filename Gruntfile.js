@@ -80,6 +80,7 @@ module.exports = function(grunt) {
                 options: {
                     rootDir: './typescript/build/',
                     target: 'es5',
+                    moduleResolution: 'classic',
                     declaration: false,
                     pretty: true,
                     inlineSourceMap: true,
