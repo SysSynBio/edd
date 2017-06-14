@@ -22,5 +22,8 @@ interface JQueryStatic {
 
 declare var FileDrop: any;
 declare var tinymce: any;
-declare var Vue: any; 
+declare var Vue: any;
+declare var VueFormWizard: any;
+declare var require: any;
+
 

@@ -5,9 +5,11 @@
   "main": "index.js",
   "dependencies": {
     "grunt": "^1.0.1",
-    "grunt-protractor-runner": "^4.0.0"
+    "grunt-protractor-runner": "^4.0.0",
+    "vue-template-compiler": "^2.3.4"
   },
   "devDependencies": {
+    "css-loader": "^0.28.4",
     "generator-karma": "^2.0.0",
     "grunt-contrib-clean": "^1.0.0",
     "grunt-contrib-copy": "^1.0.0",
@@ -19,6 +21,7 @@
     "grunt-karma": "^2.0.0",
     "grunt-ts": "^6.0.0-beta.3",
     "grunt-typescript": "^0.8.0",
+    "grunt-webpack": "^3.0.0",
     "jasmine": "^2.4.1",
     "jasmine-core": "^2.4.1",
     "karma": "^1.1.1",
@@ -28,7 +31,10 @@
     "phantomcss": "^1.1.3",
     "phantomjs": "^2.1.7",
     "phantomjs-prebuilt": "^2.1.7",
-    "typescript": "^1.8.0"
+    "typescript": "^1.8.0",
+    "vue-loader": "^12.2.1",
+    "vue-ts-loader": "0.0.3",
+    "webpack": "^2.1.0-beta.22"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

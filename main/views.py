@@ -1298,9 +1298,9 @@ class StudyPermissionJSONView(StudyObjectMixin, generic.detail.BaseDetailView):
             manager.update_or_create(**kwargs)
 
 
-# /study/<study_id>/import/
+# /study/<study_id>/import2/
 @ensure_csrf_cookie
-def study_import_table(request, pk=None, slug=None):
+def study_import_table2(request, pk=None, slug=None):
     """
     View for importing tabular data (replaces AssayTableData.cgi).
     :raises: Exception if an error occurrs during the import attempt
@@ -1348,6 +1348,56 @@ def study_import_table(request, pk=None, slug=None):
         },
     )
 
+
+# /study/<study_id>/import/
+@ensure_csrf_cookie
+def study_import_table(request, pk=None, slug=None):
+    """
+    View for importing tabular data (replaces AssayTableData.cgi).
+    :raises: Exception if an error occurrs during the import attempt
+    """
+    study = load_study(request, pk=pk, slug=slug, permission_type=CAN_EDIT)
+    user_can_write = study.user_can_write(request.user)
+
+    # FIXME protocol display on import page should be an autocomplete
+    protocols = Protocol.objects.order_by('name')
+
+    if request.method == "POST":
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug('\n'.join([
+                '%(key)s : %(value)s' % {'key': key, 'value': request.POST[key]}
+                for key in sorted(request.POST)
+            ]))
+        try:
+            storage = redis.ScratchStorage()
+            # save POST to scratch space as urlencoded string
+            key = storage.save(request.POST.urlencode())
+            result = import_table_task.delay(study.pk, request.user.pk, key)
+            # save task ID for notification later
+            request.user.profile.tasks.create(uuid=result.id)
+            messages.add_message(
+                request,
+                msg_constants.SUCCESS_PERSISTENT,
+                _('Data is submitted for import. You may continue to use EDD, another message '
+                  'will appear once the import is complete.')
+            )
+        except RuntimeError as e:
+            logger.exception('Data import failed: %s', e.message)
+
+            # show the first error message to the user. continuing the import attempt to collect
+            # more potentially-useful errors makes the code too complex / hard to maintain.
+            messages.error(request, e)
+            # redirect to study page
+        return HttpResponseRedirect(reverse('main:detail', kwargs={'slug': study.slug}))
+    return render(
+        request,
+        "main/import.html",
+        context={
+            "study": study,
+            "protocols": protocols,
+            "writable": user_can_write,
+        },
+    )
 
 # /study/<study_id>/describe/
 @ensure_csrf_cookie
