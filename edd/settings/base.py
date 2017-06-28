@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Django settings for edd project.
+Django settings for the EDD project, as well as some custom EDD-defined configuration.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/dev/topics/settings/
@@ -14,8 +14,6 @@ import environ
 from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS as TCP
 from psycopg2.extensions import ISOLATION_LEVEL_SERIALIZABLE
 
-from jbei.rest.auth import HmacAuth
-
 
 root = environ.Path(__file__) - 3  # root is two parents up of directory containing base.py
 BASE_DIR = root()
@@ -26,17 +24,56 @@ env = environ.Env(
 )
 # Use the SECRET_KEY to detect if env is setup via Docker; if not, load from file secrets.env
 if env('SECRET_KEY', default=DOCKER_SENTINEL) is DOCKER_SENTINEL:
-    env.read_env(root('secrets.env'))
-
+    env.read_env(root('secrets.env'))  # read passwords into the environment from secrets.env
 
 ###################################################################################################
-# Set ICE configuration used in multiple places, or that we want to be able to override in local.py
+# Custom EDD-defined configuration options
 ###################################################################################################
+
+EDD_VERSION_NUMBER = '2.0.4'
+
+# Optionally alter the UI to make a clear distinction between deployment environments (e.g. to
+# help prevent developers from accidentally altering data in production). Any value that starts
+# with the prefix "DEVELOPMENT" or "TEST" will change EDD's background color and print a the value
+# of this variable at the top of each page.
+EDD_DEPLOYMENT_ENVIRONMENT = env('EDD_DEPLOYMENT_ENVIRONMENT',  default='PRODUCTION')
+
+# override to allow arbitrary text instead of requiring protein ID's to fit the pattern of Uniprot
+# accession id's (though at present validity isn't confirmed, only format).
+# See http://www.uniprot.org/
+REQUIRE_UNIPROT_ACCESSION_IDS = True
+
+# by default, don't expose EDD's nascent DRF-based REST API until we can do more testing
+# This option is needed to support the bulk line creation script, but should only be exposed on
+# a secure network because of known security problems in the first version.
+PUBLISH_REST_API = False
+
+##############################
+# ICE configuration used in multiple places, or that we want to be able to override in local.py
+##############################
 ICE_KEY_ID = 'edd'
 ICE_SECRET_HMAC_KEY = env('ICE_HMAC_KEY')
 ICE_URL = 'https://registry-test.jbei.org/'
 ICE_REQUEST_TIMEOUT = (10, 10)  # HTTP request connection and read timeouts, respectively (seconds)
-HmacAuth.register_key(ICE_KEY_ID, ICE_SECRET_HMAC_KEY)
+
+# Be very careful in changing this value!! Useful to avoid heachaches in *LOCAL* testing against a
+# non-TLS ICE deployment. Also barring another solution, useful as a temporary/risky workaround for
+# testing ICE communication from offsite...for example, `manage.py test_ice_communication` observed
+# failing DNS lookup from offsite if directed to registry.jbei.org, but fails SSL verification if
+# directed to registry.jbei.lbl.gov.
+# WARNING: Use in any context other than local testing can expose user credentials to a
+# third party!
+VERIFY_ICE_CERT = True
+
+# specify the name of the JSON serializer in use
+EDD_SERIALIZE_NAME = 'edd-json'
+
+##############################
+# Solr/Haystack Configuration
+##############################
+EDD_MAIN_SOLR = {
+    'default': env.search_url(default='solr://solr:8983/solr/'),
+}
 
 
 ###################################################################################################
@@ -74,6 +111,8 @@ SECRET_KEY = env('SECRET_KEY', default='I was awake and dreaming at the same tim
 
 ALLOWED_HOSTS = []
 SITE_ID = 1
+USE_X_FORWARDED_HOST = True
+
 LOGIN_REDIRECT_URL = '/'
 
 # Application definition
@@ -89,10 +128,12 @@ INSTALLED_APPS = (
     'django_extensions',  # django-extensions in pip
     'rest_framework',  # djangorestframework in pip
     'form_utils',  # django-form-utils in pip
+    'messages_extends',  # django-messages-extends in pip
     # django-allauth in pip; separate apps for each provider
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'django.contrib.flatpages',
     # 'allauth.socialaccount.providers.github',
     # 'allauth.socialaccount.providers.google',
     # 'allauth.socialaccount.providers.linkedin_oauth2',
@@ -101,6 +142,7 @@ INSTALLED_APPS = (
     'main',
     'edd_utils',
     'edd.profile',
+    'edd.branding'
 )
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -112,6 +154,8 @@ MIDDLEWARE_CLASSES = (
     'threadlocals.middleware.ThreadLocalMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'main.utilities.EDDSettingsMiddleware',
+    'edd.profile.middleware.TaskNotification',
 )
 
 
@@ -145,14 +189,6 @@ TEMPLATES = [
 
 
 ###################################################################################################
-# Solr/Haystack Configuration
-###################################################################################################
-EDD_MAIN_SOLR = {
-    'default': env.search_url(default='solr://solr:8983/solr/'),
-}
-
-
-###################################################################################################
 # Databases
 ###################################################################################################
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
@@ -180,13 +216,14 @@ CACHES = {
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
+EDD_LATEST_CACHE = 'default'
 
 
-####################################################################################################
+###################################################################################################
 # REST API Framework
-####################################################################################################
+###################################################################################################
+# http://www.django-rest-framework.org/api-guide/settings/
 
-PUBLISH_REST_API = False  # by default, don't publish the API until we can do more testing
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` authentication.
     'DEFAULT_AUTHENTICATION_CLASSES': (

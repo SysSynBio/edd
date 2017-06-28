@@ -11,7 +11,7 @@
     $(this).closest('.disclose').toggleClass('discloseHide');
     return false;
   }
-  $(window).load(function () {
+  $(window).on('load', function () {
     $('.disclose').find('a.discloseLink').on('click', disclose);
   });
   </script>
@@ -42,7 +42,7 @@
 
 {% block body_title %}
   SBML Export For {% for study in selection.studies %}
-   <a href="{% url 'main:detail' study.id %}">{{ study.name }}</a>{% if not forloop.last %},{% endif %}
+   <a href="{% url 'main:detail' slug=study.slug %}">{{ study.name }}</a>{% if not forloop.last %},{% endif %}
   {% endfor %}
 {% endblock body_title %}
 
@@ -275,9 +275,16 @@
     </div><!-- #allstatusmain -->
 
     {% if time_form %}
+    {% with warnings_list=time_form.sbml_warnings %}
     <div class="pageSection" style="margin:10px;" id="timeselectmain">
-      <div class="sectionHead">{% trans "Export SBML at timepoint" %}</div>
+      <div class="sectionHead">
+        <span>{% trans "Export SBML at timepoint" %}</span>
+        {% include 'main/include/export/warningnotice.html' %}
+      </div>
       <div class="sectionContent">
+        {% for message in warnings_list %}
+        <div class="warn2">{{ message }}</div>
+        {% endfor %}
         <!-- Form to select time for export -->
         {{ time_form.as_p }}
       </div>
@@ -285,6 +292,7 @@
         <button type="submit" name="action" value="download">{% trans "Download SBML" %}</button>
       </div>
     </div>
+    {% endwith %}
     {% endif %}
 
   </form><!-- #exportForm -->

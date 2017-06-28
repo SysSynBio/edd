@@ -63,6 +63,7 @@ class SbmlExport(object):
         self._forms = {}
         self._match_fields = {}
         self._match_sbml_warnings = []
+        self._export_errors = []
         self._max = self._min = None
         self._points = None
         self._density = []
@@ -79,9 +80,8 @@ class SbmlExport(object):
         default_factor = density_measurements.cleaned_data.get('gcdw_default', 0.65)
         factor_meta = density_measurements.cleaned_data.get('gcdw_conversion', None)
         measurement_qs = self.load_measurement_queryset(density_measurements)
-        measurement_set = set(measurements)
         # try to load factor metadata for each assay
-        for m in [m for m in measurement_qs if m.pk in measurement_set]:
+        for m in measurement_qs:
             if factor_meta is None:
                 factor = default_factor
             else:
@@ -106,7 +106,7 @@ class SbmlExport(object):
         # process all the scalar measurements
         types_qs = models.MeasurementType.objects.filter(
             measurement__in=measurements,
-            measurement__measurement_format=models.MeasurementFormat.SCALAR,
+            measurement__measurement_format=models.Measurement.Format.SCALAR,
         ).distinct()
         types_list = list(types_qs)
         # add fields matching species/exchange for every scalar measurement type
@@ -266,6 +266,7 @@ class SbmlExport(object):
         time_form = SbmlExportSelectionForm(
             t_range=t_range, points=points, line=self._selection.lines[0], data=payload, **kwargs
         )
+        time_form.sbml_warnings.extend(self._export_errors)
         return time_form
 
     def init_forms(self, payload, context):
@@ -289,7 +290,7 @@ class SbmlExport(object):
         # https://code.djangoproject.com/ticket/24747
         values_qs = models.MeasurementValue.objects.filter(x__len=1, y__len=1).order_by('x')
         return m_form.measurement_qs.filter(
-                measurement_format=models.MeasurementFormat.SCALAR
+                measurement_format=models.Measurement.Format.SCALAR
             ).select_related(
                 'assay__line',
             ).prefetch_related(
@@ -410,10 +411,22 @@ class SbmlExport(object):
             times = [p.x[0] for p in self._density]
             next_index = bisect(times, time)
             # already converted with gCDW in SbmlExport#addDensity()
-            y_0 = interpolate_at(self._density, time)
-            y_next = float(self._density[next_index].y[0])
-            time_next = times[next_index]
-            time_delta = float(time_next - time)
+            if next_index == len(times) and time == times[-1]:
+                # calculate flux based on second-to-last for last element
+                y_0 = self._density[-2].y[0]
+                y_next = self._density[-1].y[0]
+                time_delta = float(time - times[-2])
+            elif next_index == len(times):
+                logger.warning('tried to calculate biomass flux beyond upper range of data')
+                return
+            elif next_index == 0 and times[0] != time:
+                logger.warning('tried to calculate biomass flux beyond lower range of data')
+                return
+            else:
+                # calculate flux to next value for all but last value
+                y_0 = interpolate_at(self._density, time)
+                y_next = float(self._density[next_index].y[0])
+                time_delta = float(times[next_index] - time)
             flux = math.log(y_next / y_0) / time_delta
             kinetic_law = reaction.getKineticLaw()
             # NOTE: libsbml calls require use of 'bytes' CStrings
@@ -429,15 +442,24 @@ class SbmlExport(object):
         for mlist in self._measures.itervalues():
             for m in mlist:
                 if m.is_carbon_ratio():
-                    magnitudes = models.MeasurementValue.objects.filter(
+                    points = models.MeasurementValue.objects.filter(
                         measurement=m, x__0=time,
-                    ).values_list('y')[0][0]
-                    combined = ['%s(0.02)' % v for v in magnitudes]
-                    # pad out to 13 elements
-                    combined += ['-'] * (13 - len(magnitudes))
-                    name = m.measurement_type.short_name
-                    value = '\t'.join(combined)
-                    notes[m.assay.protocol.name].append('%s\tM-0\t%s' % (name, value))
+                    )
+                    if points.exists():
+                        # only get first value object, unwrap values_list tuple to get y-array
+                        magnitudes = points.values_list('y')[0][0]
+                        combined = ['%s(0.02)' % v for v in magnitudes]
+                        # pad out to 13 elements
+                        combined += ['-'] * (13 - len(magnitudes))
+                        name = m.measurement_type.short_name
+                        value = '\t'.join(combined)
+                        # TODO: find a better way to store/update this magic string
+                        notes['LCMSLabelData'].append(' %s\tM-0\t%s' % (name, value))
+                    else:
+                        logger.warning(
+                            "No vector data found for %(measurement)s at %(time)s",
+                            {'measurement': m, 'time': time}
+                        )
         if self._sbml_model.isSetNotes():
             notes_obj = self._sbml_model.getNotes()
         else:
@@ -488,10 +510,20 @@ class SbmlExport(object):
         )
         for m in m_inter:
             points = {p.x[0] for p in m.values if self._min <= p.x[0] <= self._max}
-            if self._points:
-                self._points.intersection_update(points)
-            else:
+            if self._points is None:
                 self._points = points
+            elif self._points:
+                self._points.intersection_update(points)
+                if not self._points:
+                    # Adding warning as soon as no valid timepoints found
+                    self._export_errors.append(
+                        _('Including measurement %(type_name)s results in no valid export '
+                          'timepoints; consider excluding this measurement, or enable '
+                          'interpolation for the %(protocol)s protocol.') % {
+                            'type_name': m.measurement_type.type_name,
+                            'protocol': m.assay.protocol.name,
+                        }
+                    )
 
     def _update_reaction(self, builder, our_reactions, time):
         # loop over all template reactions, if in our_reactions set bounds, notes, etc
@@ -506,27 +538,36 @@ class SbmlExport(object):
                     }
                 )
                 continue
+            else:
+                logger.info("working on reaction %s", reaction_sid)
             self._update_omics(builder, reaction, time)
             try:
                 values = self._values_by_type[type_key]
                 times = [v.x[0] for v in values]
                 next_index = bisect(times, time)
-                if next_index == len(times):
-                    logger.warning('tried to calculate beyond upper range of data')
+                if time > times[-1]:
+                    logger.warning('tried to calculate reaction flux beyond upper range of data')
                     continue
-                elif next_index == 0 and times[0] != time:
-                    logger.warning('tried to calculate beyond lower range of data')
+                elif time < times[0]:
+                    logger.warning('tried to calculate reaction flux beyond lower range of data')
                     continue
+                elif next_index == len(times):
+                    # calculate flux based on second-to-last for last element
+                    y_0 = float(values[-1].y[0])
+                    y_prev = float(values[-2].y[0])
+                    y_delta = y_0 - y_prev
+                    time_delta = float(time - times[-2])
+                else:
+                    # calculate flux to next value for all but last value
+                    y_0 = interpolate_at(values, time)
+                    y_next = float(values[next_index].y[0])
+                    y_delta = y_next - y_0
+                    time_delta = float(times[next_index] - time)
                 # interpolate_at returns a float
                 # NOTE: arithmetic operators do not work between float and Decimal
                 density = interpolate_at(self._density, time)
-                y_0 = interpolate_at(values, time)
-                y_next = float(values[next_index].y[0])
-                time_next = times[next_index]
-                y_delta = y_next - y_0
-                time_delta = float(time_next - time)
                 # TODO: find better way to detect ratio units
-                if values[next_index].measurement.y_units.unit_name.endswith('/hr'):
+                if values[0].measurement.y_units.unit_name.endswith('/hr'):
                     flux = y_0 / density
                 else:
                     flux = (y_delta / time_delta) / density
@@ -564,9 +605,9 @@ class SbmlExport(object):
             try:
                 # TODO: change to .order_by('x__0') once Django supports ordering on transform
                 # https://code.djangoproject.com/ticket/24747
-                values = models.MeasurementValue.objects.filter(
+                values = list(models.MeasurementValue.objects.filter(
                     measurement__in=measurements
-                ).select_related('measurement__y_units').order_by('x')
+                ).select_related('measurement__y_units').order_by('x'))
                 # convert units
                 for v in values:
                     units = v.measurement.y_units
@@ -600,7 +641,7 @@ class SbmlExportSettingsForm(SbmlForm):
     """ Form used for selecting settings on SBML exports. """
     sbml_template = forms.ModelChoiceField(
         # TODO: potentially narrow options based on current user?
-        models.SBMLTemplate.objects.all(),
+        models.SBMLTemplate.objects.exclude(biomass_exchange_name=''),
         label=_('SBML Template'),
     )
 
@@ -668,7 +709,13 @@ class SbmlExportMeasurementsForm(SbmlForm):
         ).order_by(
             'assay__protocol__name', 'assay__name',
         ).select_related(
+            # including these to cut down on additional queries later
+            'assay',
+            'assay__protocol',
+            'y_units',
             'measurement_type',
+        ).prefetch_related(
+            'measurementvalue_set',
         )
         if qfilter is not None:
             f.queryset = f.queryset.filter(qfilter)
@@ -678,6 +725,17 @@ class SbmlExportMeasurementsForm(SbmlForm):
             del self.fields['interpolate']
         else:
             f.initial = f.queryset
+            # Add in warnings for any Metabolite measurements that have no defined molar_mass
+            missing_mass = models.Metabolite.objects.filter(
+                Q(measurement__in=f.queryset),
+                Q(molar_mass__isnull=True) | Q(molar_mass=0),
+            ).order_by('type_name')
+            for metabolite in missing_mass:
+                self._sbml_warnings.append(
+                    _('Measurement type %(type_name)s has no defined molar mass.') % {
+                        'type_name': metabolite.type_name,
+                    }
+                )
             self.fields['interpolate'].queryset = models.Protocol.objects.filter(
                 assay__measurement__in=f.queryset
             ).distinct()
@@ -935,7 +993,7 @@ class SbmlMatchReactions(SbmlForm):
         return super(SbmlMatchReactions, self).clean()
 
 
-class SbmlExportSelectionForm(forms.Form):
+class SbmlExportSelectionForm(SbmlForm):
     """ Form determining output timepoint and filename for an SBML download. """
     time_select = forms.DecimalField(
         help_text=_('Select the time to compute fluxes for embedding in SBML template'),
@@ -952,13 +1010,14 @@ class SbmlExportSelectionForm(forms.Form):
     def __init__(self, t_range, points=None, line=None, *args, **kwargs):
         super(SbmlExportSelectionForm, self).__init__(*args, **kwargs)
         time_field = self.fields['time_select']
-        if points and len(points):
+        if points is not None:
+            initial = points[0] if points else None
             self.fields['time_select'] = forms.TypedChoiceField(
                 choices=[('%s' % t, '%s hr' % t) for t in points],
                 coerce=Decimal,
                 empty_value=None,
                 help_text=time_field.help_text,
-                initial=points[0],
+                initial=initial,
                 label=time_field.label,
             )
         else:

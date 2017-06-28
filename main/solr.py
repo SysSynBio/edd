@@ -6,8 +6,11 @@ import logging
 import requests
 
 from django.conf import settings as django_settings
+from django.db.models import Count, F, Prefetch
+from itertools import ifilter, islice
+from six import string_types
 
-from builtins import str
+from . import models, utilities
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +20,8 @@ timeout = (10, 10)  # tuple for request connection and read timeouts, respective
 class SolrSearch(object):
     """ Base class for interfacing with Solr indices. """
 
-    def __init__(self, core=None, settings=None, settings_key='default', url=None, *args, **kwargs):
+    def __init__(self, core=None, settings=None, settings_key='default', url=None,
+                 *args, **kwargs):
         self.core = core
         if settings is not None:
             self.settings = settings
@@ -44,65 +48,76 @@ class SolrSearch(object):
         Clears the index, deleting everything.
         :raises IOError if an error occurs during the attempt
         """
-
         # build the request
         url = self.url + '/update/json'
         command = '{"delete":{"query":"*:*"},"commit":{}}'
         headers = {'content-type': 'application/json'}
-
         # issue the request (raises IOError)
         response = requests.post(url, data=command, headers=headers, timeout=timeout)
+        response.raise_for_status()  # raises HttpError (extends IOError)
+        return self
 
-        if response.status_code != requests.codes.ok:
-            response.raise_for_status()  # raises HttpError (extends IOError)
+    def get_solr_payload(self, obj):
+        return obj.to_solr_json()
+
+    def get_queryopt(self, query, **kwargs):
+        # do some basic bounds sanity checking
+        try:
+            start = int(kwargs.get('i', 0))
+            start = 0 if start < 0 else start
+        except Exception as e:
+            start = 0
+
+        try:
+            rows = int(kwargs.get('size', 50))
+            rows = 50 if rows < 1 else rows
+        except Exception as e:
+            rows = 50
+        queryopt = {
+            'indent': True,
+            'q': query,
+            'start': start,
+            'rows': rows,
+            'sort': kwargs.get('sort', None),
+            'wt': 'json',
+            'fl': '*',
+        }
+        return queryopt
 
     def remove(self, docs=[]):
         """
-            Updates Solr with a list of objects to remove from the index.
+        Updates Solr with a list of objects to remove from the index.
 
-            :param docs: an iterable of objects with an id property
+        :param docs: an iterable of objects with an id property
 
-            :raises IOError: if an error occurs during the removal attempt. Note that removals
-            are performed iteratively, so it's possible that some succeeded before the error
-            occurred.
+        :raises IOError: if an error occurs during the removal attempt. Note that removals are
+            performed iteratively, so it's possible that some succeeded before the error occurred.
         """
-
         # Does no permissions checking; permissions already valid if called from Study pre_delete
         # signal, but other clients must do their own permission checks.
         url = self.url + '/update/json'
-
         # proactively log input to help diagnose integration errors, if they occur
-        logger.info("%(class_name)s.%(method_name)s: %(params)s" % {
-            'class_name': self.__class__.__name__,
-            'method_name': self.remove.__name__,
-            'params': 'url=%(url)s, doc ids = %(doc_ids)s' % {
-                'doc_ids': str([doc.id for doc in docs]),
-                'url': url, }})
-
+        logger.info('%(cls)s deleting from solr index with: %(ids)s' % {
+            'cls': self.__class__.__name__,
+            'ids': [doc.id for doc in docs],
+        })
         command = '{"delete":{"query":"id:%s"},"commit":{}}'
         headers = {'content-type': 'application/json'}
         for doc in docs:
             try:
                 response = requests.post(
-                    url, data=command % (doc.id,), headers=headers, timeout=timeout)
-
-            # catch / re-raise communication errors after logging some helpful context re: where the
-            # error occurred
+                    url,
+                    data=command % (doc.id,),
+                    headers=headers,
+                    timeout=timeout,
+                )
+                response.raise_for_status()
+            # catch / re-raise communication errors after logging some helpful context re: where
+            # the error occurred
             except IOError as err:
                 # log the doc id on which the error occurred, then re-raise the error
-                logger.error('Error removing data from Solr index. Failed on doc id %s' % str(
-                        doc.id))
+                logger.error('Error removing data from Solr index. Failed on doc id %s', doc.id)
                 raise err
-
-            else:
-                # if we got an error response from Solr, log some context re: when the error
-                # occurred, then raise an HttpError (extents IOError noted in docstring / thrown
-                # above)
-                if response.status_code != requests.codes.ok:
-                    # log the doc id on which the problem occurred, then raise an HttpError
-                    logger.error(
-                        'Error removing data from Solr index. Failed on doc id %s' % str(doc.id))
-                    response.raise_for_status()
 
     def search(self, queryopt={'q': '*:*', 'wt': 'json', }):
         """
@@ -115,65 +130,116 @@ class SolrSearch(object):
             queryopt['q'] = queryopt['q'] + '*'
 
         # proactively log input to help diagnose integration errors, if they occur
-        logger.info("%(class_name)s.%(method_name)s: %(params)s" % {
-            'class_name': self.__class__.__name__,
-            'method_name': self.search.__name__,
-            'params': ('queryopt=%s' % str(queryopt))
+        logger.info('%(cls)s searching solr index with: %(queryopt)s' % {
+            'cls': self.__class__.__name__,
+            'queryopt': queryopt,
         })
 
         # contact Solr / raise any IOErrors that arise
         response = requests.get(self.url + '/select', params=queryopt, timeout=timeout)
+        response.raise_for_status()
 
-        if response.status_code == requests.codes.ok:
-            return response.json()
-        else:
-            # if we got an error response from Solr, log some context re: when the error
-            # occurred, then raise an HttpError (extents IOError noted in docstring maybe thrown
-            # by GET above)
-            response.raise_for_status()
+        return response.json()
+
+    def query(self, query, **kwargs):
+        """ Runs a query against the Solr core, translating options to the Solr syntax.
+
+            Arguments:
+                query: Solr query string (default: 'is_active:true')
+                i: starting index of results to fetch (default: 0)
+                size: maximum fetch size (default: 50)
+                sort: comma-delimited string of "field (asc|desc)" (default: None)
+            Returns:
+                JSON results of query:
+                    - responseHeader
+                        - status: 0 for no errors, otherwise an error code
+                        - QTime: milliseconds to complete query
+                        - params: echo of parameters used in request
+                    - response
+                        - numFound: total documents matching query
+                        - start: starting index of results
+                        - docs: array of results
+            :raises IOError: if an error occurs during the query attempt (error connecting,
+                or HTTP error response from Solr)
+        """
+        queryopt = self.get_queryopt(query, **kwargs)
+        return self.search(queryopt=queryopt)
 
     def update(self, docs=[]):
         """
         Update Solr index from the given list of objects. Does no permissions checking; permissions
-        already valid if called from Study post_save
-        # signal, but other clients must do own checks on permissions.
+        already valid if called from Study post_save signal, but other clients must do own checks
+        on permissions.
 
         :param docs: an iterable of objects with a to_solr_json method to update in Solr. Must
-        have an id attribute.
-        :return: Solr's JSON response, if successful
-        :return the Solr JSON response, if the add was successfully performed.
-        :raise: IOError if an error occurs during the update attempt
+            have an id attribute.
+        :return: list of Solr's JSON response(s), if the update was successfully performed.
+        :raises IOError: if an error occurs during the update attempt
         """
         url = self.url + '/update/json'
-        payload = map(lambda d: d.to_solr_json(), docs)
-
-        # proactively log input to help diagnose integration errors, if they occur
-        logger.info("%(class_name)s.%(method_name)s: %(params)s" % {
-            'class_name': self.__class__.__name__, 'method_name': self.update.__name__,
-            'params': 'url=%(url)s, doc ids = %(doc_ids)s' % {
-                'doc_ids': str([doc.id for doc in docs]),
-                'url': url,
-            }
-        })
+        payload = ifilter(lambda d: d is not None, map(self.get_solr_payload, docs))
+        response_list = []
 
         headers = {'content-type': 'application/json'}
-        # make an initial request to do the add / raise IOError if it occurs
-        response = requests.post(
-            url, data=json.dumps(payload), headers=headers, timeout=timeout)
-
-        # if we received a valid response with an HTTP error code, raise HttpException (
-        # extends IOError that may also be raised above)
-        if response.status_code != requests.codes.ok:
+        # Send updates in groups of 50
+        for group in iter(lambda: list(islice(payload, 50)), []):
+            ids = map(lambda item: item.get('id'), group)
+            logger.info('%(cls)s updating solr index with IDs: %(ids)s' % {
+                'cls': self.__class__.__name__,
+                'ids': ids,
+            })
+            # make an initial request to do the add / raise IOError if it occurs
+            response = requests.post(
+                url,
+                data=json.dumps(group, cls=utilities.JSONDecimalEncoder),
+                headers=headers,
+                timeout=timeout,
+            )
+            # if we received a valid response with an HTTP error code, raise HttpException
             response.raise_for_status()
 
-        # if the add worked, send commit command
-        add_json = response.json()
-        response = requests.post(
-            url, data='{"commit":{}}', headers=headers, timeout=timeout)  # raises IOError
-        if response.status_code == requests.codes.ok:
-            return add_json
-        else:
+            # if the add worked, send commit command
+            add_json = response.json()
+            response = requests.post(
+                url,
+                data='{"commit":{}}',
+                headers=headers,
+                timeout=timeout,
+            )  # raises IOError
             response.raise_for_status()  # raises HttpError (extends IOError)
+            logger.info('%(cls)s commit successful with IDs: %(ids)s' % {
+                'cls': self.__class__.__name__,
+                'ids': ids,
+            })
+            response_list.append(add_json)
+        return response_list
+
+    def swap(self):
+        """
+        Change this search object to point to the swap index. All other search objects will
+        continue to use the main index.
+        """
+        if self.core.endswith('_swap'):
+            self.core = self.core[:self.core.rfind('_swap')]
+        else:
+            self.core = self.core + '_swap'
+        return self
+
+    def swap_execute(self):
+        """
+        Change this search object AND ALL OTHERS to point to the swap index. Use this to handle
+        long-running re-index tasks; update everything in the swap index, then replace the main
+        index with the swap index.
+        """
+        url = self.settings['URL'] + 'admin/cores'
+        params = {
+            'action': 'SWAP',
+            'other': self.swap().core,
+            'core': self.swap().core,
+        }
+        response = requests.get(url, params=params, timeout=timeout)
+        response.raise_for_status()
+        return self
 
     @property
     def url(self):
@@ -208,12 +274,33 @@ class StudySearch(SolrSearch):
         # Admins get no filter on read, and a query that will always eval true for write
         if ident.is_superuser:
             return ('', 'id:*')
-        acl = ['"u:'+ident.username+'"'] + \
-            map(lambda g: '"g:'+g.name+'"', ident.groups.all()) + \
-            ['"g:__Everyone__"']
+        acl = ['"g:__Everyone__"', '"u:'+ident.username+'"', ] + map(
+            lambda g: '"g:'+g.name+'"', ident.groups.all()
+        )
         return (
             ' OR '.join(map(lambda r: 'aclr:'+r, acl)),
             ' OR '.join(map(lambda w: 'aclw:'+w, acl)),
+        )
+
+    @staticmethod
+    def get_queryset():
+        return models.Study.objects.select_related(
+            'contact',
+            'updated__mod_by__userprofile',
+            'created__mod_by__userprofile',
+        ).annotate(
+            _file_count=Count('files'),
+            _comment_count=Count('comments'),
+        ).prefetch_related(
+            Prefetch(
+                'userpermission_set',
+                queryset=models.UserPermission.objects.select_related('user'),
+            ),
+            Prefetch(
+                'grouppermission_set',
+                queryset=models.GroupPermission.objects.select_related('group'),
+            ),
+            'everyonepermission_set',
         )
 
     def query(self, query='', options={}):
@@ -239,38 +326,35 @@ class StudySearch(SolrSearch):
                         - numFound: total documents matching query
                         - start: starting index of results
                         - docs: array of results
-            :raises IOError: if an error occurs during the query attempt (error connecting,
-            or HTTP error response from Solr)
+            :raises IOError: if an error occurs during the query attempt
+        """
+        # Keeping the old signature to retain backward-compatibility
+        return super(StudySearch, self).query(query=query, **options)
 
-            """
+    def get_queryopt(self, query, **kwargs):
+        queryopt = super(StudySearch, self).get_queryopt(query, **kwargs)
         if self.ident is None:
             raise RuntimeError('No user defined for query')
         (readable, writable) = StudySearch.build_acl_filter(self.ident)
         fq = [readable, ]
-        queryopt = {
-            'indent': True,
-            'q': query,
-            'start': options.get('i', 0),
-            'rows': options.get('size', 50),
-            'sort': options.get('sort', None),
-            'wt': 'json',
-            'fl': '*,score,writable:exists(query({!v=\'%(aclw)s\'},0))' % {'aclw': writable},
+        queryopt['fl'] = '*,score,writable:exists(query({!v=\'%(aclw)s\'},0))' % {
+            'aclw': writable,
         }
-        if options.get('edismax', False):
+        if kwargs.get('edismax', False):
             queryopt['defType'] = 'edismax'
             # these are the query fields and boosts to use in EDisMax
-            queryopt['qf'] = ' '.join(['name^10', 'name_ng', 'description^5', 'description_ng',
-                                       'contact', 'contact_ng', 'creator_email', 'creator_name',
-                                       'creator_ng', 'initials', 'metabolite_name',
-                                       'protocol_name', 'part_name',
-                                       ])
+            queryopt['qf'] = ' '.join([
+                'name^10', 'name_ng', 'description^5', 'description_ng', 'contact', 'contact_ng',
+                'creator_email', 'creator_name', 'creator_ng', 'initials', 'metabolite_name',
+                'protocol_name', 'part_name',
+            ])
             queryopt['q.alt'] = '*:*'
-        if not options.get('showDisabled', False):
+        if not kwargs.get('showDisabled', False):
             fq.append('active:true')
-        if options.get('showMine', False):
+        if kwargs.get('showMine', False):
             fq.append('creator:%s' % (self.ident.pk))
         queryopt['fq'] = fq
-        return self.search(queryopt=queryopt)
+        return queryopt
 
 
 class UserSearch(SolrSearch):
@@ -278,6 +362,14 @@ class UserSearch(SolrSearch):
 
     def __init__(self, core='users', *args, **kwargs):
         super(UserSearch, self).__init__(core=core, *args, **kwargs)
+
+    @staticmethod
+    def get_queryset():
+        return models.User.objects.select_related(
+            'userprofile',
+        ).prefetch_related(
+            'userprofile__institutions',
+        )
 
     def query(self, query='is_active:true', options={}):
         """ Run a query against the Users Solr index.
@@ -301,24 +393,73 @@ class UserSearch(SolrSearch):
                         - start: starting index of results
                         - docs: array of results
             :raises IOError: if an error occurs during the query attempt (error connecting,
-            or HTTP error response from Solr)
+                or HTTP error response from Solr)
         """
-        queryopt = {
-            'indent': True,
-            'q': query,
-            'start': options.get('i', 0),
-            'rows': options.get('size', 50),
-            'sort': options.get('sort', None),
-            'wt': 'json',
-            'fl': '*',
-        }
-        if options.get('edismax', False):
+        # Keeping the old signature to retain backward-compatibility
+        return super(UserSearch, self).query(query=query, **options)
+
+    def get_queryopt(self, query, **kwargs):
+        queryopt = super(UserSearch, self).get_queryopt(query, **kwargs)
+        if kwargs.get('edismax', False):
             queryopt['defType'] = 'edismax'
             # these are the query fields and boosts to use in EDisMax
             queryopt['qf'] = ' '.join([
                 'name^10', 'name_ng^5', 'initial_lower^5', 'group_ng', 'institution_ng',
             ])
             queryopt['q.alt'] = '*:*'
-        if options.get('showDisabled', False):
+        if kwargs.get('showDisabled', False):
             queryopt['fq'] = [queryopt['fq'], 'is_active:true']
-        return self.search(queryopt=queryopt)
+        return queryopt
+
+
+class MeasurementTypeSearch(SolrSearch):
+    """ API to manage searching for measurement types via Solr index """
+
+    def __init__(self, core='measurement', *args, **kwargs):
+        super(MeasurementTypeSearch, self).__init__(core=core, *args, **kwargs)
+
+    @staticmethod
+    def get_queryset():
+        return models.MeasurementType.objects.annotate(
+            _source_name=F('type_source__name'),
+        ).select_related(
+            'metabolite',
+            'proteinidentifier',
+            'geneidentifier',
+            'phosphor',
+        )
+
+    def get_queryopt(self, query, **kwargs):
+        queryopt = super(MeasurementTypeSearch, self).get_queryopt(query, **kwargs)
+        queryopt['defType'] = 'edismax'
+        queryopt['qf'] = ' '.join([
+            'name^10',  # put high weight on matching name
+            'name_edge^5',  # half as much on matching begin/end of name
+            'name_ng^2',  # smaller weight on matching substring
+            'synonym^8',  # high weight on matching synonyms
+            'synonym_edge^4',  # half as much on matching begin/end of synonym
+            'synonym_ng^2',  # smaller weight on matching substring of synonym
+            'code^10',  # high weight on matching the BIGG/SBML short name
+            'm_formula',  # small weight on matching formula string
+        ])
+        queryopt['q.alt'] = '*:*'
+        if kwargs.get('family', None):
+            family = kwargs['family']
+            if isinstance(family, string_types):
+                queryopt['fq'] = 'family:%s' % family
+            else:
+                queryopt['fq'] = ['family:%s' % f for f in family].join(' OR ')
+        return queryopt
+
+    def get_solr_payload(self, obj):
+        try:
+            if obj.type_group == models.MeasurementType.Group.METABOLITE:
+                item = obj.metabolite
+            elif obj.type_group == models.MeasurementType.Group.PROTEINID:
+                item = obj.proteinidentifier
+            else:
+                item = obj
+        except Exception as e:
+            logger.exception('Could not load detailed info on measurement type %s', obj.type_name)
+            item = obj
+        return item.to_solr_json()

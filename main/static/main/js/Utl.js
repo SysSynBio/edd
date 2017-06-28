@@ -48,9 +48,158 @@ var Utl;
             }
             return mUnits;
         };
+        EDD.findCSRFToken = function () {
+            if (jQuery.cookie) {
+                return jQuery.cookie('csrftoken');
+            }
+            return jQuery('input[name=csrfmiddlewaretoken]').val() || '';
+        };
+        // Helper function to do a little more prep on objects when calling jQuery's Alax handler.
+        // If options contains "data", it is assumed to be a constructed formData object.
+        // If options contains a "rawdata" object, it is assumed to be a standard key-value collection
+        // If options contains "type", the form type will be set to it - valid values are 'GET' or 'POST'.
+        //   If "type" is not specified, it will be 'POST'.
+        // If options contains a "progressBar" object, that object is assumed to be an HTML element of type "progress",
+        //   and the bar will be updated to reflect the upload and/or download completion.
+        EDD.callAjax = function (options) {
+            var debug = options.debug || false;
+            var processData = false;
+            var formData = options.rawdata || options.data;
+            var url = options.url || '';
+            var type = options.type || 'POST';
+            if ((options.rawdata) && (type != 'POST')) {
+                // Turns object name/attribute pairs into a query string, e.g. ?a=4&b=3 .
+                // Never what we want when using POST.
+                processData = true;
+            }
+            if (debug) {
+                console.log('Calling ' + url);
+            }
+            var headers = {};
+            if (type == 'POST') {
+                headers["X-CSRFToken"] = EDD.findCSRFToken();
+            }
+            $.ajax({
+                xhr: function () {
+                    var xhr = new XMLHttpRequest();
+                    if (options.progressBar && (options.upEnd - options.upStart > 0)) {
+                        // Specifying evt:any to deal with TypeScript compile error
+                        // ">> ../site/ALWindow.ts(197,15): error TS2339: Property 'lengthComputable' does not exist on type 'Event'."
+                        xhr.upload.addEventListener("progress", function (evt) {
+                            if (evt.lengthComputable) {
+                                var p = ((evt.loaded / evt.total) * (options.upEnd - options.upStart)) + options.upStart;
+                                options.progressBar.setProgress(p);
+                                if (debug) {
+                                    console.log('Upload Progress ' + p + '...');
+                                }
+                            }
+                            else if (debug) {
+                                console.log('Upload Progress...');
+                            }
+                        }, false);
+                    }
+                    if (options.progressBar && (options.downEnd - options.downStart > 0)) {
+                        xhr.addEventListener("progress", function (evt) {
+                            if (evt.lengthComputable) {
+                                var p = ((evt.loaded / evt.total) * (options.downEnd - options.downStart)) + options.downStart;
+                                options.progressBar.setProgress(p);
+                                if (debug) {
+                                    console.log('Download Progress ' + p + '...');
+                                }
+                            }
+                            else if (debug) {
+                                console.log('Download Progress...');
+                            }
+                        }, false);
+                    }
+                    return xhr;
+                },
+                headers: headers,
+                type: type,
+                url: url,
+                data: formData,
+                cache: false,
+                error: function (jqXHR, textStatus, errorThrown) {
+                    if (debug) {
+                        console.log(textStatus + ' ' + errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                },
+                contentType: false,
+                processData: processData,
+                success: function () {
+                    var a = Array.prototype.slice.call(arguments, -1);
+                    if (debug) {
+                        console.log(a[0].responseJSON);
+                    }
+                    if (options.success) {
+                        options.success.apply(this, arguments);
+                    }
+                }
+            });
+        };
         return EDD;
-    })();
+    }());
     Utl.EDD = EDD;
+    var Tabs = (function () {
+        function Tabs() {
+        }
+        // Set up click-to-browse tabs
+        Tabs.prepareTabs = function () {
+            // declare the click handler at the document level, then filter to any link inside a .tab
+            $(document).on('click', '.tabBar span:not(.active)', function (e) {
+                var targetTab = $(e.target).closest('span');
+                var activeTabs = targetTab.closest('div.tabBar').children('span.active');
+                activeTabs.removeClass('active');
+                targetTab.addClass('active');
+                var targetTabContentID = targetTab.attr('for');
+                var activeTabEls = activeTabs.get();
+                if (targetTabContentID) {
+                    // Hide the content section for whatever tabs were active, then show the one selected
+                    for (var i = 0; i < activeTabEls.length; i++) {
+                        var a = activeTabEls[i];
+                        var tabContentID = $(a).attr('for');
+                        if (tabContentID) {
+                            $('#' + tabContentID).addClass('off');
+                        }
+                    }
+                    $('#' + targetTabContentID).removeClass('off');
+                }
+            });
+        };
+        return Tabs;
+    }());
+    Utl.Tabs = Tabs;
+    // This is currently implemented almost exactly like Tabs above.
+    var ButtonBar = (function () {
+        function ButtonBar() {
+        }
+        // Set up click-to-browse tabs
+        ButtonBar.prepareButtonBars = function () {
+            // declare the click handler at the document level, then filter to any link inside a .tab
+            $(document).on('click', '.buttonBar span:not(.active)', function (e) {
+                var targetButton = $(e.target).closest('span');
+                var activeButtons = targetButton.closest('div.buttonBar').children('span.active');
+                activeButtons.removeClass('active');
+                targetButton.addClass('active');
+                var targetButtonContentID = targetButton.attr('for');
+                var activeButtonEls = activeButtons.get();
+                if (targetButtonContentID) {
+                    // Hide the content section for whatever buttons were active, then show the one selected
+                    for (var i = 0; i < activeButtonEls.length; i++) {
+                        var a = activeButtonEls[i];
+                        var ButtonContentID = $(a).attr('for');
+                        if (ButtonContentID) {
+                            $('#' + ButtonContentID).addClass('off');
+                        }
+                    }
+                    $('#' + targetButtonContentID).removeClass('off');
+                }
+            });
+        };
+        return ButtonBar;
+    }());
+    Utl.ButtonBar = ButtonBar;
     var QtipHelper = (function () {
         function QtipHelper() {
         }
@@ -77,7 +226,7 @@ var Utl;
             return document.getElementById(this.qtip.attr('aria-describedby'));
         };
         return QtipHelper;
-    })();
+    }());
     Utl.QtipHelper = QtipHelper;
     // RGBA helper class.
     // Values are 0-255 (although toString() makes alpha 0-1 since that's how CSS likes it).
@@ -120,7 +269,7 @@ var Utl;
         Color.black = Color.rgb(0, 0, 0);
         Color.white = Color.rgb(255, 255, 255);
         return Color;
-    })();
+    }());
     Utl.Color = Color;
     ;
     var Table = (function () {
@@ -149,7 +298,7 @@ var Utl;
             element.appendChild(this.table);
         };
         return Table;
-    })();
+    }());
     Utl.Table = Table;
     // Javascript utilities
     var JS = (function () {
@@ -244,7 +393,7 @@ var Utl;
         JS.guessFileType = function (n, t) {
             // Going in order from most confident to least confident guesses:
             if (t.indexOf('officedocument.spreadsheet') >= 0) {
-                return 'excel';
+                return 'xlsx';
             }
             if (t === 'text/csv') {
                 return 'csv';
@@ -253,16 +402,16 @@ var Utl;
                 return 'xml';
             }
             if ((n.indexOf('.xlsx', n.length - 5) !== -1) || (n.indexOf('.xls', n.length - 4) !== -1)) {
-                return 'excel';
+                return 'xlsx';
             }
             if (n.indexOf('.xml', n.length - 4) !== -1) {
                 return 'xml';
             }
             if (t === 'text/plain') {
-                return 'plaintext';
+                return 'txt';
             }
             if (n.indexOf('.txt', n.length - 4) !== -1) {
-                return 'plaintext';
+                return 'txt';
             }
             // If all else fails, assume it's a csv file.  (So, any extension that's not tried above, or no extension.)
             return 'csv';
@@ -372,7 +521,7 @@ var Utl;
             $(selector).css("class", "waitbadge");
         };
         return JS;
-    })();
+    }());
     Utl.JS = JS;
     // A progress bar with a range from 0 to 100 percent.
     // When given only an id, the class seeks an element in the document and uses that as the progress bar.
@@ -410,18 +559,19 @@ var Utl;
             }
         };
         return ProgressBar;
-    })();
+    }());
     Utl.ProgressBar = ProgressBar;
     // A class wrapping filedrop-min.js (http://filedropjs.org) and providing some additional structure.
     // It's initialized with a single 'options' object:
     // {
-    //	elementId: ID of the element to be set up as a drop zone
-    //	fileInitFn: Called when a file has been dropped, but before any processing has started
-    //	processRawFn: Called when the file content has been read into a local variable, but before any communication with
+    //  elementId: ID of the element to be set up as a drop zone
+    //  fileInitFn: Called when a file has been dropped, but before any processing has started
+    //  processRawFn: Called when the file content has been read into a local variable, but before any communication with
     //                the server.
-    //	url: The URL to upload the file.
-    //	progressBar: A ProgressBar object for tracking the upload progress.
-    //	processResponseFn: Called when the server sends back its results.
+    //  url: The URL to upload the file.
+    //  progressBar: A ProgressBar object for tracking the upload progress.
+    //  processResponseFn: Called when the server sends back its results.
+    //  processErrorFn: Called as an alternative to processResponseFn if the server reports an error.
     // }
     // All callbacks are given a FileDropZoneFileContainer object as their first argument.
     // TODO:
@@ -432,13 +582,14 @@ var Utl;
         // If processRawFn is provided, it will be called with the raw file data from the drop zone.
         // If url is provided and processRawFn returns false (or was not provided) the file will be sent to the given url.
         // If processResponseFn is provided, it will be called with the returned result of the url call.
+        // If an error occurs, processErrorFn will be called with the result.
         function FileDropZone(options) {
             this.progressBar = options.progressBar || null;
             // If there's a cleaner way to force-disable event logging in filedrop-min.js, do please put it here!
             window.fd.logging = false;
             var z = new FileDrop(options.elementId, {}); // filedrop-min.js , http://filedropjs.org
             this.zone = z;
-            this.csrftoken = jQuery.cookie('csrftoken');
+            this.csrftoken = EDD.findCSRFToken();
             if (!(typeof options.multiple === "undefined")) {
                 z.multiple(options.multiple);
             }
@@ -448,6 +599,8 @@ var Utl;
             this.fileInitFn = options.fileInitFn;
             this.processRawFn = options.processRawFn;
             this.processResponseFn = options.processResponseFn;
+            this.processErrorFn = options.processErrorFn;
+            this.processWarningFn = options.processWarningFn;
             this.url = options.url;
         }
         // Helper function to create and set up a FileDropZone.
@@ -535,7 +688,16 @@ var Utl;
             f.event('done', function (xhr) {
                 var result = jQuery.parseJSON(xhr.responseText);
                 if (result.python_error) {
-                    alert(result.python_error); // TODO: This is a bit extreme. Might want to just pass it to the callback.
+                    // If we were given a function to process the error, use it.
+                    if (typeof t.processErrorFn === "function") {
+                        t.processErrorFn(fileContainer, xhr);
+                    }
+                    else {
+                        alert(result.python_error);
+                    }
+                }
+                else if (result.warnings) {
+                    t.processWarningFn(fileContainer, result);
                 }
                 else if (typeof t.processResponseFn === "function") {
                     t.processResponseFn(fileContainer, result);
@@ -543,9 +705,9 @@ var Utl;
                 fileContainer.allWorkFinished = true;
             });
             f.event('error', function (e, xhr) {
-                // TODO: Again, heavy handed. Might want to just embed this in FileDropZoneFileContainer
-                // and make an error handler callback.
-                alert('Error uploading ' + f.name + ': ' + xhr.status + ', ' + xhr.statusText);
+                if (typeof t.processErrorFn === "function") {
+                    t.processErrorFn(fileContainer, xhr);
+                }
                 fileContainer.allWorkFinished = true;
             });
             f.event('xhrSetup', function (xhr) {
@@ -573,7 +735,7 @@ var Utl;
         };
         FileDropZone.fileContainerIndexCounter = 0;
         return FileDropZone;
-    })();
+    }());
     Utl.FileDropZone = FileDropZone;
     // SVG-related utilities.
     var SVG = (function () {
@@ -672,6 +834,6 @@ var Utl;
         };
         SVG._namespace = "http://www.w3.org/2000/svg";
         return SVG;
-    })();
+    }());
     Utl.SVG = SVG;
 })(Utl || (Utl = {})); // end module Utl

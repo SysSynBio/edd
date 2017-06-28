@@ -79,19 +79,29 @@ class EmptyChoice(ColumnChoice):
 
 class ExportSelection(object):
     """ Object used for selecting objects for export. """
-    def __init__(self, user, studyId=[], lineId=[], assayId=[], measureId=[]):
+    def __init__(self, user, exclude_disabled=True,
+                 studyId=[], lineId=[], assayId=[], measureId=[]):
         # cannot import these at top-level
         from main.models import Assay, CarbonSource, Line, Measurement, Strain, Study
+
+        def Q_active(**kwargs):
+            """ Conditionally returns a QuerySet Q filter if exclude_disabled flag is set. """
+            if exclude_disabled:
+                return Q(**kwargs)
+            return Q()
+
         # check studies linked to incoming IDs for permissions
         matched_study = Study.objects.filter(
-            Q(pk__in=studyId, active=True) |
-            Q(line__in=lineId, line__active=True) |
-            Q(line__assay__in=assayId, line__assay__active=True) |
-            Q(line__assay__measurement__in=measureId, line__assay__measurement__active=True)
+            (Q(pk__in=studyId) & Q_active(active=True)) |
+            (Q(line__in=lineId) & Q_active(line__active=True)) |
+            (Q(line__assay__in=assayId) & Q_active(line__assay__active=True)) |
+            (Q(line__assay__measurement__in=measureId) &
+             Q_active(line__assay__measurement__active=True))
         ).distinct(
         ).prefetch_related(
             'userpermission_set',
             'grouppermission_set',
+            'everyonepermission_set',
         )
         self._allowed_study = [s for s in matched_study if s.user_can_read(user)]
         # load all matching measurements
@@ -100,9 +110,9 @@ class ExportSelection(object):
             Q(assay__line__study__in=self._allowed_study),
             # OR grouping finds measurements under one of passed-in parameters
             Q(assay__line__study__in=studyId) |
-            Q(assay__line__in=lineId, assay__line__active=True) |
-            Q(assay__in=assayId, assay__active=True) |
-            Q(pk__in=measureId, active=True),
+            (Q(assay__line__in=lineId) & Q_active(assay__line__active=True)) |
+            (Q(assay__in=assayId) & Q_active(assay__active=True)) |
+            (Q(pk__in=measureId) & Q_active(active=True)),
         ).order_by(
             'assay__protocol_id'
         ).select_related(
@@ -119,9 +129,9 @@ class ExportSelection(object):
         )
         self._assays = Assay.objects.filter(
             Q(line__study__in=self._allowed_study),
-            Q(line__in=lineId, line__active=True) |
-            Q(pk__in=assayId, active=True) |
-            Q(measurement__in=measureId, measurement__active=True),
+            (Q(line__in=lineId) & Q_active(line__active=True)) |
+            (Q(pk__in=assayId) & Q_active(active=True)) |
+            (Q(measurement__in=measureId) & Q_active(measurement__active=True)),
         ).distinct(
         ).select_related(
             'protocol',
@@ -129,9 +139,9 @@ class ExportSelection(object):
         self._lines = Line.objects.filter(
             Q(study__in=self._allowed_study),
             Q(study__in=studyId) |
-            Q(pk__in=lineId, active=True) |
-            Q(assay__in=assayId, assay__active=True) |
-            Q(assay__measurement__in=measureId, assay__measurement__active=True),
+            (Q(pk__in=lineId) & Q_active(active=True)) |
+            (Q(assay__in=assayId) & Q_active(assay__active=True)) |
+            (Q(assay__measurement__in=measureId) & Q_active(assay__measurement__active=True)),
         ).distinct(
         ).select_related(
             'experimenter__userprofile', 'updated',
@@ -238,6 +248,29 @@ def value_str(value):
     return ':'.join(map(str, map(float, value)))
 
 
+class CellQuote(object):
+    """ Object defining how to quote table cell values. """
+    def __init__(self, always_quote=False, separator_string=',', quote_string='"'):
+        """ Defines how to quote values.
+            :param always_quote: if True, always quote values, instead of conditionally quote
+            :param separator_string: sequence that separates cell values, requiring quotation
+            :param quote_string: sequence used to surround quoted values
+        """
+        self.always_quote = always_quote
+        self.separator_string = separator_string
+        self.quote_string = quote_string
+
+    def quote(self, value):
+        """ Quotes a value based on object parameters. """
+        if self.always_quote or self.separator_string in value:
+            # wrap in quotes, replace any quote sequences with a doubled sequence
+            return '%(quote)s%(value)s%(quote)s' % {
+                'quote': self.quote_string,
+                'value': value.replace(self.quote_string, self.quote_string * 2),
+            }
+        return value
+
+
 class TableExport(object):
     """ Outputs tables for export of EDD objects. """
     def __init__(self, selection, options, worklist=None):
@@ -265,15 +298,15 @@ class TableExport(object):
         table_separator = '\n\n'
         row_separator = '\n'
         cell_separator = self.options.separator
+        cell_format = CellQuote(separator_string=cell_separator)
         if layout == ExportOption.DATA_COLUMN_BY_POINT:
             # data is already in correct orientation, join and return
             return table_separator.join([
                 row_separator.join([
-                    cell_separator.join([
-                        str(cell) for cell in rrow
-                        ]) for rkey, rrow in ttable.items()
-                    ]) for tkey, ttable in tables.items()
-                ])
+                    cell_separator.join(map(cell_format.quote, rrow))
+                    for rkey, rrow in ttable.items()
+                ]) for tkey, ttable in tables.items()
+            ])
         # both LINE_COLUMN_BY_DATA and DATA_COLUMN_BY_LINE are constructed similarly
         # each table in LINE_COLUMN_BY_DATA is transposed
         out = []
@@ -290,7 +323,7 @@ class TableExport(object):
             if layout == ExportOption.LINE_COLUMN_BY_DATA:
                 rows = zip(*rows)
             # join the cells
-            rows = [cell_separator.join(row) for row in rows]
+            rows = [cell_separator.join(map(cell_format.quote, row)) for row in rows]
             # join the rows
             out.append(row_separator.join(rows))
         return table_separator.join(out)
@@ -416,15 +449,14 @@ class WorklistExport(TableExport):
         lines = self.selection.lines
         protocol = self.worklist.protocol
         table = tables['all']
-        counter = 0
-        for i, (pk, line) in enumerate(lines):
+        # lines is a QuerySet of the lines to use in worklist creation
+        for i, line in enumerate(lines):
             # build row with study/line info
             row = self._output_row_with_line(line, protocol)
-            table['%s' % (pk, )] = row
+            table[str(line.pk)] = row
             # when modulus set, insert 'blank' row every modulus rows
             if self.options.blank_mod and not (i + 1) % self.options.blank_mod:
-                counter += 1
                 blank = self._output_row_with_line(
-                    None, protocol, columns=self.options.blank_columns, blank=counter,
+                    None, protocol, columns=self.options.blank_columns
                 )
                 table['blank%s' % i] = blank

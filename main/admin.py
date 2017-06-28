@@ -2,9 +2,11 @@
 from __future__ import unicode_literals
 
 from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
+from django.core.validators import RegexValidator
 from django.db import connection
 from django.core.urlresolvers import reverse
 from django.db.models import Count, Q
@@ -15,18 +17,23 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django_auth_ldap.backend import LDAPBackend
 
+import logging
+
+from . import models
 from .export.sbml import validate_sbml_attachment
 from .forms import (
     MeasurementTypeAutocompleteWidget, MetadataTypeAutocompleteWidget, RegistryAutocompleteWidget,
     RegistryValidator, UserAutocompleteWidget
 )
 from .models import (
-    Assay, Attachment, CarbonSource, GeneIdentifier, GroupPermission, Line, MeasurementGroup,
-    Measurement, MeasurementType, Metabolite, MetadataGroup, MetadataType, Phosphor,
+    Assay, Attachment, CarbonSource, GeneIdentifier, GroupPermission, Line, Measurement,
+    MeasurementType, Metabolite, MetadataGroup, MetadataType, Phosphor,
     ProteinIdentifier, Protocol, SBMLTemplate, Strain, Study, Update, UserPermission,
     WorklistColumn, WorklistTemplate,
 )
 from .solr import StudySearch, UserSearch
+
+logger = logging.getLogger(__name__)
 
 
 class AttachmentInline(admin.TabularInline):
@@ -162,12 +169,14 @@ class StrainAdmin(EDDObjectAdmin):
         super(StrainAdmin, self).__init__(*args, **kwargs)
         self.ice_validator = RegistryValidator()
 
+    def has_add_permission(self, request):
+        """ Disable adding via admin interface. Strains are automatically added when referenced
+            via the main.forms.RegistryValidator. """
+        return False
+
     def get_fields(self, request, obj=None):
         self.ice_validator = RegistryValidator(existing_strain=obj)
-        if not obj:  # creating a strain
-            return ['registry_id', ]
-        elif not obj.registry_id:  # existing strain without link to ICE
-            return ['name', 'description', 'registry_id', 'study_list', ]
+        assert(obj)
         # existing strain with link to ICE
         return ['name', 'description', 'registry_url', 'study_list', ]
 
@@ -178,9 +187,8 @@ class StrainAdmin(EDDObjectAdmin):
         return super(StrainAdmin, self).formfield_for_dbfield(db_field, **kwargs)
 
     def get_readonly_fields(self, request, obj=None):
-        if not obj:  # creating a strain
-            return []
-        elif not obj.registry_id:  # existing strain without link to ICE
+        assert(obj)
+        if not obj.registry_id:  # existing strain without link to ICE
             return ['study_list', ]
         return ['name', 'description', 'registry_url', 'study_list', ]
 
@@ -290,11 +298,13 @@ class MeasurementTypeAdmin(admin.ModelAdmin):
     def get_fields(self, request, obj=None):
         return [
             ('type_name', 'short_name', ),
+            'alt_names',
+            'type_source',
             'study_list',
         ]
 
     def get_list_display(self, request):
-        return ['type_name', 'short_name', '_study_count', ]
+        return ['type_name', 'short_name', '_study_count', 'type_source', ]
 
     def get_merge_autowidget(self):
         return MeasurementTypeAutocompleteWidget
@@ -313,15 +323,15 @@ class MeasurementTypeAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super(MeasurementTypeAdmin, self).get_queryset(request)
         if self.model == MeasurementType:
-            qs = qs.filter(type_group=MeasurementGroup.GENERIC)
+            qs = qs.filter(type_group=MeasurementType.Group.GENERIC)
         qs = qs.annotate(num_studies=Count('measurement__assay__line__study', distinct=True))
         return qs
 
     def get_readonly_fields(self, request, obj=None):
-        return ['study_list', ]
+        return ['type_source', 'study_list', ]
 
     def get_search_fields(self, request):
-        return ['type_name', 'short_name', ]
+        return ['type_name', 'short_name', 'alt_names', ]
 
     def merge_with_action(self, request, queryset):
         MergeForm = self.get_merge_form(request)
@@ -345,6 +355,13 @@ class MeasurementTypeAdmin(admin.ModelAdmin):
             'form': form,
         })
     merge_with_action.short_description = 'Merge records into …'
+
+    def save_model(self, request, obj, form, change):
+        # Save Datasource of editing user first
+        source = models.Datasource(name=request.user.username)
+        source.save()
+        obj.type_source = source
+        super(MeasurementTypeAdmin, self).save_model(request, obj, form, change)
 
     def study_list(self, instance):
         qs = Study.objects.filter(line__assay__measurement__measurement_type=instance).distinct()
@@ -393,56 +410,85 @@ class MetaboliteAdmin(MeasurementTypeAdmin):
     def get_fields(self, request, obj=None):
         return super(MetaboliteAdmin, self).get_fields(request, obj) + [
             ('molecular_formula', 'molar_mass', 'charge', ),  # grouping in tuple puts in a row
-            'source', 'study_list',
+            'smiles', 'id_map', 'tags',
         ]
 
     def get_list_display(self, request):
         # complete override
         return [
             'type_name', 'short_name', 'molecular_formula', 'molar_mass', 'charge', '_tags',
-            '_study_count', 'source'
+            '_study_count', 'type_source'
         ]
 
     def get_merge_autowidget(self):
-        opt = {'text_attr': {'class': 'autocomp autocomp_metabol'}}
+        opt = {'text_attr': {'class': 'autocomp', 'eddautocompletetype': 'Metabolite'}}
         return MeasurementTypeAutocompleteWidget(opt=opt)
 
     def get_queryset(self, request):
         qs = super(MetaboliteAdmin, self).get_queryset(request)
-        qs = qs.select_related('source')
+        qs = qs.select_related('type_source')
         return qs
-
-    def get_readonly_fields(self, request, obj=None):
-        return ['source', 'study_list', ]
 
     def _tags(self, obj):
         return ', '.join(obj.tags)
 
 
 class ProteinAdmin(MeasurementTypeAdmin):
+
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        Override default generated admin form to add specialized help text and verification for
+        Uniprot accession ID's. This is a bit indirect since type_name is inherited from
+        MeasurementTypeAdmin.
+        """
+
+        # override the type_name label to indicate it should be a UniProt accession ID
+        if settings.REQUIRE_UNIPROT_ACCESSION_IDS:
+            labels = kwargs.get('labels')
+            if not labels:
+                labels = {}
+                kwargs['labels'] = labels
+            labels['type_name'] = _('Protein Name')
+            labels['accession_id'] = _('UniProt Accession ID')
+
+        generated_form = super(ProteinAdmin, self).get_form(request, obj, **kwargs)
+
+        # require that newly-created ProteinIdentifiers have an accession ID matching the
+        # expected pattern. existing ID's that don't conform should still be editable
+        new_identifier = not obj
+        if new_identifier and settings.REQUIRE_UNIPROT_ACCESSION_IDS:
+            generated_form.base_fields['type_name'].validators.append(RegexValidator(
+                    regex=ProteinIdentifier.accession_pattern,
+                    message=_('New entries must be valid UniProt accession IDs')))
+        return generated_form
+
     def get_fields(self, request, obj=None):
         return super(ProteinAdmin, self).get_fields(request, obj) + [
+            'accession_id',
             ('length', 'mass',),
-            'source', 'study_list',
         ]
 
     def get_list_display(self, request):
         # complete override
         return [
-            'type_name', 'short_name', 'length', 'mass', '_study_count', 'source',
+            'type_name', 'short_name', 'accession_id', 'length', 'mass', '_study_count',
+            'type_source',
         ]
 
     def get_merge_autowidget(self):
-        opt = {'text_attr': {'class': 'autocomp autocomp_protein'}}
+        opt = {'text_attr': {'class': 'autocomp', 'eddautocompletetype': 'Protein'}}
         return MeasurementTypeAutocompleteWidget(opt=opt)
 
     def get_queryset(self, request):
         qs = super(ProteinAdmin, self).get_queryset(request)
-        qs = qs.select_related('source')
+        qs = qs.select_related('type_source')
         return qs
 
     def get_readonly_fields(self, request, obj=None):
-        return ['source', 'study_list', ]
+        # only allow editing accession ID when it is not already set
+        if obj and obj.accession_id is None:
+            return ['type_source', 'study_list', ]
+        return ['accession_id', 'type_source', 'study_list', ]
 
     def get_search_results(self, request, queryset, search_term):
         search_term = ProteinIdentifier.match_accession_id(search_term)
@@ -454,7 +500,6 @@ class GeneAdmin(MeasurementTypeAdmin):
         return super(GeneAdmin, self).get_fields(request, obj) + [
             ('location_in_genome', 'positive_strand', 'location_start', 'location_end',
              'gene_length'),  # join these on the same row
-            'study_list',
         ]
 
     def get_list_display(self, request):
@@ -465,7 +510,7 @@ class GeneAdmin(MeasurementTypeAdmin):
         ]
 
     def get_merge_autowidget(self):
-        opt = {'text_attr': {'class': 'autocomp autocomp_gene'}}
+        opt = {'text_attr': {'class': 'autocomp', 'eddautocompletetype': 'Gene'}}
         return MeasurementTypeAutocompleteWidget(opt=opt)
 
 
@@ -484,7 +529,7 @@ class PhosphorAdmin(MeasurementTypeAdmin):
         ]
 
     def get_merge_autowidget(self):
-        opt = {'text_attr': {'class': 'autocomp autocomp_phosphor'}}
+        opt = {'text_attr': {'class': 'autocomp', 'eddautocompletetype': 'Phosphor'}}
         return MeasurementTypeAutocompleteWidget(opt=opt)
 
 
@@ -535,8 +580,15 @@ class StudyAdmin(EDDObjectAdmin):
 
 class SBMLTemplateAdmin(EDDObjectAdmin):
     """ Definition fro admin-edit of SBML Templates """
-    fields = ('name', 'description', 'sbml_file', 'biomass_calculation', )
-    list_display = ('name', 'description', 'biomass_calculation', 'created', )
+    fields = (
+        'name', 'description', 'sbml_file',
+        'biomass_calculation', 'biomass_exchange_name',
+    )
+    list_display = (
+        'name', 'description',
+        'biomass_calculation', 'biomass_exchange_name',
+        'created',
+    )
     inlines = (AttachmentInline, )
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
@@ -546,7 +598,7 @@ class SBMLTemplateAdmin(EDDObjectAdmin):
 
     def get_fields(self, request, obj=None):
         if obj:
-            return ('name', 'description', 'sbml_file', 'biomass_calculation',)
+            return self.fields
         # Only show attachment inline for NEW templates
         return ((), )
 
@@ -571,7 +623,10 @@ class SBMLTemplateAdmin(EDDObjectAdmin):
         if change:
             sbml = obj.sbml_file.file
             sbml_data = validate_sbml_attachment(sbml.read())
-            obj.biomass_exchange_name = self._extract_biomass_exchange_name(sbml_data.getModel())
+            if not obj.biomass_exchange_name:
+                obj.biomass_exchange_name = self._extract_biomass_exchange_name(
+                    sbml_data.getModel()
+                )
         elif len(form.files) == 1:
             sbml = list(form.files.values())[0]
             sbml_data = validate_sbml_attachment(sbml.read())

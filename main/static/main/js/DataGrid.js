@@ -32,40 +32,66 @@ var DataGrid = (function () {
         this._spec = dataGridSpec;
         this._table = dataGridSpec.tableElement;
         this._timers = {};
+        this._widgetRefreshCooldownTimer = null;
+        this._widgetRefreshPending = false;
+        this._classes = 'dataTable sortable dragboxes hastablecontrols table-striped table-bordered';
         var tableBody = $(this._tableBody = document.createElement("tbody"));
         // First step: Blow away the old contents of the table
         $(this._table).empty()
             .attr({ 'cellpadding': 0, 'cellspacing': 0 })
-            .addClass('dataTable sortable dragboxes hastablecontrols')
+            .addClass(this._getClasses())
             .append(tableBody);
-        var tableHeaderRow = $(document.createElement("tr")).addClass('header');
-        var tableHeaderCell = $(this._tableHeaderCell = document.createElement("th"))
-            .appendTo(tableHeaderRow);
-        if (dataGridSpec.tableSpec.name) {
-            $(this.tableTitleSpan = document.createElement("span")).text(dataGridSpec.tableSpec.name).appendTo(tableHeaderCell);
+        this._tableBodyJquery = tableBody;
+        var tHead = $(document.createElement("thead"));
+        this._tableControlsArea = this.getCustomControlsArea(); // If there is no custom area, this returns null
+        if (!this._tableControlsArea) {
+            var tr = $(document.createElement("tr")).addClass('header').appendTo(tHead);
+            this._tableControlsArea = $(document.createElement("th")).appendTo(tr).get(0);
+            if ((this._totalColumnCount = this.countTotalColumns()) > 1) {
+                $(this._tableControlsArea).attr('colspan', this._totalColumnCount);
+            }
         }
-        var waitBadge = $(this._waitBadge = document.createElement("span"))
-            .addClass('waitbadge wait').appendTo(tableHeaderCell);
-        if ((this._totalColumnCount = this.countTotalColumns()) > 1) {
-            tableHeaderCell.attr('colspan', this._totalColumnCount);
-        }
-        // If we're asked to show the header, then add it to the table.  Otherwise we will leave it off.
-        if (dataGridSpec.tableSpec.showHeader) {
-            tableBody.append(tableHeaderRow);
+        this._waitBadge = document.createElement("span");
+        $(this._waitBadge).addClass('waitbadge wait').appendTo(this._tableControlsArea);
+        // If we're asked not to display a header, create it anyway to widgets can go somewhere, but hide it.
+        if (!dataGridSpec.tableSpec.showHeader) {
+            $(this._tableControlsArea).addClass('off');
         }
         // Apply the default column visibility settings.
         this.prepareColumnVisibility();
+        // TODO: If we wish to move the column headers outside the table so the
+        // body rows can scroll independedntly, we need to create a second table.
+        // A working solution would involve a resize timer, and some modifications to
+        // DataGrid to allow creating the table header cells in a second table (with 0 data rows)
+        // That is then placed immediately above an 'overflow-y:scroll' div containing the first table.
+        // Then we would need some event handlers to resize the second table based on changes in the first.
         var headerRows = this._headerRows = this._buildTableHeaders();
-        this._headerRows.forEach(function (v) { return tableBody.append(v); });
+        tHead.append(headerRows);
+        $(tHead).insertBefore(this._tableBody);
+        // If any checkbox changes in the table body - indicating a potential change in the selection -
+        // refresh the header widgets, since their appearance may need to change.
+        tableBody.on('change', ':checkbox', this._refreshAllWidgetsWithThrottling.bind(this));
         setTimeout(function () { return _this._initializeTableData(); }, 1);
     }
+    DataGrid.prototype._getTableBody = function () {
+        return this._tableBodyJquery;
+    };
+    // By defaut the controls are placed at the top of the table,
+    // inside a single header cell spanning the entire table.
+    // But we can override this placement by returning a JQuery reference to an alternate location.
+    DataGrid.prototype.getCustomControlsArea = function () {
+        return null;
+    };
+    DataGrid.prototype._getClasses = function () {
+        return this._classes;
+    };
     // Breaking up the initial table creation into two stages allows the browser to render a preliminary
     // version of the table with a header but no data rows, then continue loading other assets in parallel.
     // It actually speeds up the entire table creation as well, for reasons that are not very clear.
     // (If the setup is NOT run in two stages, all the 'createElement' calls for the data cells take much longer,
     // in Firefox and Safari, according to load-time profiling ... and only when paired with some servers??)
     DataGrid.prototype._initializeTableData = function () {
-        var hCell = this._tableHeaderCell;
+        var cArea = this._tableControlsArea;
         Dragboxes.initTable(this._table);
         this._buildAllTableSorters()
             ._buildTableSortSequences()
@@ -77,15 +103,15 @@ var DataGrid = (function () {
         // (Since all widgets are styled to float right, they will appear from right to left.)
         this._headerWidgets.forEach(function (widget, index) {
             if (!widget.displayBeforeViewMenu()) {
-                widget.appendElements(hCell, index.toString(10));
+                widget.appendElements(cArea, index.toString(10));
             }
         });
         // Now append the 'View' pulldown menu
-        hCell.appendChild(this._optionsMenuElement);
+        cArea.appendChild(this._optionsMenuElement);
         // Finally, append the header widgets that should appear "before".
         this._headerWidgets.forEach(function (widget, index) {
             if (widget.displayBeforeViewMenu()) {
-                widget.appendElements(hCell, index.toString(10));
+                widget.appendElements(cArea, index.toString(10));
             }
         });
         this._initializeSort().arrangeTableDataRows();
@@ -94,7 +120,7 @@ var DataGrid = (function () {
         // Prepare the table for sorting
         this._prepareSortable();
         this._spec.onInitialized(this);
-        $(this._waitBadge).addClass('off');
+        $(this._waitBadge).remove();
         return this;
     };
     DataGrid.prototype._initializeSort = function () {
@@ -126,12 +152,7 @@ var DataGrid = (function () {
         });
         // And make sure only the currently visible things are ... visible
         this._applyColumnVisibility();
-        this._headerWidgets.forEach(function (widget, index) {
-            widget.refreshWidget();
-        });
-        this._optionsMenuWidgets.forEach(function (widget, index) {
-            widget.refreshWidget();
-        });
+        this._refreshAllWidgets();
         return this;
     };
     // Update only the table rows for the specified records.
@@ -146,12 +167,7 @@ var DataGrid = (function () {
         });
         if (reflow) {
             this._buildTableSortSequences().arrangeTableDataRows();
-            this._headerWidgets.forEach(function (widget, index) {
-                widget.refreshWidget();
-            });
-            this._optionsMenuWidgets.forEach(function (widget, index) {
-                widget.refreshWidget();
-            });
+            this._refreshAllWidgets();
         }
         return this;
     };
@@ -207,11 +223,11 @@ var DataGrid = (function () {
                 });
             });
         }
-        var mainSpan = $(this._optionsMenuElement = document.createElement("span"))
+        var mainSpan = $(this._optionsMenuElement = document.createElement("div"))
             .attr('id', mainID + 'ColumnChooser').addClass('pulldownMenu');
         var menuLabel = $(this._optionsLabel = document.createElement("div"))
             .addClass('pulldownMenuLabelOff')
-            .text('View\u25BE')
+            .text('View options \u25BE')
             .click(function () { if (menuLabel.hasClass('pulldownMenuLabelOff'))
             _this._showOptMenu(); })
             .appendTo(mainSpan);
@@ -221,7 +237,7 @@ var DataGrid = (function () {
         // event handlers to hide menu if clicking outside menu block or pressing ESC
         $(document).click(function (ev) {
             var t = $(ev.target);
-            if (t.closest(_this._optionsMenuElement).size() === 0) {
+            if (t.closest(_this._optionsMenuElement).length === 0) {
                 _this._hideOptMenu();
             }
         }).keydown(function (ev) {
@@ -374,28 +390,25 @@ var DataGrid = (function () {
     DataGrid.prototype.arrangeTableDataRows = function () {
         var _this = this;
         var striping = 1;
+        $(this._tableBody).children().detach();
         // We create a document fragment - a kind of container for document-related objects that we don't
         // want in the page - and accumulate inside it all the rows we want to display, in sorted order.
         var frag = document.createDocumentFragment();
         this.applySortIndicators();
-        var sequence = this._getSequence(this._sort[0]);
-        // Verify that the row sets referred to by the IDs actually exist
-        var filteredSequence = sequence.filter(function (v) { return !!_this._recordElements[v]; });
-        var unfilteredSequence = filteredSequence.slice(0);
         // Remove all the grouping title rows from the table as well, if they were there
         var rowGroupSpec = this._spec.tableRowGroupSpec;
         rowGroupSpec.forEach(function (rowGroup) {
-            var r = rowGroup.disclosedTitleRow;
+            var r = rowGroup.replicateGroupTable;
             if (r.parentNode) {
-                _this._tableBody.removeChild(r);
-            }
-            r = rowGroup.undisclosedTitleRow;
-            if (r.parentNode) {
-                _this._tableBody.removeChild(r);
+                r.parentNode.removeChild(r);
             }
             // While we're here, reset the member record arrays.  We need to rebuild them post-filtering.
             rowGroup.memberRecords = [];
         });
+        var sequence = this._getSequence(this._sort[0]);
+        // Verify that the row sets referred to by the IDs actually exist
+        var filteredSequence = sequence.filter(function (v) { return !!_this._recordElements[v]; });
+        var unfilteredSequence = filteredSequence.slice(0);
         filteredSequence = this.applyAllWidgetFiltering(filteredSequence);
         // Call to detach only the rows that didn't make it through the filter.
         // The others will be automatically detached by being moved to the document fragment.
@@ -412,12 +425,6 @@ var DataGrid = (function () {
         // But if grouping is enabled and there is at least one group, we add them a few at a time,
         // proceeding through each group.
         if (!this._groupingEnabled || rowGroupSpec.length < 1) {
-            if (this._spec.tableSpec.applyStriping) {
-                filteredSequence.forEach(function (s) {
-                    striping = 1 - striping;
-                    _this._recordElements[s].applyStriping(striping);
-                });
-            }
             filteredSequence.forEach(function (s) {
                 var rows = _this._recordElements[s].getElements();
                 rows.forEach(function (row) {
@@ -426,44 +433,67 @@ var DataGrid = (function () {
             });
         }
         else {
-            var stripeStyles = ['stripeRowA', 'stripeRowB'];
-            var stripeStylesJoin = stripeStyles.join(' ');
             filteredSequence.forEach(function (s) {
                 var rowGroup = rowGroupSpec[_this._spec.getRowGroupMembership(s)];
                 rowGroup.memberRecords.push(_this._recordElements[s]);
             });
-            rowGroupSpec.forEach(function (rowGroup) {
-                if (rowGroup.memberRecords.length < 1) {
-                    // If there's nothing in the group (may have all been filtered out) skip it
-                    return;
-                }
-                striping = 1 - striping;
-                if (_this._spec.tableSpec.applyStriping) {
-                    rowGroup.undisclosedTitleRowJQ.add(rowGroup.disclosedTitleRowJQ)
-                        .removeClass(stripeStylesJoin).addClass(stripeStyles[striping]).end();
-                }
-                if (!rowGroup.disclosed) {
-                    // If the group is not disclosed, just print the "undisclosed" title row, and skip the
-                    // rows themselves (but invert the striping value so the striping pattern isn't disturbed)
-                    frag.appendChild(rowGroup.undisclosedTitleRow);
-                    return;
-                }
-                frag.appendChild(rowGroup.disclosedTitleRow);
-                rowGroup.memberRecords.forEach(function (record) {
-                    striping = 1 - striping;
-                    if (_this._spec.tableSpec.applyStriping) {
-                        record.applyStriping(striping);
-                    }
-                    var rows = record.getElements();
-                    rows.forEach(function (row) {
-                        frag.appendChild(row);
-                    });
+            //iterate over the different replicate groups
+            _.each(rowGroupSpec, function (grouping) {
+                //find the assay ids associated with the replicate group
+                var replicateIds = _this._findReplicateLines(_this._groupReplicates(), grouping);
+                //find the lines associated with the replicate group
+                var lines = _this.addReplicateRows(replicateIds);
+                _.each(lines, function (line) {
+                    //hide the lines associated with the replicate group
+                    $(line).hide();
                 });
+            });
+            rowGroupSpec.forEach(function (rowGroup) {
+                striping = 1 - striping;
+                frag.appendChild(rowGroup.replicateGroupTable);
+            });
+            // TODO: This command doesn't make sense - the frag is not in the document yet
+            $(frag).insertBefore($(this._tableBody));
+        }
+        // TODO: This really needs to be moved
+        if ($('#GroupStudyReplicatesCB').prop('checked') === false) {
+            var lines = $(frag).children();
+            _.each(lines, function (line) {
+                $(line).removeClass('replicateLineShow');
+                $(line).show();
             });
         }
         // Remember that we last sorted by this column
         this._tableBody.appendChild(frag);
         return this;
+    };
+    // Call _refreshAllWidgets, unless a half-second cooldown timer is active from the last call,
+    // in which case set a flag to call _refreshAllWidgets when the timer expires.
+    DataGrid.prototype._refreshAllWidgetsWithThrottling = function () {
+        if (this._widgetRefreshCooldownTimer) {
+            this._widgetRefreshPending = true;
+            return;
+        }
+        this._refreshAllWidgets();
+        this._widgetRefreshCooldownTimer = setTimeout(this._refreshAllWidgetsClearTimer.bind(this), 500);
+    };
+    DataGrid.prototype._refreshAllWidgetsClearTimer = function () {
+        this._widgetRefreshCooldownTimer = null;
+        // If a request to refresh came in while the cooldown was in operation,
+        // clear the flag and call for another refresh.
+        // With the timer cleared, it will immediately refresh, without setting the pending request flag.
+        if (this._widgetRefreshPending) {
+            this._widgetRefreshPending = false;
+            this._refreshAllWidgetsWithThrottling();
+        }
+    };
+    DataGrid.prototype._refreshAllWidgets = function () {
+        this._headerWidgets.forEach(function (widget, index) {
+            widget.refreshWidget();
+        });
+        this._optionsMenuWidgets.forEach(function (widget, index) {
+            widget.refreshWidget();
+        });
     };
     // Given an array of record IDs, send the array through the filtering function for each of
     // the header widgets, and each of the options menu widgets, then return the filtered array.
@@ -630,23 +660,45 @@ var DataGrid = (function () {
         var _this = this;
         this._spec.tableRowGroupSpec.forEach(function (oneGroup, index) {
             oneGroup.disclosed = true;
+            var replicates = _this._groupReplicates();
+            var replicateIds = _this._findReplicateLines(replicates, oneGroup);
             oneGroup.memberRecords = [];
-            var row = oneGroup.disclosedTitleRowJQ = $(oneGroup.disclosedTitleRow = document.createElement("tr"))
-                .addClass('groupHeader').click(function () { return _this._collapseRowGroup(index); });
-            var cell = $(document.createElement("td")).appendTo(row);
-            $(document.createElement("div")).appendTo(cell).text("\u25BA " + oneGroup.name);
-            if (_this._totalColumnCount > 1) {
-                cell.attr('colspan', _this._totalColumnCount);
-            }
-            row = oneGroup.undisclosedTitleRowJQ = $(oneGroup.undisclosedTitleRow = document.createElement("tr"))
-                .addClass('groupHeader').click(function () { return _this._expandRowGroup(index); });
-            cell = $(document.createElement("td")).appendTo(row);
-            $(document.createElement("div")).appendTo(cell).text("\u25BC " + oneGroup.name);
+            var clicks = true;
+            var table = oneGroup.replicateGroupTableJQ = $(oneGroup.replicateGroupTable = document.createElement("tbody"))
+                .addClass('groupHeaderTable');
+            var row = oneGroup.replicateGroupTitleRowJQ = $(oneGroup.replicateGroupTitleRow = document.createElement("tr"))
+                .appendTo(table).addClass('groupHeader').click(function () {
+                if (clicks) {
+                    _this._expandRowGroup(index, replicateIds);
+                    clicks = false;
+                }
+                else {
+                    _this._collapseRowGroup(index, replicateIds);
+                    clicks = true;
+                }
+            });
+            var cell = $(document.createElement("td")).appendTo(row).text(" " + oneGroup.name).addClass('groupReplicateRow');
             if (_this._totalColumnCount > 1) {
                 cell.attr('colspan', _this._totalColumnCount);
             }
         });
         return this;
+    };
+    /**
+     * this function returns the lines associated with a replicate group
+     * @param replicates - array of ids associated with replicate
+     * @param oneGroup is the replicate name
+     * @returns {Array} of lines that are associate with the said replicate name
+     * @private
+     */
+    DataGrid.prototype._findReplicateLines = function (replicates, oneGroup) {
+        var groupedIds = []; //returns ids associated with replicate id.
+        $.each(replicates, function (key) {
+            if (EDDData.Lines[replicates[key]].name === oneGroup.name) {
+                groupedIds.push(key);
+            }
+        });
+        return groupedIds;
     };
     // Handle the "sortable" CSS class in a table.
     DataGrid.prototype._prepareSortable = function () {
@@ -661,17 +713,63 @@ var DataGrid = (function () {
         $(this._optionsLabel).removeClass('pulldownMenuLabelOn').addClass('pulldownMenuLabelOff');
         $(this._optionsMenuBlockElement).addClass('off');
     };
-    DataGrid.prototype._collapseRowGroup = function (groupIndex) {
+    /**
+     * this function hides the lines and collapses the replicate dropdown
+     * @param groupIndex
+     * @param replicateIds
+     * @private
+     */
+    DataGrid.prototype._collapseRowGroup = function (groupIndex, replicateIds) {
         var _this = this;
         var rowGroup = this._spec.tableRowGroupSpec[groupIndex];
         rowGroup.disclosed = false;
+        var lines = this.addReplicateRows(replicateIds);
+        $(rowGroup.replicateGroupTitleRow).removeClass('replicate');
+        _.each(lines, function (line) {
+            $(line).hide();
+        });
         this.scheduleTimer('arrangeTableDataRows', function () { return _this.arrangeTableDataRows(); });
     };
-    DataGrid.prototype._expandRowGroup = function (groupIndex) {
-        var _this = this;
+    /**
+     * this function opens the dropdown on a replicate group and shows the lines associated with
+     * the replicate group
+     * @param groupIndex
+     * @param replicateIds
+     * @private
+     */
+    DataGrid.prototype._expandRowGroup = function (groupIndex, replicateIds) {
         var rowGroup = this._spec.tableRowGroupSpec[groupIndex];
         rowGroup.disclosed = true;
-        this.scheduleTimer('arrangeTableDataRows', function () { return _this.arrangeTableDataRows(); });
+        var lines = this.addReplicateRows(replicateIds);
+        $(rowGroup.replicateGroupTitleRow).addClass('replicate');
+        _.each(lines, function (line) {
+            $(line).show().addClass('replicateLineShow');
+            $(rowGroup.replicateGroupTitleRow).after(line);
+        });
+    };
+    /**
+     * this function finds the lines associated with their replicate group id.
+     * @returns {} line id as key and the replicate id the line is associated with
+     * @private
+     */
+    DataGrid.prototype._groupReplicates = function () {
+        var lines = EDDData.Lines;
+        var rows = {};
+        $.each(lines, function (key) {
+            if (lines[key].replicate) {
+                rows[lines[key].id] = lines[key].replicate;
+            }
+        });
+        return rows;
+    };
+    /**
+     * this function gets the line elements associated with a replicate id
+     * @param idArray
+     * @returns {Array}
+     */
+    DataGrid.prototype.addReplicateRows = function (idArray) {
+        var _this = this;
+        return $.map(idArray, function (id) { return $('[value=' + id + ']', _this._table).parents('tr').filter(':first'); });
     };
     DataGrid.prototype.turnOnRowGrouping = function () {
         var _this = this;
@@ -804,6 +902,13 @@ var DataGrid = (function () {
         });
         return this;
     };
+    // apply a function to each record ID in the sequence until the function returns false
+    DataGrid.prototype.testRecordSet = function (func, ids) {
+        var _this = this;
+        return ids.every(function (id) {
+            return func.call({}, _this._recordElements[id].getDataGridDataRows(), id, _this._spec, _this);
+        });
+    };
     // retreive the current sequence of records in the DataGrid
     DataGrid.prototype.currentSequence = function () {
         return this._getSequence(this._sort[0]);
@@ -818,13 +923,13 @@ var DataGrid = (function () {
         }
     };
     return DataGrid;
-})();
+}());
 // Type definition for the records contained in a DataGrid
 var DataGridRecordSet = (function () {
     function DataGridRecordSet() {
     }
     return DataGridRecordSet;
-})();
+}());
 // Type definition for the records contained in a DataGrid
 var DataGridRecord = (function () {
     function DataGridRecord(gridSpec, id) {
@@ -832,10 +937,7 @@ var DataGridRecord = (function () {
         this.recordID = id;
         this.rowElements = [];
         this.dataGridDataRows = [];
-        this.stripeStyles = ['stripeRowA', 'stripeRowB'];
-        this.stripeStylesJoin = this.stripeStyles.join(' ');
         this.createdElements = false;
-        this.recentStripeIndex = null;
     }
     DataGridRecord.prototype.reCreateElementsInPlace = function () {
         // If the elements haven't been created even once, then divert to standard creation and finish.
@@ -862,10 +964,6 @@ var DataGridRecord = (function () {
         // The old cells are still referenced in their colSpec objects before this,
         // but calling generateCells again automatically replaces them.
         this.createElements();
-        // If recentStripeIndex is null, we haven't applied any striping to the previous row, so we skip it here.
-        if (!(this.recentStripeIndex === null)) {
-            this.applyStriping(this.recentStripeIndex);
-        }
         // Drop the new rows into place where the old rows lived.
         if (previousParent) {
             if (nextSibling) {
@@ -953,17 +1051,8 @@ var DataGridRecord = (function () {
         }
         return this.rowElements;
     };
-    DataGridRecord.prototype.applyStriping = function (stripeIndex) {
-        var _this = this;
-        var rows = this.getDataGridDataRows();
-        this.recentStripeIndex = stripeIndex;
-        rows.forEach(function (row) {
-            var rJQ = row.getElementJQ();
-            rJQ.removeClass(_this.stripeStylesJoin).addClass(_this.stripeStyles[stripeIndex]);
-        });
-    };
     return DataGridRecord;
-})();
+}());
 // Container class for data rows in the body of the DataGrid table.
 // DataGrid instantiates these by passing in an array of the DataGridDataCell objects that will form the content of the row.
 var DataGridDataRow = (function () {
@@ -1009,7 +1098,7 @@ var DataGridDataRow = (function () {
         return this.rowElementJQ;
     };
     return DataGridDataRow;
-})();
+}());
 // Container class for cells in the body of the DataGrid table.
 // DataGrid calls a function defined in DataGridColumnSpec objects to instantiate these,
 // passing in a reference to the DataGridSpecBase and a unique identifier for a data record.
@@ -1030,7 +1119,7 @@ var DataGridDataCell = (function () {
         $.extend(this, defaults, opt || {});
     }
     DataGridDataCell.prototype.createElement = function () {
-        var id = this.recordID, c = document.createElement("td"), checkId, checkName, menu;
+        var id = this.recordID, c = document.createElement("td"), checkId, checkName, title;
         if (this.checkboxWithID) {
             checkId = this.checkboxWithID.call(this.gridSpec, id);
             checkName = this.checkboxName || checkId;
@@ -1047,10 +1136,23 @@ var DataGridDataCell = (function () {
         $(this.contentContainerElement).html(this.contentString);
         this.contentFunction.call(this.gridSpec, this.contentContainerElement, id);
         if (this.sideMenuItems && this.sideMenuItems.length) {
-            menu = $('<ul>').addClass('popupmenu').appendTo(c);
+            title = '<span>';
             this.sideMenuItems.forEach(function (item) {
-                $('<li>').html(item).appendTo(menu);
+                //TODO: clean up
+                if (item.slice(0, 1) != ('<')) {
+                    title += item;
+                }
+                else if ($(item).attr('class') === "line-edit-link") {
+                    $(item).addClass('editLine');
+                    title += ('<ul>' + item + '</ul>');
+                }
+                else {
+                    title += ('<ul>' + item + '</ul>');
+                }
+                title += '</span>';
             });
+            c.setAttribute('title', title);
+            c.setAttribute('id', id);
         }
         var cellClasses = [];
         if (this.colspan > 1) {
@@ -1065,9 +1167,7 @@ var DataGridDataCell = (function () {
         if (this.hoverEffect) {
             cellClasses.push('popupcell');
         }
-        if (this.nowrap) {
-            cellClasses.push('nowrap');
-        }
+        cellClasses.push('nowrap');
         if (this.minWidth) {
             c.style.minWidth = this.minWidth + 'px';
         }
@@ -1119,7 +1219,7 @@ var DataGridDataCell = (function () {
         }
     };
     return DataGridDataCell;
-})();
+}());
 // A placeholder cell when data is still loading
 var DataGridLoadingCell = (function (_super) {
     __extends(DataGridLoadingCell, _super);
@@ -1128,7 +1228,7 @@ var DataGridLoadingCell = (function (_super) {
         this.contentString = '<span class="loading">Loading...</span>';
     }
     return DataGridLoadingCell;
-})(DataGridDataCell);
+}(DataGridDataCell));
 // A general class that acts as a common repository for utility functions for DataGrid widgets.
 // It is immediately subclassed into DataGridOptionWidget and DataGridHeaderWidget.
 var DataGridWidget = (function () {
@@ -1137,10 +1237,13 @@ var DataGridWidget = (function () {
         this.dataGridSpec = dataGridSpec;
     }
     // Utility function to create a label element
-    DataGridWidget.prototype._createLabel = function (text, id) {
+    DataGridWidget.prototype._createLabel = function (text, id, tip) {
         var label = document.createElement("label");
         label.setAttribute('for', id);
         label.appendChild(document.createTextNode(text));
+        if (tip) {
+            label.setAttribute('title', tip);
+        }
         return label;
     };
     // Utility function to create a checkbox element
@@ -1150,6 +1253,13 @@ var DataGridWidget = (function () {
         cb.setAttribute('name', name);
         cb.setAttribute('type', 'checkbox');
         cb.setAttribute('value', value);
+        return cb;
+    };
+    DataGridWidget.prototype._createButton = function (id, name) {
+        var cb = document.createElement("input");
+        cb.setAttribute('id', id);
+        cb.setAttribute('name', name);
+        cb.setAttribute('type', 'button');
         return cb;
     };
     // This is called with an array of row elements, and the ID they represent, so the widget can
@@ -1163,7 +1273,7 @@ var DataGridWidget = (function () {
         // nothing by default
     };
     return DataGridWidget;
-})();
+}());
 // This is the base class for additional widgets that appear in the options menu of a DataGrid table.
 // The default behavior is to create a checkbox element with a callback, and pair it with a label element.
 //
@@ -1179,12 +1289,16 @@ var DataGridOptionWidget = (function (_super) {
         this._createdElements = false;
     }
     // Return a fragment to use in generating option widget IDs
-    DataGridOptionWidget.prototype.getIDFragment = function () {
-        return 'GenericOptionCB';
+    DataGridOptionWidget.prototype.getIDFragment = function (uniqueID) {
+        return this.dataGridSpec.tableSpec.id + 'GenericOptionCB' + uniqueID;
     };
     // Return text used to label the widget
     DataGridOptionWidget.prototype.getLabelText = function () {
         return 'Name Of Option';
+    };
+    // Mouseover text for the label (none by default)
+    DataGridOptionWidget.prototype.getLabelTitle = function () {
+        return null;
     };
     // Handle activation of widget
     DataGridOptionWidget.prototype.onWidgetChange = function (e) {
@@ -1194,7 +1308,7 @@ var DataGridOptionWidget = (function (_super) {
     // when creating input element labels or other things requiring an ID.
     DataGridOptionWidget.prototype.createElements = function (uniqueID) {
         var _this = this;
-        var cbID = this.dataGridSpec.tableSpec.id + this.getIDFragment() + uniqueID;
+        var cbID = this.getIDFragment(uniqueID);
         var cb = this._createCheckbox(cbID, cbID, '1');
         // We need to make sure the checkbox has a callback to the DataGrid's handler function.
         // Among other things, the handler function will call the appropriate filtering functions for all the widgets in turn.
@@ -1203,7 +1317,7 @@ var DataGridOptionWidget = (function (_super) {
             cb.setAttribute('checked', 'checked');
         }
         this.checkBoxElement = cb;
-        this.labelElement = this._createLabel(this.getLabelText(), cbID);
+        this.labelElement = this._createLabel(this.getLabelText(), cbID, this.getLabelTitle());
         this._createdElements = true;
     };
     // This is called to append the widget elements beneath the given element.
@@ -1243,7 +1357,7 @@ var DataGridOptionWidget = (function (_super) {
         }
     };
     return DataGridOptionWidget;
-})(DataGridWidget);
+}(DataGridWidget));
 // This is the base class for additional widgets that appear in the header area of a DataGrid table.
 //
 // The DataGridSpec is responsible for instantiating these DataGridOptionWidget-derived objects for a particular table,
@@ -1296,7 +1410,7 @@ var DataGridHeaderWidget = (function (_super) {
         return rowIDs;
     };
     return DataGridHeaderWidget;
-})(DataGridWidget);
+}(DataGridWidget));
 // A generic "Select All" header widget, appearing as a button.
 // When clicked, it walks through every row and cell looking for DataGrid-created checkboxes,
 // and checks every one it finds.
@@ -1315,58 +1429,34 @@ var DGSelectAllWidget = (function (_super) {
             .addClass('tableControl')
             .click(function () { return _this.clickHandler(); });
         this.element.setAttribute('type', 'button'); // JQuery attr cannot do this
+        this.anySelected = false;
+    };
+    DGSelectAllWidget.prototype.refreshWidget = function () {
+        this.testIfAnySelected();
+        this.updateButtonLabel();
+    };
+    DGSelectAllWidget.prototype.updateButtonLabel = function () {
+        if (this.anySelected) {
+            this.element.setAttribute('value', 'Select None');
+            //disable action buttons
+            $("#editButton, #cloneButton, #groupButton, #addAssayButton, #disableButton, #enableButton").prop('disabled', false);
+        }
+        else {
+            this.element.setAttribute('value', 'Select All');
+            $("#editButton, #cloneButton, #groupButton, #addAssayButton, #disableButton, #enableButton").prop('disabled', true);
+        }
     };
     DGSelectAllWidget.prototype.clickHandler = function () {
-        var sequence = this.dataGridOwnerObject.currentSequence();
-        // Have DataGrid apply function to everything in current sequence
-        this.dataGridOwnerObject.applyToRecordSet(function (rows) {
-            // each row in sequence
-            rows.forEach(function (row) {
-                // each cell in row
-                row.dataGridDataCells.forEach(function (cell) {
-                    // if the cell has a checkbox, check it
-                    $(cell.checkboxElement).prop('checked', true).trigger('change');
-                });
-            });
-        }, sequence);
+        $(this.dataGridSpec.tableElement).find('tbody input[type=checkbox]').prop('checked', !this.anySelected);
+        this.anySelected = !this.anySelected;
+        this.updateButtonLabel();
+    };
+    DGSelectAllWidget.prototype.testIfAnySelected = function () {
+        this.anySelected = $(this.dataGridSpec.tableElement).find('tbody input[type=checkbox]:checked').length > 0;
+        return this.anySelected;
     };
     return DGSelectAllWidget;
-})(DataGridHeaderWidget);
-// A generic "Deselect All" header widget, appearing as a button.
-// When clicked, it walks through every row and cell looking for DataGrid-created checkboxes,
-// and checks every one it finds.
-var DGDeselectAllWidget = (function (_super) {
-    __extends(DGDeselectAllWidget, _super);
-    function DGDeselectAllWidget(dataGridOwnerObject, dataGridSpec) {
-        _super.call(this, dataGridOwnerObject, dataGridSpec);
-    }
-    // The uniqueID is provided to assist the widget in avoiding collisions
-    // when creating input element labels or other things requiring an ID.
-    DGDeselectAllWidget.prototype.createElements = function (uniqueID) {
-        var _this = this;
-        var buttonID = this.dataGridSpec.tableSpec.id + 'DelAll' + uniqueID;
-        var button = $(this.element = document.createElement("input"));
-        button.attr({ 'id': buttonID, 'name': buttonID, 'value': 'Deselect All' })
-            .addClass('tableControl')
-            .click(function () { return _this.clickHandler(); });
-        this.element.setAttribute('type', 'button'); // JQuery attr cannot do this
-    };
-    DGDeselectAllWidget.prototype.clickHandler = function () {
-        var sequence = this.dataGridOwnerObject.currentSequence();
-        // Have DataGrid apply function to everything in current sequence
-        this.dataGridOwnerObject.applyToRecordSet(function (rows) {
-            // each row in sequence
-            rows.forEach(function (row) {
-                // each cell in row
-                row.dataGridDataCells.forEach(function (cell) {
-                    // if the cell has a checkbox, uncheck it
-                    $(cell.checkboxElement).prop('checked', false).trigger('change');
-                });
-            });
-        }, sequence);
-    };
-    return DGDeselectAllWidget;
-})(DataGridHeaderWidget);
+}(DataGridHeaderWidget));
 // Here's an example of a working DataGridHeaderWidget.
 // It's a search field that narrows the set of rows to ones that contain the given string.
 var DGSearchWidget = (function (_super) {
@@ -1450,35 +1540,50 @@ var DGSearchWidget = (function (_super) {
         v = v.trim(); // Remove leading and trailing whitespace
         v = v.toLowerCase();
         v = v.replace(/\s\s*/, ' '); // Replace internal whitespace with single spaces
-        // If there are multiple words, we match each separately.
-        // We will not attempt to match against empty strings, so we filter those out if any slipped through
+        // If there are multiple words, we look for each separately, but expect to find all of them.
+        // We will not attempt to match against empty strings, so we filter those out if any slipped through.
         var queryStrs = v.split(' ').filter(function (one) { return one.length > 0; });
+        if (queryStrs.length == 0) {
+            return rowIDs;
+        }
         var filteredIDs = [];
         this.dataGridOwnerObject.applyToRecordSet(function (rows, id) {
-            rows.forEach(function (row) {
-                row.dataGridDataCells.forEach(function (cell) {
-                    if (cell.createdElement) {
-                        var text = cell.contentContainerElement.textContent.toLowerCase();
-                        var match = queryStrs.some(function (v) {
-                            // TODO: Sholdn't this be text.length >= v.length ?
-                            return text.length > v.length && text.indexOf(v) >= 0;
-                        });
-                        if (match) {
-                            filteredIDs.push(id);
-                        }
+            var thisRecordQueryStrs = queryStrs;
+            // Go row by row, cell by cell, testing each query until it matches,
+            // until we run out of unmatched queries (and return true) or run out
+            // of rows and cells (and return false).
+            var rowsMatch = rows.some(function (row) {
+                return row.dataGridDataCells.some(function (cell) {
+                    if (!cell.createdElement) {
+                        return false;
                     }
+                    var text = cell.contentContainerElement.textContent.toLowerCase();
+                    var unmatchedQueryStrs = [];
+                    thisRecordQueryStrs.forEach(function (queryStr) {
+                        if (text.length < queryStr.length || text.indexOf(queryStr) < 0) {
+                            unmatchedQueryStrs.push(queryStr);
+                        }
+                    });
+                    if (unmatchedQueryStrs.length == 0) {
+                        return true;
+                    }
+                    thisRecordQueryStrs = unmatchedQueryStrs;
+                    return false;
                 });
             });
+            if (rowsMatch) {
+                filteredIDs.push(id);
+            }
         }, rowIDs);
         return filteredIDs;
     };
     return DGSearchWidget;
-})(DataGridHeaderWidget);
+}(DataGridHeaderWidget));
 var DataGridSort = (function () {
     function DataGridSort() {
     }
     return DataGridSort;
-})();
+}());
 // This is a widget that will place controls for paging
 var DGPagingWidget = (function (_super) {
     __extends(DGPagingWidget, _super);
@@ -1498,13 +1603,13 @@ var DGPagingWidget = (function (_super) {
     DGPagingWidget.prototype.appendElements = function (container, uniqueID) {
         var _this = this;
         if (!this.createdElements()) {
-            $(this.widgetElement = document.createElement('div'))
-                .appendTo(container);
+            $(this.widgetElement = document.createElement('div'));
+            $(container).append(this.widgetElement);
             $(this.labelElement = document.createElement('span'))
                 .appendTo(this.widgetElement);
             $(this.prevElement = document.createElement('a'))
                 .attr('href', '#').css('margin', '0 5px')
-                .text('< Previous').prop('disabled', true)
+                .text('< Previous').addClass('disableLink')
                 .appendTo(this.widgetElement)
                 .click(function () {
                 _this.source.pageDelta(-1).requestPageOfData(_this.requestDone);
@@ -1519,6 +1624,7 @@ var DGPagingWidget = (function (_super) {
                 return false;
             });
             this.createdElements(true);
+            $(this.widgetElement).addClass('studyPrevNext');
         }
         this.refreshWidget();
     };
@@ -1534,23 +1640,32 @@ var DGPagingWidget = (function (_super) {
             labelText = 'No results found!';
         }
         $(this.labelElement).text(labelText);
-        $(this.prevElement).prop('disabled', !start);
-        $(this.nextElement).prop('disabled', start + viewSize >= totalSize);
+        if (!start) {
+            $(this.prevElement).addClass('disableLink');
+        }
+        else {
+            $(this.prevElement).removeClass('disableLink');
+        }
+        if (start + viewSize >= totalSize) {
+            $(this.nextElement).addClass('disableLink');
+        }
+        else {
+            $(this.nextElement).removeClass('disableLink');
+        }
     };
     return DGPagingWidget;
-})(DataGridHeaderWidget);
+}(DataGridHeaderWidget));
 // Define the TableSpec object used by DataGridSpecBase
 var DataGridTableSpec = (function () {
     function DataGridTableSpec(id, opt) {
         this.id = id; // ID is required, initialize sensible defaults for everything else
-        opt = $.extend({ 'name': '', 'defaultSort': 0, 'showHeader': true, 'applyStriping': true }, opt);
+        opt = $.extend({ 'name': '', 'defaultSort': 0, 'showHeader': true }, opt);
         this.name = opt['name'];
         this.defaultSort = opt['defaultSort'];
         this.showHeader = opt['showHeader'];
-        this.applyStriping = opt['applyStriping'];
     }
     return DataGridTableSpec;
-})();
+}());
 // Define the HeaderSpec object used by DataGridSpecBase
 var DataGridHeaderSpec = (function () {
     function DataGridHeaderSpec(group, id, opt) {
@@ -1572,7 +1687,7 @@ var DataGridHeaderSpec = (function () {
         this.sortId = opt['sortId'];
     }
     return DataGridHeaderSpec;
-})();
+}());
 // Define the ColumnSpec object used by DataGridSpecBase
 var DataGridColumnSpec = (function () {
     function DataGridColumnSpec(group, generateCells) {
@@ -1585,9 +1700,6 @@ var DataGridColumnSpec = (function () {
         this.createdDataCellObjects[index] = c.slice(0);
         return c;
     };
-    // clearEntireIndex(index:number):void {
-    //     this.createdDataCellObjects = {};
-    // }
     DataGridColumnSpec.prototype.clearIndexAtID = function (index) {
         delete this.createdDataCellObjects[index];
     };
@@ -1606,7 +1718,7 @@ var DataGridColumnSpec = (function () {
         return cells;
     };
     return DataGridColumnSpec;
-})();
+}());
 // Define the ColumnGroupSpec object used by DataGridSpecBase
 var DataGridColumnGroupSpec = (function () {
     function DataGridColumnGroupSpec(label, opt) {
@@ -1617,14 +1729,14 @@ var DataGridColumnGroupSpec = (function () {
         this.revealedCallback = opt['revealedCallback'];
     }
     return DataGridColumnGroupSpec;
-})();
+}());
 // Define the RowGroupSpec object used by DataGridSpecBase
 var DataGridRowGroupSpec = (function () {
     function DataGridRowGroupSpec(label) {
         this.name = label;
     }
     return DataGridRowGroupSpec;
-})();
+}());
 // Users of DataGrid should derive from this class, altering the constructor to
 // provide a specification for the layout, interface, and data sources of their DataGrid table,
 // and override the callbacks to customize functionality.
@@ -1632,13 +1744,21 @@ var DataGridRowGroupSpec = (function () {
 // As an example, this base class is set up to render the Studies table on the main page of the EDD.
 var DataGridSpecBase = (function () {
     function DataGridSpecBase() {
+        this.tableElement = null;
+        this.tableSpec = null;
+        this.tableHeaderSpec = null;
+        this.tableColumnSpec = null;
+        this.tableColumnGroupSpec = null;
+        this.tableRowGroupSpec = null;
+    }
+    DataGridSpecBase.prototype.init = function () {
         this.tableElement = this.getTableElement();
         this.tableSpec = this.defineTableSpec();
         this.tableHeaderSpec = this.defineHeaderSpec();
         this.tableColumnSpec = this.defineColumnSpec();
         this.tableColumnGroupSpec = this.defineColumnGroupSpec();
         this.tableRowGroupSpec = this.defineRowGroupSpec();
-    }
+    };
     // All of these "define" functions should be overridden
     // Specification for the table as a whole
     DataGridSpecBase.prototype.defineTableSpec = function () {
@@ -1756,4 +1876,4 @@ var DataGridSpecBase = (function () {
     DataGridSpecBase.prototype.onUpdatedGroupingEnabled = function (dataGrid, enabled) {
     };
     return DataGridSpecBase;
-})();
+}());

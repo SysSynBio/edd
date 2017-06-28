@@ -13,6 +13,11 @@ var IndexPage;
     // Called when the page loads.
     function prepareIt() {
         $('.disclose').find('.discloseLink').on('click', disclose);
+        $("#addStudyModal").dialog({ minWidth: 600, autoOpen: false });
+        $("#addStudyButton").click(function () {
+            $("#addStudyModal").removeClass('off').dialog("open");
+            return false;
+        });
         IndexPage.prepareTable();
     }
     IndexPage.prepareIt = prepareIt;
@@ -25,6 +30,24 @@ var IndexPage;
         var _this = this;
         // Instantiate a table specification for the Studies table
         this.studiesDataGridSpec = new DataGridSpecStudies();
+        this.studiesDataGridSpec.init();
+        //prepare tooltip for matched searches
+        $(this.studiesDataGridSpec.tableElement).tooltip({
+            content: function () {
+                return $(this).prop('title');
+            },
+            position: { my: "left-10 center", at: "right center" },
+            show: null,
+            close: function (event, ui) {
+                ui.tooltip.hover(function () {
+                    $(this).stop(true).fadeTo(400, 1);
+                }, function () {
+                    $(this).fadeOut("400", function () {
+                        $(this).remove();
+                    });
+                });
+            }
+        });
         // Instantiate the table itself with the spec
         this.studiesDataGrid = new DataGrid(this.studiesDataGridSpec);
         this.studiesDataGridSpec.requestPageOfData(function (success) {
@@ -88,7 +111,7 @@ var DataGridSpecStudies = (function (_super) {
         if (match) {
             sideMenuItems = match.getFields().map(function (field) {
                 var matches = match.getMatches(field, '<span class="search_match">', '</span>', 10);
-                return 'Matched on ' + field + ': ' + matches.join(', ');
+                return 'Matched on ' + field + ': ' + matches.join(', ') + " ";
             });
         }
         return [
@@ -96,7 +119,8 @@ var DataGridSpecStudies = (function (_super) {
                 'hoverEffect': true,
                 'nowrap': true,
                 'sideMenuItems': sideMenuItems,
-                'contentString': ['<a href="', studyDoc.url, '" class="darker">', studyDoc.n, '</a>'].join('')
+                'contentString': ['<a href="', studyDoc.url, '" class="darker">', studyDoc.n, '</a>'].join(''),
+                'title': studyDoc.n
             })
         ];
     };
@@ -105,7 +129,8 @@ var DataGridSpecStudies = (function (_super) {
             new DataGridDataCell(gridSpec, index, {
                 'maxWidth': '400',
                 'customID': function (id) { return 'editableDescriptionField' + id; },
-                'contentString': gridSpec.dataObj[index].des || ''
+                'contentString': gridSpec.dataObj[index].des || '',
+                'title': gridSpec.dataObj[index].des || '',
             })
         ];
     };
@@ -166,8 +191,8 @@ var DataGridSpecStudies = (function (_super) {
             new DataGridColumnGroupSpec('Owner Initials'),
             new DataGridColumnGroupSpec('Owner Full Name', { 'hiddenByDefault': true }),
             new DataGridColumnGroupSpec('Institute', { 'hiddenByDefault': true }),
-            new DataGridColumnGroupSpec('Date Created', { 'hiddenByDefault': true }),
-            new DataGridColumnGroupSpec('Last Modified')
+            new DataGridColumnGroupSpec('Date Created'),
+            new DataGridColumnGroupSpec('Last Modified', { 'hiddenByDefault': true })
         ];
     };
     // The table element on the page that will be turned into the DataGrid.  Any preexisting table content will be removed.
@@ -280,7 +305,7 @@ var DataGridSpecStudies = (function (_super) {
     DataGridSpecStudies.prototype.requestPageOfData = function (callback) {
         var _this = this;
         $.ajax({
-            'url': '/study/search/',
+            'url': '/study/study-search/',
             'type': 'GET',
             'data': $.extend({}, this._searchOpt, {
                 'q': this._query,
@@ -302,6 +327,8 @@ var DataGridSpecStudies = (function (_super) {
     // The order of the array will be the order they are added to the header bar.
     // It's perfectly fine to return an empty array.
     DataGridSpecStudies.prototype.createCustomHeaderWidgets = function (dataGrid) {
+        // override bootsrap
+        $('#hStudyMod').css('border-right', '1px solid lightgrey');
         // Create a single widget for showing disabled Studies
         var array = [
             new DGStudiesSearchWidget(dataGrid, this, 'Search Studies', 40, true),
@@ -332,7 +359,6 @@ var DataGridSpecStudies = (function (_super) {
         else {
             this.dataObj = this._transformData(replacement); // transform also handles storing sort keys
             this._size = totalSize || this.viewSize();
-            this._offset = totalOffset || 0;
         }
         return this;
     };
@@ -378,7 +404,7 @@ var DataGridSpecStudies = (function (_super) {
         return transformed;
     };
     return DataGridSpecStudies;
-})(DataGridSpecBase);
+}(DataGridSpecBase));
 // initialized with a query string, can search study fields for matches to query terms
 var ResultMatcher = (function () {
     function ResultMatcher(query) {
@@ -423,7 +449,7 @@ var ResultMatcher = (function () {
         });
     };
     return ResultMatcher;
-})();
+}());
 // This is a DataGridHeaderWidget derived from DGSearchWidget.
 // It's a search field that offers options for additional data types, querying the server for results.
 var DGStudiesSearchWidget = (function (_super) {
@@ -454,17 +480,6 @@ var DGStudiesSearchWidget = (function (_super) {
         };
         this._spec = spec;
     }
-    // This is called to append the widget elements beneath the given element.
-    // If the elements have not been created yet, they are created, and the uniqueID is passed along.
-    DGStudiesSearchWidget.prototype.appendElements = function (container, uniqueID) {
-        _super.prototype.appendElements.call(this, container, uniqueID);
-        var span = document.createElement("span");
-        var spanID = this.dataGridSpec.tableSpec.id + 'SearchDisc' + uniqueID;
-        span.setAttribute('id', spanID);
-        span.className = 'searchDisclosure';
-        this.searchDisclosureElement = span;
-        container.appendChild(this.searchDisclosureElement);
-    };
     // OVERRIDE
     // HEY GUYS WE DON'T NEED TO FILTER HERE ANYMORE
     DGStudiesSearchWidget.prototype.applyFilterToIDs = function (rowIDs) {
@@ -481,8 +496,7 @@ var DGStudiesSearchWidget = (function (_super) {
         }
     };
     return DGStudiesSearchWidget;
-})(DGSearchWidget);
-// Here's an example of a working DataGridOptionWidget.
+}(DGSearchWidget));
 // When checked, this hides all Studies that are not owned by the current user.
 var DGOnlyMyStudiesWidget = (function (_super) {
     __extends(DGOnlyMyStudiesWidget, _super);
@@ -490,7 +504,7 @@ var DGOnlyMyStudiesWidget = (function (_super) {
         _super.call(this, grid, spec);
         this._spec = spec;
     }
-    DGOnlyMyStudiesWidget.prototype.getIDFragment = function () {
+    DGOnlyMyStudiesWidget.prototype.getIDFragment = function (uniqueID) {
         return 'ShowMyStudiesCB';
     };
     DGOnlyMyStudiesWidget.prototype.getLabelText = function () {
@@ -513,8 +527,7 @@ var DGOnlyMyStudiesWidget = (function (_super) {
         });
     };
     return DGOnlyMyStudiesWidget;
-})(DataGridOptionWidget);
-// Here's another example of a working DataGridOptionWidget.
+}(DataGridOptionWidget));
 // When unchecked, this hides the set of Studies that are marked as disabled.
 var DGDisabledStudiesWidget = (function (_super) {
     __extends(DGDisabledStudiesWidget, _super);
@@ -522,7 +535,7 @@ var DGDisabledStudiesWidget = (function (_super) {
         _super.call(this, grid, spec);
         this._spec = spec;
     }
-    DGDisabledStudiesWidget.prototype.getIDFragment = function () {
+    DGDisabledStudiesWidget.prototype.getIDFragment = function (uniqueID) {
         return 'ShowDStudiesCB';
     };
     DGDisabledStudiesWidget.prototype.getLabelText = function () {
@@ -549,11 +562,11 @@ var DGDisabledStudiesWidget = (function (_super) {
         if (data[rowID].dis) {
             for (var r = 0; r < dataRowObjects.length; r++) {
                 var rowElement = dataRowObjects[r].getElement();
-                rowElement.style.backgroundColor = "#FFC0C0";
+                $(rowElement).addClass('disabledRecord');
             }
         }
     };
     return DGDisabledStudiesWidget;
-})(DataGridOptionWidget);
+}(DataGridOptionWidget));
 // use JQuery ready event shortcut to call prepareIt when page is ready
 $(IndexPage.prepareIt);

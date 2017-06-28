@@ -5,11 +5,12 @@ import json
 import logging
 
 from collections import defaultdict
+
+from django.db.transaction import atomic
 from six import string_types
 
 from ..models import (
-    Assay, GeneIdentifier, Line, Measurement, MeasurementCompartment,
-    MeasurementUnit, MeasurementValue, Protocol, Update
+    Assay, GeneIdentifier, Line, Measurement, MeasurementUnit, MeasurementValue, Protocol, Update
 )
 
 
@@ -84,7 +85,7 @@ class import_rna_seq(object):
                         continue
                 assay_start_id = line.new_assay_number(protocol)
                 assay = line.assay_set.create(
-                    name=str(assay_start_id),
+                    name=Assay.build_name(line, protocol, assay_start_id),
                     description=desc,
                     protocol=protocol,
                     experimenter=user,
@@ -170,7 +171,7 @@ class import_rna_seq(object):
                             y_units=units,
                             experimenter=user,
                             update_ref=update,
-                            compartment=MeasurementCompartment.INTRACELLULAR
+                            compartment=Measurement.Compartment.INTRACELLULAR
                         )
                         self.n_meas += 1
                         new_measurements.append(meas)
@@ -209,6 +210,7 @@ class import_rna_seq(object):
             MeasurementValue.objects.bulk_create(new_meas_data)
 
     @classmethod
+    @atomic
     def from_form(cls, request, study):
         form = request.POST
         n_cols = int(form["n_cols"])
@@ -277,7 +279,7 @@ def interpret_raw_rna_seq_data(raw_data, study, file_name=None):
         "raw_data": raw_data,
         "table": table,
         "samples": samples,
-        "assays": [{"id": a.id, "name": a.long_name} for a in assays],
+        "assays": [{"id": a.id, "name": a.name} for a in assays],
     }
 
 
@@ -441,7 +443,7 @@ class import_rnaseq_edgepro (object):
                 if (meas_record is None):
                     meas_record = Measurement(
                         assay=assay,
-                        compartment=MeasurementCompartment.INTRACELLULAR,
+                        compartment=Measurement.Compartment.INTRACELLULAR,
                         experimenter=update.mod_by,
                         measurement_type=gene_meas,
                         update_ref=update,

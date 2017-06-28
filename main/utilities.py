@@ -1,33 +1,28 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
-import json
 import re
 
 from builtins import str
 from collections import defaultdict, Iterable
-from decimal import Decimal
-from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.contrib import auth
 from django.contrib.sites.models import Site
 from django.db.models import Aggregate
 from django.db.models.aggregates import Aggregate as SQLAggregate
 from six import string_types
 from threadlocals.threadlocals import get_current_request
-from uuid import UUID
 
-from .models import (
-    CarbonSource, GeneIdentifier, MeasurementUnit, Metabolite, MetadataType, ProteinIdentifier,
-    Strain,
-)
+from edd.utilities import JSONEncoder
+from . import models
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-class JSONDecimalEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, Decimal):
-            return float(o)
-        elif isinstance(o, UUID):
-            return str(o)
-        return super(JSONDecimalEncoder, self).default(o)
+class JSONDecimalEncoder(JSONEncoder):
+    pass
 
 
 class SQLArrayAgg(SQLAggregate):
@@ -41,6 +36,14 @@ class ArrayAgg(Aggregate):
         query.aggregates[alias] = SQLArrayAgg(
             col, source=source, is_summary=is_summary, **self.extra
         )
+
+
+class EDDSettingsMiddleware(object):
+    """ Adds an `edd_deployment` attribute to requests passing through the middleware with a value
+        of the current deployment environment. """
+    def process_request(self, request):
+        request.edd_deployment = settings.EDD_DEPLOYMENT_ENVIRONMENT
+
 
 media_types = {
     '--': '-- (No base media used)',
@@ -78,10 +81,10 @@ def get_edddata_study(study):
         the given study. """
 
     metab_types = study.get_metabolite_types_used()
-    gene_types = GeneIdentifier.objects.filter(assay__line__study=study).distinct()
-    protein_types = ProteinIdentifier.objects.filter(assay__line__study=study).distinct()
+    gene_types = models.GeneIdentifier.objects.filter(assay__line__study=study).distinct()
+    protein_types = models.ProteinIdentifier.objects.filter(assay__line__study=study).distinct()
     protocols = study.get_protocols_used()
-    carbon_sources = CarbonSource.objects.filter(line__study=study).distinct()
+    carbon_sources = models.CarbonSource.objects.filter(line__study=study).distinct()
     assays = study.get_assays().select_related(
         'line__name', 'created__mod_by', 'updated__mod_by',
     )
@@ -91,13 +94,13 @@ def get_edddata_study(study):
     # …
     # assays = assays.annotate(
     #     metabolites=Count(Case(When(
-    #         measurement__measurement_type__type_group=MeasurementGroup.METABOLITE,
+    #         measurement__measurement_type__type_group=MeasurementType.Group.METABOLITE,
     #         then=Value(1)))),
     #     transcripts=Count(Case(When(
-    #         measurement__measurement_type__type_group=MeasurementGroup.GENEID,
+    #         measurement__measurement_type__type_group=MeasurementType.Group.GENEID,
     #         then=Value(1)))),
     #     proteins=Count(Case(When(
-    #         measurement__measurement_type__type_group=MeasurementGroup.PROTEINID,
+    #         measurement__measurement_type__type_group=MeasurementType.Group.PROTEINID,
     #         then=Value(1)))),
     # )
     strains = study.get_strains_used()
@@ -125,32 +128,26 @@ def get_edddata_study(study):
 
 
 def get_edddata_misc():
-    # XXX should these be stored elsewhere (postgres, other module)?
-    measurement_compartments = {i: comp for i, comp in enumerate([
-        {"name": "", "sn": ""},
-        {"name": "Intracellular/Cytosol (Cy)", "sn": "IC"},
-        {"name": "Extracellular", "sn": "EC"},
-    ])}
-    users = get_edddata_users()
-    mdtypes = MetadataType.objects.all().select_related('group')
-    unit_types = MeasurementUnit.objects.all()
+    mdtypes = models.MetadataType.objects.all().select_related('group')
+    unit_types = models.MeasurementUnit.objects.all()
+    # TODO: find if any of these are still needed on front-end, could eliminate call
     return {
         # Measurement units
         "UnitTypes": {ut.id: ut.to_json() for ut in unit_types},
         # media types
         "MediaTypes": media_types,
         # Users
-        "Users": users,
+        "Users": get_edddata_users(),
         # Assay metadata
         "MetaDataTypes": {m.id: m.to_json() for m in mdtypes},
         # compartments
-        "MeasurementTypeCompartments": measurement_compartments,
+        "MeasurementTypeCompartments": models.Measurement.Compartment.to_json(),
     }
 
 
 def get_edddata_carbon_sources():
     """All available CarbonSource records."""
-    carbon_sources = CarbonSource.objects.all()
+    carbon_sources = models.CarbonSource.objects.all()
     return {
         "MediaTypes": media_types,
         "CSourceIDs": [cs.id for cs in carbon_sources],
@@ -162,7 +159,7 @@ def get_edddata_carbon_sources():
 # TODO unit test
 def get_edddata_measurement():
     """All data not associated with a study or related objects."""
-    metab_types = Metabolite.objects.all()
+    metab_types = models.Metabolite.objects.all()
     return {
         "MetaboliteTypeIDs": [mt.id for mt in metab_types],
         "MetaboliteTypes": {mt.id: mt.to_json() for mt in metab_types},
@@ -170,7 +167,7 @@ def get_edddata_measurement():
 
 
 def get_edddata_strains():
-    strains = Strain.objects.all().select_related("created", "updated")
+    strains = models.Strain.objects.all().select_related("created", "updated")
     return {
         "StrainIDs": [s.id for s in strains],
         "EnabledStrainIDs": [s.id for s in strains if s.active],
@@ -179,7 +176,7 @@ def get_edddata_strains():
 
 
 def get_edddata_users(active_only=False):
-    User = get_user_model()
+    User = auth.get_user_model()
     users = User.objects.select_related(
         'userprofile'
     ).prefetch_related(
@@ -195,7 +192,7 @@ def interpolate_at(measurement_data, x):
     Given an X-value without a measurement, use linear interpolation to
     compute an approximate Y-value based on adjacent measurements (if any).
     """
-    import numpy  # Nat mentioned delayed loading of numpy due to wierd startup interactions
+    import numpy  # Nat mentioned delayed loading of numpy due to weird startup interactions
     data = [md for md in measurement_data if len(md.x) and md.x[0] is not None]
     data.sort(key=lambda a: a.x[0])
     if len(data) == 0:
@@ -259,6 +256,7 @@ def get_absolute_url(relative_url):
     if current_request and not current_request.is_secure():
         protocol = 'http://'
     return protocol + Site.objects.get_current().domain + relative_url
+
 
 extensions_to_icons = {
     '.zip':  'icon-zip.png',

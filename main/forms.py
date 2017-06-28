@@ -5,7 +5,6 @@ import json
 import logging
 
 from builtins import str
-from collections import OrderedDict
 from copy import deepcopy
 from django import forms
 from django.conf import settings
@@ -13,7 +12,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.postgres.forms import HStoreField
 from django.core.exceptions import ValidationError
-from django.db.models import Prefetch, Q
+from django.db import transaction
+from django.db.models import Q
 from django.db.models.base import Model
 from django.db.models.manager import BaseManager
 from django.utils.safestring import mark_safe
@@ -22,8 +22,7 @@ from form_utils.forms import BetterModelForm
 from functools import partial
 
 from jbei.rest.auth import HmacAuth
-from jbei.ice.rest.ice import IceApi
-from .export import table
+from jbei.rest.clients.ice import IceApi
 from .models import (
     Assay, Attachment, CarbonSource, Comment, Line, Measurement, MeasurementType,
     MeasurementValue, MetaboliteExchange, MetaboliteSpecies, MetadataType, Protocol, Strain,
@@ -40,7 +39,7 @@ class AutocompleteWidget(forms.widgets.MultiWidget):
         js = (
             'main/js/lib/jquery/jquery.js',
             'main/js/lib/jquery-ui/jquery-ui.min.js',
-            'main/js/autocomplete2.js',
+            'main/js/EDDAutocomplete.js',
             )
         css = {
             'all': (
@@ -128,14 +127,14 @@ class MultiAutocompleteWidget(AutocompleteWidget):
 class UserAutocompleteWidget(AutocompleteWidget):
     """ Autocomplete widget for Users """
     def __init__(self, attrs=None, opt={}):
-        opt.update({'text_attr': {'class': 'autocomp autocomp_user', }, })
+        opt.update({'text_attr': {'class': 'autocomp form-control', 'eddautocompletetype': 'User'}, })
         super(UserAutocompleteWidget, self).__init__(attrs=attrs, model=User, opt=opt)
 
 
 class GroupAutocompleteWidget(AutocompleteWidget):
     """ Autocomplete widget for Groups """
     def __init__(self, attrs=None, opt={}):
-        opt.update({'text_attr': {'class': 'autocomp autocomp_group', }, })
+        opt.update({'text_attr': {'class': 'autocomp', 'eddautocompletetype': 'Group'}, })
         super(GroupAutocompleteWidget, self).__init__(attrs=attrs, model=Group, opt=opt)
 
 
@@ -149,7 +148,9 @@ class RegistryValidator(object):
         update = Update.load_update()
         user_email = update.mod_by.email
         try:
-            ice = IceApi(auth=HmacAuth(key_id=settings.ICE_KEY_ID, username=user_email))
+            ice = IceApi(auth=HmacAuth(key_id=settings.ICE_KEY_ID, username=user_email),
+                         verify_ssl_cert=settings.VERIFY_ICE_CERT)
+            ice.timeout = settings.ICE_REQUEST_TIMEOUT
             self.entry = ice.get_entry(registry_id)
             self.entry.url = ''.join((ice.base_url, '/entry/', str(self.entry.id),))
         except Exception:
@@ -207,7 +208,7 @@ class RegistryValidator(object):
 class RegistryAutocompleteWidget(AutocompleteWidget):
     """ Autocomplete widget for Registry strains """
     def __init__(self, attrs=None, opt={}):
-        opt.update({'text_attr': {'class': 'autocomp autocomp_reg', }, })
+        opt.update({'text_attr': {'class': 'autocomp form-control', 'eddautocompletetype': 'Registry'}, })
         super(RegistryAutocompleteWidget, self).__init__(attrs=attrs, model=Strain, opt=opt)
 
     def decompress(self, value):
@@ -230,7 +231,7 @@ class MultiRegistryAutocompleteWidget(MultiAutocompleteWidget, RegistryAutocompl
 class CarbonSourceAutocompleteWidget(AutocompleteWidget):
     """ Autocomplete widget for carbon sources """
     def __init__(self, attrs=None, opt={}):
-        opt.update({'text_attr': {'class': 'autocomp autocomp_carbon', }, })
+        opt.update({'text_attr': {'class': 'autocomp form-control', 'eddautocompletetype': 'CarbonSource'}, })
         super(CarbonSourceAutocompleteWidget, self).__init__(
             attrs=attrs, model=CarbonSource, opt=opt)
 
@@ -245,7 +246,7 @@ class MultiCarbonSourceAutocompleteWidget(MultiAutocompleteWidget, CarbonSourceA
 class MetadataTypeAutocompleteWidget(AutocompleteWidget):
     """ Autocomplete widget for types of metadata """
     def __init__(self, attrs=None, opt={}):
-        opt.update({'text_attr': {'class': 'autocomp autocomp_type', }, })
+        opt.update({'text_attr': {'class': 'autocomp', 'eddautocompletetype': 'MetadataType'}, })
         super(MetadataTypeAutocompleteWidget, self).__init__(
             attrs=attrs, model=MetadataType, opt=opt)
 
@@ -254,7 +255,7 @@ class MeasurementTypeAutocompleteWidget(AutocompleteWidget):
     """ Autocomplete widget for types of metadata """
     def __init__(self, attrs=None, opt={}):
         """ Set opt with {'text_attr': {'class': 'autocomp autocomp_XXX'}} to override. """
-        my_opt = {'text_attr': {'class': 'autocomp autocomp_measure', }, }
+        my_opt = {'text_attr': {'class': 'autocomp form-control', 'eddautocompletetype': 'MeasurementType'}, }
         my_opt.update(**opt)
         super(MeasurementTypeAutocompleteWidget, self).__init__(
             attrs=attrs, model=MeasurementType, opt=my_opt,
@@ -305,7 +306,7 @@ class SbmlInfoAutocompleteWidget(AutocompleteWidget):
 class SbmlExchangeAutocompleteWidget(SbmlInfoAutocompleteWidget):
     """ Autocomplete widget for Exchanges in an SBMLTemplate """
     def __init__(self, template, attrs=None, opt={}):
-        opt.update(text_attr={'class': 'autocomp autocomp_sbml_r'})
+        opt.update(text_attr={'class': 'autocomp', 'eddautocompletetype': 'MetaboliteExchange'})
         super(SbmlExchangeAutocompleteWidget, self).__init__(
             template=template, attrs=attrs, model=MetaboliteExchange, opt=opt
         )
@@ -318,7 +319,7 @@ class SbmlExchangeAutocompleteWidget(SbmlInfoAutocompleteWidget):
 class SbmlSpeciesAutocompleteWidget(SbmlInfoAutocompleteWidget):
     """ Autocomplete widget for Species in an SBMLTemplate """
     def __init__(self, template, attrs=None, opt={}):
-        opt.update(text_attr={'class': 'autocomp autocomp_sbml_s'})
+        opt.update(text_attr={'class': 'autocomp', 'eddautocompletetype': 'MetaboliteSpecies'})
         super(SbmlSpeciesAutocompleteWidget, self).__init__(
             template=template, attrs=attrs, model=MetaboliteSpecies, opt=opt
         )
@@ -330,6 +331,13 @@ class SbmlSpeciesAutocompleteWidget(SbmlInfoAutocompleteWidget):
 
 class CreateStudyForm(forms.ModelForm):
     """ Form to create a new study. """
+    # include hidden field for copying multiple Line instances by ID
+    lineId = forms.ModelMultipleChoiceField(
+        queryset=Line.objects.none(),
+        required=False,
+        widget=forms.MultipleHiddenInput
+    )
+
     class Meta:
         model = Study
         fields = ['name', 'description', 'contact', ]
@@ -339,30 +347,82 @@ class CreateStudyForm(forms.ModelForm):
             'contact': _('Contact'),
         }
         widgets = {
-            'name': forms.widgets.TextInput(attrs={'size': 50}),
-            'description': forms.widgets.Textarea(attrs={'cols': 100}),
+            'name': forms.widgets.TextInput(attrs={'size': 50, 'class': 'form-control', 'placeholder': '(required)'}),
+            'description': forms.widgets.Textarea(attrs={'cols': 49, 'class': 'form-control'}),
             'contact': UserAutocompleteWidget(),
+        }
+
+        help_texts = {
+            'name': _(''),
+            'description': _(''),
         }
 
     def __init__(self, *args, **kwargs):
         # removes default hard-coded suffix of colon character on all labels
         kwargs.setdefault('label_suffix', '')
+        self._user = kwargs.pop('user', None)   # Q: Why are we assigning this to self?
         super(CreateStudyForm, self).__init__(*args, **kwargs)
+        # self.fields exists after super.__init__()
+        if self._user:
+            # make sure lines are in a readable study
+            q = Study.user_permission_q(
+                self._user,
+                StudyPermission.READ,
+                keyword_prefix='study__',
+            )
+            if self._user.is_superuser:
+                queryset = Line.objects.filter()
+            else:
+                queryset = Line.objects.filter(q)
+            self.fields['lineId'].queryset = queryset
 
     def save(self, commit=True, force_insert=False, force_update=False, *args, **kwargs):
-        # save the study
-        s = super(CreateStudyForm, self).save(commit=commit, *args, **kwargs)
-        # make sure the creator has write permission, and ESE has read
-        s.userpermission_set.update_or_create(
-            user=s.created.mod_by,
-            permission_type=StudyPermission.WRITE,
-        )
-        # XXX hard-coding the ID is gross, do it better
-        s.grouppermission_set.update_or_create(
-            group_id=1,
-            permission_type=StudyPermission.READ,
-        )
+        # perform updates atomically to the study and related user permissions
+        with transaction.atomic():
+            # save the study
+            s = super(CreateStudyForm, self).save(commit=commit, *args, **kwargs)
+            # make sure the creator has write permission, and ESE has read
+            s.userpermission_set.update_or_create(
+                user=s.created.mod_by,
+                permission_type=StudyPermission.WRITE,
+            )
+
+            # if configured, apply default group read permissions to the new study
+            _SETTING_NAME = 'EDD_DEFAULT_STUDY_READ_GROUPS'
+            default_group_names = getattr(settings, _SETTING_NAME, None)
+            if default_group_names:
+                default_groups = Group.objects.filter(name__in=default_group_names)
+                requested_groups = len(default_group_names)
+                found_groups = len(default_groups)
+                if requested_groups != found_groups:
+                    logger.error(
+                            'Setting only %(found)d of %(requested)d default read permissions for '
+                            'study %(study)d. Check %(setting_name)s and update this study.' % {
+                                'found': found_groups,
+                                'requested': requested_groups,
+                                'study': s.id,
+                                'setting_name': _SETTING_NAME, })
+
+                for group in default_groups:
+                    s.grouppermission_set.update_or_create(group_id=group.pk,
+                                                           defaults={'permission_type':
+                                                                     StudyPermission.READ})
+
+            # create copies of passed in Line IDs
+            self.save_lines(s)
         return s
+
+    def save_lines(self, study):
+        """ Saves copies of Line IDs passed to the form on the study. """
+        to_add = []
+        for line in self.cleaned_data['lineId']:
+            line.pk = line.id = None
+            line.study = study
+            line.study_id = study.id
+            line.uuid = None
+            to_add.append(line)
+        # https://docs.djangoproject.com/en/1.9/ref/models/relations/#django.db.models.fields.related.RelatedManager.add
+        study.line_set.add(*to_add, bulk=False)
 
 
 class CreateAttachmentForm(forms.ModelForm):
@@ -371,8 +431,12 @@ class CreateAttachmentForm(forms.ModelForm):
         model = Attachment
         fields = ('file', 'description', )
         labels = {
-            'file': _('Attachment'),
+            'file': _(''),
             'description': _('Description'),
+        }
+        help_texts = {
+            'description': _(''),
+            'file': _(''),
         }
         widgets = {
             'description': forms.widgets.TextInput(),
@@ -400,6 +464,9 @@ class CreateCommentForm(forms.ModelForm):
         fields = ('body', )
         labels = {
             'body': _('')
+        }
+        help_texts = {
+            'body': _(''),
         }
 
     def __init__(self, *args, **kwargs):
@@ -443,7 +510,7 @@ class LineForm(forms.ModelForm):
             'strains', 'meta_store',
         )
         labels = {
-            'name': _('Line'),
+            'name': _('Line Name'),
             'description': _('Description'),
             'control': _('Is Control?'),
             'contact': _('Contact'),
@@ -452,12 +519,22 @@ class LineForm(forms.ModelForm):
             'strains': _('Strains'),
         }
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 2}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(required)'}),
+            'description': forms.Textarea(attrs={'rows': 2, 'class': 'form-control '}),
             'contact': UserAutocompleteWidget(),
             'experimenter': UserAutocompleteWidget(),
             'carbon_source': MultiCarbonSourceAutocompleteWidget(),
             'strains': MultiRegistryAutocompleteWidget(),
             'meta_store': forms.HiddenInput(),
+        }
+        help_texts = {
+            'name': _(''),
+            'description': _(''),
+            'control': _(''),
+            'contact': _(''),
+            'experimenter': _(''),
+            'carbon_source': _(''),
+            'strains': _(''),
         }
 
     def __init__(self, *args, **kwargs):
@@ -567,6 +644,8 @@ class AssayForm(forms.ModelForm):
         )
         help_texts = {
             'name': _('If left blank, a name in form [Line]-[Protocol]-[#] will be generated. '),
+            'description': _(''),
+
         }
         labels = {
             'name': _('Name'),
@@ -575,7 +654,9 @@ class AssayForm(forms.ModelForm):
             'experimenter': _('Experimenter'),
         }
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 2}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'protocol': forms.Select(attrs={'class':'form-control'}),
             'experimenter': UserAutocompleteWidget(),
         }
 
@@ -611,8 +692,8 @@ class MeasurementForm(forms.ModelForm):
         fields = ('measurement_type', 'y_units', 'compartment', )
         help_texts = {
             'measurement_type': _(''),
-            'y_units': _('Select the units used for these measurements'),
-            'compartment': _('(optional) Select if the measurement is inside or outside'
+            'y_units': _('(optional) Select the units used for these measurements'),
+            'compartment': _('Select if the measurement is inside or outside'
                              ' the organism')
         }
         labels = {
@@ -622,6 +703,8 @@ class MeasurementForm(forms.ModelForm):
         }
         widgets = {
             'measurement_type': MeasurementTypeAutocompleteWidget(),
+            'y_units': forms.Select(attrs={'class': 'form-control'}),
+            'compartment': forms.Select(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):

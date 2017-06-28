@@ -17,8 +17,8 @@ MANAGERS = ADMINS = (
     ('Jay Bay', 'admin@example.org'),  # <-- CHANGE ME
 )
 
-# Set the IPs where the debug toolbar will be available; use localhost IPv4 and IPv6
 ALLOWED_HOSTS = ['*', ]
+# Set the IPs where the Django debug toolbar will be available; use localhost IPv4 and IPv6
 INTERNAL_IPS = ['127.0.0.1', '::1', ]
 # Also add the 'external' IP for the nginx service proxying the appserver
 try:
@@ -26,21 +26,43 @@ try:
     INTERNAL_IPS.append(socket.gethostbyname('nginx'))
 except:
     pass
-# Add the Django Debug Toolbar to local instance
 # Add login providers
-INSTALLED_APPS = INSTALLED_APPS + (
-    'allauth.socialaccount.providers.github',
-    'allauth.socialaccount.providers.google',
-    'allauth.socialaccount.providers.linkedin_oauth2',
-    'debug_toolbar',
-)
-DEBUG_TOOLBAR_CONFIG = {
-    'JQUERY_URL': '/static/main/js/lib/jquery/jquery-2.1.4.min.js',
-}
+# INSTALLED_APPS = INSTALLED_APPS + (
+#     'allauth.socialaccount.providers.github',
+#     'allauth.socialaccount.providers.google',
+#     'allauth.socialaccount.providers.linkedin_oauth2',
+# )
 
-USE_CELERY = True
-PUBLISH_REST_API = True
+# Uncomment below to use DEBUG mode and include the debug toolbar
+# DEBUG = True
+
+# Add the Django Debug Toolbar to local instance
+if DEBUG:  # noqa
+    INSTALLED_APPS = INSTALLED_APPS + ('debug_toolbar', )  # noqa
+    MIDDLEWARE_CLASSES = (
+        'debug_toolbar.middleware.DebugToolbarMiddleware',
+    ) + MIDDLEWARE_CLASSES  # noqa
+    DEBUG_TOOLBAR_CONFIG = {
+        'JQUERY_URL': '/static/main/js/lib/jquery/jquery-3.1.0.min.js',
+    }
+
+if env('HTTPS_METHOD', default=None) == 'noredirect':  # noqa
+    DEFAULT_HTTP_PROTOCOL = 'http'
+
+# disable the initial new REST API by default since it's insecure. Only needed to support
+# create_lines.py and maintain_ice_links.py
+PUBLISH_REST_API = False
+
+# False disables signup. A callable object will get called with a request object. A string type
+#   will attempt to look up and instantiate an object to use/call.
+EDD_ALLOW_SIGNUP = True
+
+# True disables all study creation by non-superusers. Used to disable writes to the public EDD
+# until the "web of EDD's" can be implemented.
 EDD_ONLY_SUPERUSER_CREATE = False
+
+# Uncomment to give read permission to new studies to a list of user groups by default
+# EDD_DEFAULT_STUDY_READ_GROUPS = ['GROUP NAME']
 
 
 ###################################################################################################
