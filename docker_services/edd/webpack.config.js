@@ -19,7 +19,8 @@ module.exports = {
   },
   output: {
     path: path.resolve(__dirname, './edd/main/static/dist'),
-    filename: '[name].js'
+    filename: '[name].js',
+    publicPath: '/static/dist/'
   },
   resolve: {
     modules: [

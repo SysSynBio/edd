@@ -5,19 +5,21 @@ ARG EDD_VERSION=2.1.0
 ARG GIT_BRANCH=master
 ARG GIT_URL=https://github.com/JBEI/edd.git
 ENV EDD_VERSION=${EDD_VERSION}
-RUN git clone --depth 1 -b ${GIT_BRANCH} ${GIT_URL} edd
+RUN git clone --depth 1 -b ${GIT_BRANCH} ${GIT_URL} /usr/local/edd
 
 # Copy in javascript build instructions
-COPY tsconfig.json webpack.config.js ./
-RUN npm run build
+COPY .bowerrc bower.json Gruntfile.js ./
+RUN bower --allow-root install \
+    && ln -s /usr/local/edd/typescript . \
+    && ln -s /usr/local/edd/main . \
+    && grunt
 
 # ---
 
 FROM buildpack-deps:stretch
 
-MAINTAINER William Morrell "WCMorrell@lbl.gov"
+LABEL maintainer="William Morrell <WCMorrell@lbl.gov>"
 WORKDIR /code
-
 ENV PYTHONUNBUFFERED=1 LANG=C.UTF-8
 
 # include Debian packages required to build pip packages
@@ -62,7 +64,7 @@ RUN chmod +x /tini
 COPY entrypoint.sh /usr/local/bin
 
 # Copy in code from node image
-COPY --from=node /node/edd /usr/local/edd
+COPY --from=node /usr/local/edd /usr/local/edd
 
 ENTRYPOINT ["/tini", "--", "/usr/local/bin/entrypoint.sh"]
 CMD ["--help"]

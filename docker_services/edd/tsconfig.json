@@ -25,5 +25,8 @@
   },
   "include": [
     "./edd/typescript/**/*"
+  ],
+  "exclude": [
+    "./edd/node_modules"
   ]
 }
