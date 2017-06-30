@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "declaration": true,
+    "module": "commonjs",
+    "pretty": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "noImplicitAny": false,
+    "rootDir": "./typescript/src/",
+    "outDir": "dist"
+  },
+  "exclude": [
+    "node_modules",
+    "bower_components",
+    "typescript/src/typescript-declarations.d.ts"
+  ]
+}
