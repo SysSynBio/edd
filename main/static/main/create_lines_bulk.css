@@ -97,14 +97,21 @@ input[type="radio"] {
 
 }
 
+.inputCell {
+    display: flex;
+    width: 100%;
+}
 
-/*
-TODO: doesn't resolve growing inputs to fill the column in an easily-parsable way! try tweaking nested spans next
+.inputCell input{
+    margin-left: 5px;
+}
 
-TODO: an unused / speculative / last-resort solution. try spans first!
+.inputCell button {
+    margin-left: 5px;
+}
 
 .single_meta_value_input {
-    width:100%;
+    flex-grow: 1;
 }
 
 .single_meta_value_input span {
@@ -113,10 +120,12 @@ TODO: an unused / speculative / last-resort solution. try spans first!
 
 
 .meta_type_input {
-    width: 50%;
+    /*width: 50%;*/
+    flex-grow: 1;
 }
 
 .meta_value_input {
-    width: 50%;
+    /*width: 50%;*/
+    flex-grow: 1;
 }
-*/
+

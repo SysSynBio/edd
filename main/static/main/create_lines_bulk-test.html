@@ -6,9 +6,12 @@
     <!-- TODO: template-ize script / stylesheet references -->
     <link rel="stylesheet" type="text/css" href="common.css"/>
     <link rel="stylesheet" type="text/css" href="create_lines_bulk.css"/>
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
-  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <link rel="stylesheet"
+          href="file:///Users/mark.forrer/edd/main/static/main/js/lib/jquery-ui/jquery-ui.min.css">
+  <script src="file:///Users/mark.forrer/edd/main/static/main/js/lib/jquery/jquery-3.1.0.min.js"></script>
+    <script src="file:///Users/mark.forrer/edd/main/static/main/js/CreateLines.js"></script>
+  <script
+          src="file:///Users/mark.forrer/edd/main/static/main/js/lib/jquery-ui/jquery-ui.min.js"></script>
   <script src="/resources/demos/external/jquery-mousewheel/jquery.mousewheel.js"></script>
   <!--link rel="stylesheet" href="/resources/demos/style.css"-->
     <!-- TODO: extract this code into thestylesheet, or remove / replace -- initial experimental
@@ -74,16 +77,16 @@
   </script>
     <script>
         // custom work-in-progress JavaScript to make the page thingy work
-        $("#clear_form".click(function(){
-            alert("Are you sure you want to clear the form?")
+        $("#clear_form").click(function(){
+            alert("Are you sure you want to clear the form?");
             spinner.spinner("value", 3)
-        }));
+        });
     </script>
     <!-- end of copied JQueryUI spinner sample code-->
 </head>
 <body>
 <h1>Create lines for <a href="/study/{{ study.id }}">{{ study.name }}</a></h1>
-<form>
+<div>
     <!-- Step 1 -->
     <div class="pageSection" id="select_input_source_step">
         <div class="sectionHead">Step 1: Choose the source(s) for line definitions:</div>
@@ -108,8 +111,30 @@
                 </ul>
             </div>
     </div>
+    <!-- Step 2 (Dynamic) -->
+    <div class="pageSection" id="select_line_properties_step_dynamic">
+        <div class="sectionHead">Step 2: Choose properties to apply to each new line:</div>
+    <div class="sectionContent">
+        <div class="heading">
+            <div class="cell">
+                <label>Property</label>
+            </div>
+            <div class="cell"><!--empty for property user input--></div>
+            <div class="cell"><!--empty for add button column--></div>
+            <div class="cell">
+                <label>Apply to<br> All Lines</label>
+            </div>
+            <div class="cell">
+                <label>Make Combinations</label>
+            </div>
+        </div>
+    <!-- TODO: template-ize this for only a selected subset of metadata based on runtime data.
+    See naiive draft code in CreateLines.ts-->
+        <!-- contact -->
+    </div>
+</div>
     <!-- Step 2 -->
-    <div class="pageSection id="select_line_properties_step">
+    <div class="pageSection" id="select_line_properties_step">
         <div class="sectionHead">Step 2: Choose properties to apply to each new line:</div>
     <div class="sectionContent">
         <div class="heading">
@@ -130,7 +155,8 @@
         <!-- contact -->
         <div class="row">
             <div class="cell"><label for="contact_input">Contact:</label></div>
-            <div class="cell"><input type="text" class="autocomplete single_meta_value_input" id="contact"/></div>
+            <div class="cell inputCell"><input type="text" class="autocomplete single_meta_value_input"
+                                      id="contact"/></div>
             <div class="cell">
                 <button type="button" name="add_contact_btn"
                         id="add_contact_btn">+</button></div>
@@ -143,7 +169,8 @@
         <!-- experimenter -->
         <div class="row">
             <div class="cell"><label for="experimentor_input">Experimenter:</label></div>
-                <div class="cell"><input type="text" class="autocomplete single_meta_value_input" id="experimentor"/></div>
+                <div class="cell inputCell"><input type="text"
+                                          class="autocomplete single_meta_value_input" id="experimentor"/></div>
             <div class="cell">
                 <button type="button" name="add_experimentor_btn"
                         id="add_experimentor_btn">+</button></div>
@@ -156,7 +183,7 @@
         <div class="row">
             <div class="cell">
                 <label for="carbon_source_input">Carbon Source:</label></div>
-            <div class="cell">
+            <div class="cell inputCell">
                 <input type="text" class="autocomplete single_meta_value_input" id="carbon_source_input"/>
                 <button type="button" name="remove_carbon_source_btn"
                         id="add_carbon_source_btn">-</button>
@@ -174,7 +201,7 @@
         <!-- carbon source 2-->
         <div class="row">
             <div class="cell"></div>
-            <div class="cell">
+            <div class="cell inputCell">
                 <input type="text" class="autocomplete single_meta_value_input" id="carbon_source_input"/>
                 <button type="button" name="remove_carbon_source_btn"
                         id="add_carbon_source_btn">-</button>
@@ -188,7 +215,7 @@
         <div class="row">
             <div class="cell">
                 <label for="strain_input">Strain:</label></div>
-            <div class="cell">
+            <div class="cell inputCell">
                 <input type="text" class="autocomplete single_meta_value_input" id="strain_input"/>
                 <button type="button" name="remove_strain1_btn"
                         id="remove_strain_btn">-</button>
@@ -206,7 +233,7 @@
         <!--  strain 2-->
         <div class="row">
             <div class="cell"></div>
-            <div class="cell">
+            <div class="cell inputCell">
                 <input type="text" class="autocomplete single_meta_value_input" id="strain_input"/>
                 <button type="button" name="remove_strain2_btn"
                         id="remove_strain2_btn">-</button>
@@ -220,7 +247,7 @@
         <div class="row">
             <div class="cell">
                 <label for="metadata_input">Meta-data:</label></div>
-            <div class="cell">
+            <div class="cell inputCell">
                 <input type="text" class="autocomplete single_meta_value_input" id="metadata_type1_input"/>
                 <input type="text" class="autocomplete single_meta_value_input" id="metadata_value1_input"/>
                 <button type="button" name="remove_metadata1_btn"
@@ -239,7 +266,7 @@
          <!-- meta-data 2 -->
             <div class="row">
             <div class="cell"></div>
-            <div class="cell">
+            <div class="cell inputCell">
                 <input type="text" class="autocomplete single_meta_value_input" id="metadata_type2_input"/>
                 <input type="text" class="autocomplete single_meta_value_input" id="metadata_value2_input"/>
                 <button type="button" name="remove_metadata2_btn"
@@ -256,7 +283,7 @@
         <!-- control -->
         <div class="row">
             <div class="cell"><label>Is Control?:</label></div>
-            <div class="cell single_meta_value_input">
+            <div class="cell inputCell single_meta_value_input">
                 <span><input type="checkbox" id="is_control"/><label
                         for="is_control">Yes</label></span>
                 <span><input type="checkbox" id="is_not_control"/>
@@ -271,7 +298,7 @@
         <!-- Description-->
         <div class="row">
             <div class="cell"><label>Description:</label></div>
-            <div class="cell single_meta_value_input">
+            <div class="cell inputCell single_meta_value_input">
                 <input type="text" class="description_value_input"
                              id="description"/><button type="button" name="remove_description_btn"
                         id="remove_description_btn">-</button></div>
@@ -288,7 +315,7 @@
         <!-- Replicates -->
         <div class="row">
             <div class="cell"><label for="spinner">Replicates:</label></div>
-            <div class="cell single_meta_value_input">
+            <div class="cell inputCell single_meta_value_input">
                 <input id="spinner" value="3"/>
                 </div>
             <div class="cell"></div>
@@ -302,7 +329,7 @@
         <!-- Sample Position -->
          <div class="row">
             <div class="cell"><label class="disabled-label">Sample Position:</label></div>
-            <div class="cell single_meta_value_input"">
+            <div class="cell inputCell single_meta_value_input"">
                 <ul id="step2_sample_position_list">
                     <li><input type="checkbox" name="copy_from_ice_btn" class="property_radio"
                                      value="apply_to_all" disabled="disabled"/><label
@@ -400,8 +427,33 @@
                     </div>
                 </div>
                  </div>
+
+    <div class="pageSection" id="choose_line_names_step">
+            <div class="sectionHead">Step 4: Review line creation summary</div>
+            <div class="sectionContent">
+                <div class="table">
+                    <div class="row">
+                        <div class="cell"><label>Total lines to be created</label></div>
+                        <div class="cell"><label>24</label></div>
+                    </div>
+                    <div class="row">
+                        <div class="cell"><label>Other important stats (e.g. # variations /
+                            metadata type)</label></div>
+                        <div class="cell"><label>TBD</label></div>
+                    </div>
+                    <div class="row">
+                        <div class="cell"><label>Sample Line Names</label></div>
+                        <div class="cell"><label>Blah</label></div>
     </div>
 
+                    </div>
+                <button disabled="disabled">Create 24 Lines...</button>
+                <button disabled="disabled">Create Spreadsheet</button>
+                <button disabled="disabled">Save As Template</button>
+                </div>
+    </div>
+    <input type="hidden" id="jsonoutput" name="jsonoutput" />
+    <input type="hidden" name="studyID" value="{{ study.id }}"/>
 </form>
 
 </body>
