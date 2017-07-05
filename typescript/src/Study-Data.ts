@@ -5,8 +5,19 @@
 /// <reference path="EDDGraphingTools.ts" />
 /// <reference path="../typings/d3/d3.d.ts"/>
 
-
-declare var EDDData:EDDData;
+declare var require: any;
+declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
+import {DataGrid} from "./DataGrid"
+import {DataGridSpecBase} from "./DataGrid"
+import {DataGridDataCell} from "./DataGrid"
+import {DataGridColumnSpec} from "./DataGrid"
+import {DataGridTableSpec} from "./DataGrid"
+import {DataGridHeaderWidget} from "./DataGrid"
+import {DataGridColumnGroupSpec} from "./DataGrid"
+import {DataGridHeaderSpec} from "./DataGrid"
+import {DataGridOptionWidget} from "./DataGrid"
+import {DataGridLoadingCell} from "./DataGrid"
+import {DGSelectAllWidget} from "./DataGrid"
 
 namespace StudyDataPage {
     'use strict';

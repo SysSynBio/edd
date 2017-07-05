@@ -1,5 +1,29 @@
-declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
+/// <reference path="typescript-declarations.d.ts" />
+/// <reference path="Utl.ts" />
 
+declare var require: any;
+declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
+import {DataGrid} from "./DataGrid"
+import {DataGridSpecBase} from "./DataGrid"
+import {DataGridDataCell} from "./DataGrid"
+import {DGPageDataSource} from "./DataGrid"
+import {DataGridColumnSpec} from "./DataGrid"
+import {DataGridTableSpec} from "./DataGrid"
+import {DataGridHeaderWidget} from "./DataGrid"
+import {DataGridColumnGroupSpec} from "./DataGrid"
+import {DataGridSort} from "./DataGrid"
+import {DataGridHeaderSpec} from "./DataGrid"
+import {DGPagingWidget} from "./DataGrid"
+import {DataGridOptionWidget} from "./DataGrid"
+import {DGSearchWidget} from "./DataGrid"
+import {DataGridDataRow} from "./DataGrid"
+//DataGridDataRow
+// 'use strict';
+//
+// require('DataGridSpecBase');
+// import DataGridSpecBase = require('DataGridSpecBase');
+// require('ClassB');
+// import ClassB = require('ClassB');
 
 module IndexPage {
 
@@ -58,10 +82,6 @@ module IndexPage {
 // The spec object that will be passed to DataGrid to create the Studies table
 class DataGridSpecStudies extends DataGridSpecBase implements DGPageDataSource {
 
-    constructor() {
-    super();
-    // console.log("Created"); ;// error here
-    }
     // spec object tracks what data should be displayed by the table
     private dataObj:{};
     private recordIds:string[] = [];

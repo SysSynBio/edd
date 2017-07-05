@@ -5,9 +5,9 @@
 //
 // This is a re-implementation of DataGridServerSide for wholly client-side tables.
 // Eventually DataGridServerSide should be phased out completely.
-//
 
-class DataGrid {
+
+export class DataGrid {
 
     // Member variables.
     private _spec:DataGridSpecBase;
@@ -1085,7 +1085,7 @@ class DataGridRecordSet {
 
 
 // Type definition for the records contained in a DataGrid
-class DataGridRecord {
+export class DataGridRecord {
     gridSpec:DataGridSpecBase;
     recordID:string;
     dataGridDataRows:DataGridDataRow[];
@@ -1232,7 +1232,7 @@ class DataGridRecord {
 
 // Container class for data rows in the body of the DataGrid table.
 // DataGrid instantiates these by passing in an array of the DataGridDataCell objects that will form the content of the row.
-class DataGridDataRow {
+export class DataGridDataRow {
 
     rowElement:HTMLElement;
     rowElementJQ:JQuery;
@@ -1300,7 +1300,7 @@ class DataGridDataRow {
 // Container class for cells in the body of the DataGrid table.
 // DataGrid calls a function defined in DataGridColumnSpec objects to instantiate these,
 // passing in a reference to the DataGridSpecBase and a unique identifier for a data record.
-class DataGridDataCell {
+export class DataGridDataCell {
 
     // Defined or set by the constructor
     gridSpec:DataGridSpecBase;
@@ -1469,7 +1469,7 @@ class DataGridDataCell {
 
 
 // A placeholder cell when data is still loading
-class DataGridLoadingCell extends DataGridDataCell {
+export class DataGridLoadingCell extends DataGridDataCell {
     constructor(gridSpec:DataGridSpecBase, id:string, opt?:{[index:string]:any}) {
         super(gridSpec, id, opt);
         this.contentString = '<span class="loading">Loading...</span>';
@@ -1479,7 +1479,7 @@ class DataGridLoadingCell extends DataGridDataCell {
 
 // A general class that acts as a common repository for utility functions for DataGrid widgets.
 // It is immediately subclassed into DataGridOptionWidget and DataGridHeaderWidget.
-class DataGridWidget {
+export class DataGridWidget {
 
     dataGridSpec:DataGridSpecBase;
     dataGridOwnerObject:DataGrid;
@@ -1545,7 +1545,7 @@ class DataGridWidget {
 //
 // The DataGridSpec is responsible for instantiating these DataGridOptionWidget-derived objects for a particular table,
 // and the DataGrid object is responsible for building the options menu that will store the checkbox and label elements.
-class DataGridOptionWidget extends DataGridWidget {
+export class DataGridOptionWidget extends DataGridWidget {
 
     _createdElements:boolean;
     // The base DataGridOptionWidget provides template code and structure for creating a checkbox with a label,
@@ -1652,7 +1652,7 @@ class DataGridOptionWidget extends DataGridWidget {
 //
 // The DataGridSpec is responsible for instantiating these DataGridOptionWidget-derived objects for a particular table,
 // and the DataGrid object is responsible for building the header area that will contain the widgets.
-class DataGridHeaderWidget extends DataGridWidget {
+export class DataGridHeaderWidget extends DataGridWidget {
 
     private _createdElements:boolean;
     // Whether to add this widget to the header of the table before the view menu, instead of the default of after.
@@ -1728,7 +1728,7 @@ class DataGridHeaderWidget extends DataGridWidget {
 // A generic "Select All" header widget, appearing as a button.
 // When clicked, it walks through every row and cell looking for DataGrid-created checkboxes,
 // and checks every one it finds.
-class DGSelectAllWidget extends DataGridHeaderWidget {
+export class DGSelectAllWidget extends DataGridHeaderWidget {
 
     private anySelected:boolean;
 
@@ -1785,7 +1785,7 @@ class DGSelectAllWidget extends DataGridHeaderWidget {
 
 // Here's an example of a working DataGridHeaderWidget.
 // It's a search field that narrows the set of rows to ones that contain the given string.
-class DGSearchWidget extends DataGridHeaderWidget {
+export class DGSearchWidget extends DataGridHeaderWidget {
 
     searchBoxElement:HTMLInputElement;
     placeHolder:string;
@@ -1925,11 +1925,11 @@ class DGSearchWidget extends DataGridHeaderWidget {
 }
 
 
-class DataGridSort {
+export class DataGridSort {
     spec:DataGridHeaderSpec;
     asc:boolean;
 }
-interface DGPageDataSource {
+export interface DGPageDataSource {
 
     pageSize():number;
     pageSize(size:number):DGPageDataSource;
@@ -1955,7 +1955,7 @@ interface DGPageDataSource {
 
 
 // This is a widget that will place controls for paging
-class DGPagingWidget extends DataGridHeaderWidget {
+export class DGPagingWidget extends DataGridHeaderWidget {
 
     private source:DGPageDataSource;
     private widgetElement:HTMLElement;
@@ -2034,7 +2034,7 @@ class DGPagingWidget extends DataGridHeaderWidget {
 
 
 // Define the TableSpec object used by DataGridSpecBase
-class DataGridTableSpec {
+export class DataGridTableSpec {
 
     name:string;            // Label to put in the title header
     id:string;              // A unique ID string for this table, to cat with other ID strings for generated table elements
@@ -2053,7 +2053,7 @@ class DataGridTableSpec {
 
 
 // Define the HeaderSpec object used by DataGridSpecBase
-class DataGridHeaderSpec {
+export class DataGridHeaderSpec {
     name:string;            // The name that appears in the header cell, and in the column show/hide widget
     id:string;              // An ID to assign to the element
     align:string;           // TODO: should be an enum type of: 'left', 'right', 'center'
@@ -2106,7 +2106,7 @@ class DataGridHeaderSpec {
 
 
 // Define the ColumnSpec object used by DataGridSpecBase
-class DataGridColumnSpec {
+export class DataGridColumnSpec {
     columnGroup:number;
     generateCellsFunction:(gridSpec:DataGridSpecBase, index:string)=>DataGridDataCell[];
 
@@ -2154,7 +2154,7 @@ class DataGridColumnSpec {
 
 
 // Define the ColumnGroupSpec object used by DataGridSpecBase
-class DataGridColumnGroupSpec {
+export class DataGridColumnGroupSpec {
     name:string;                    // Readable label string for this column group
     showInVisibilityList:boolean;   // Whether to place this column in the show/hide list
     hiddenByDefault:boolean;        // Flag if group is hidden by default
@@ -2181,7 +2181,7 @@ class DataGridColumnGroupSpec {
 
 
 // Define the RowGroupSpec object used by DataGridSpecBase
-class DataGridRowGroupSpec {
+export class DataGridRowGroupSpec {
     name:string;
 
     //
@@ -2206,7 +2206,7 @@ class DataGridRowGroupSpec {
 // and override the callbacks to customize functionality.
 // Then, when they instantiate a DataGrid, they should provide an instance of this derived DataGridSpecBase.
 // As an example, this base class is set up to render the Studies table on the main page of the EDD.
-class DataGridSpecBase {
+export class DataGridSpecBase {
 
     // These will all be defined or set by the constructor
     tableSpec:DataGridTableSpec;
@@ -2388,4 +2388,3 @@ class DataGridSpecBase {
     }
 
 }
-

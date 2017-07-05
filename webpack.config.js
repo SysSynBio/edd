@@ -6,11 +6,10 @@ var path = require('path');
 var webpack = require('webpack');
 module.exports = {
     devtool: 'source-map',
-     entry: {
+    entry: {
         AssayTableDataGraphing: "./typescript/src/AssayTableDataGraphing.ts",
         BiomassCalculationUI: "./typescript/src/BiomassCalculationUI.ts",
         CarbonSummation: "./typescript/src/CarbonSummation.ts",
-        DataGrid: "./typescript/src/DataGrid.ts",
         Dragboxes: "./typescript/src/Dragboxes.ts",
         EDDAutocomplete: "./typescript/src/EDDAutocomplete.ts",
         EDDDataInterface: "./typescript/src/EDDDataInterface.ts",
@@ -32,11 +31,11 @@ module.exports = {
     },
     output: {
         path: path.resolve(__dirname, './main/static/dist'),
-        filename: 'bundle.js'
+        filename: '[name].js'
     },
     resolve: {
         extensions: ["", ".webpack.js", ".web.js", ".ts", ".js", ".vue"],
-        modulesDirectories: ['node_modules']
+        modulesDirectories: ['node_modules',  './typescript/src/DataGrid']
         },
     module: {
         loaders: [

@@ -8,7 +8,7 @@
 module StudyBase {
     'use strict';
 
-
+    
     // Base class for the non-autocomplete inline editing fields for the Study
     export class EditableStudyElement extends EDDEditable.EditableElement {
         constructor(inputElement: HTMLElement, style?: string) {
@@ -46,6 +46,11 @@ module StudyBase {
     // Called when the page loads.
     export function prepareIt() {
         new EditableStudyName($('#editable-study-name').get()[0]);
+        // put the click handler at the document level, then filter to any link inside a .disclose
+        $(document).on('click', '.disclose .discloseLink', (e) => {
+            $(e.target).closest('.disclose').toggleClass('discloseHide');
+            return false;
+        });
     }
 };
 

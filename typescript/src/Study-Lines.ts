@@ -6,7 +6,23 @@
 /// <reference path="DataGrid.ts" />
 /// <reference path="FileDropZone.ts" />
 
-declare var EDDData:EDDData;
+declare var require: any;
+declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
+import {DataGrid} from "./DataGrid"
+import {DataGridSpecBase} from "./DataGrid"
+import {DataGridDataCell} from "./DataGrid"
+import {DGSelectAllWidget} from "./DataGrid"
+import {DataGridColumnSpec} from "./DataGrid"
+import {DataGridTableSpec} from "./DataGrid"
+import {DataGridHeaderWidget} from "./DataGrid"
+import {DataGridColumnGroupSpec} from "./DataGrid"
+import {DataGridSort} from "./DataGrid"
+import {DataGridHeaderSpec} from "./DataGrid"
+import {DGPagingWidget} from "./DataGrid"
+import {DataGridOptionWidget} from "./DataGrid"
+import {DGSearchWidget} from "./DataGrid"
+import {DataGridDataRow} from "./DataGrid"
+
 namespace StudyLines {
     'use strict';
 
@@ -111,12 +127,6 @@ namespace StudyLines {
                     })
                 });
             }
-        });
-
-        // put the click handler at the document level, then filter to any link inside a .disclose
-        $(document).on('click', '.disclose .discloseLink', (e) => {
-            $(e.target).closest('.disclose').toggleClass('discloseHide');
-            return false;
         });
 
         $(window).on('resize', queuePositionActionsBar);

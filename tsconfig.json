@@ -9,9 +9,13 @@
     "noImplicitAny": false,
     "rootDir": "./typescript/src/"
   },
+  "include": [
+    "./typescript/src/DataGrid.ts"
+  ],
   "exclude": [
     "node_modules",
     "bower_components",
     "typescript/src/typescript-declarations.d.ts"
   ]
 }
+
