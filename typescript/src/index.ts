@@ -1,13 +1,7 @@
-/// <reference path="typescript-declarations.d.ts" />
-/// <reference path="DataGrid.ts" />
-/// <reference path="Utl.ts" />
-
 declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
 
-module IndexPage {
 
-	var studiesDataGridSpec:DataGridSpecStudies = null;
-	var studiesDataGrid:DataGrid = null;
+module IndexPage {
 
 	// Called when the page loads.
 	export function prepareIt() {
@@ -59,12 +53,15 @@ module IndexPage {
             if (success) this.studiesDataGrid.triggerDataReset();
         });
 	}
-};
-
+}
 
 // The spec object that will be passed to DataGrid to create the Studies table
 class DataGridSpecStudies extends DataGridSpecBase implements DGPageDataSource {
 
+    constructor() {
+    super();
+    // console.log("Created"); ;// error here
+    }
     // spec object tracks what data should be displayed by the table
     private dataObj:{};
     private recordIds:string[] = [];
@@ -83,7 +80,6 @@ class DataGridSpecStudies extends DataGridSpecBase implements DGPageDataSource {
 	// Specification for the headers along the top of the table
 	defineHeaderSpec():DataGridHeaderSpec[] {
         // capture here, as the `this` variable below will point to global object, not this object
-        var self:DataGridSpecStudies = this;
 		return [
             new DataGridHeaderSpec(1, 'hStudyName', {
                 'name': 'Study Name',
@@ -186,7 +182,6 @@ class DataGridSpecStudies extends DataGridSpecBase implements DGPageDataSource {
 	// Specification for each of the columns that will make up the body of the table
 	defineColumnSpec():DataGridColumnSpec[] {
         // capture here, as the `this` variable below will point to global object, not this object
-        var self:DataGridSpecStudies = this;
 		return [
             new DataGridColumnSpec(1, this.generateStudyNameCells),
             this.descriptionCol = new DataGridColumnSpec(2, this.generateDescriptionCells),

@@ -48,17 +48,17 @@ module EDDTableImport {
     export var reviewStep: ReviewStep;
 
 
-    interface RawModeProcessor {
+    export interface RawModeProcessor {
         parse(rawInputStep: RawInputStep, rawData: string): RawInputStat;
         process(rawInputStep: RawInputStep, stat: RawInputStat): void;
     }
 
 
-    interface MeasurementValueSequence {
+    export interface MeasurementValueSequence {
         data: (string | number)[][];  // may be received as string, should insert as number
     }
 
-    interface GraphingSet extends MeasurementValueSequence {
+    export interface GraphingSet extends MeasurementValueSequence {
         label: string;
         name: string;
         units: string;
@@ -66,7 +66,7 @@ module EDDTableImport {
         tags?: any;
     }
     // These are returned by the server after parsing a dropped file
-    interface RawImportSet extends MeasurementValueSequence {
+    export interface RawImportSet extends MeasurementValueSequence {
         kind: string;
         line_name: string;
         assay_name: string;
@@ -75,7 +75,7 @@ module EDDTableImport {
     }
     // This information is added post-disambiguation, in addition to the fields from RawImportSet,
     // and sent to the server
-    interface ResolvedImportSet extends RawImportSet {
+    export interface ResolvedImportSet extends RawImportSet {
         protocol_id:number;
         // Value of 'null' or string 'new' indicates new Line should be created with
         // name line_name.
@@ -110,7 +110,7 @@ module EDDTableImport {
     // summarized for the user in the UI prior to the import. Any error messages will prevent the import
     // from proceeding until they're resolved. Warnings must be acknowledged by checking a checkbox
     // before the import can proceed.
-    interface ImportStep {
+    export interface ImportStep {
         getUserWarnings():ImportMessage[];
         getUserErrors():ImportMessage[];
         requiredInputsProvided():boolean; // tests whether all required input controls have a value
@@ -1166,7 +1166,7 @@ module EDDTableImport {
 
     // type for the options in row pulldowns
     // TODO update to use unions when migrating to Typescript 1.4+
-    interface RowPulldownOption extends Array<any> { // Array<string|number|RowPulldownOption[]>
+    export interface RowPulldownOption extends Array<any> { // Array<string|number|RowPulldownOption[]>
         0: string;
         1: any; // number | RowPulldownOption[]
     }

@@ -65,7 +65,7 @@ module EDDAuto {
     }
 
 
-    class AutoColumn {
+    export class AutoColumn {
         name:string;
         width:string;
         maxWidth:string;

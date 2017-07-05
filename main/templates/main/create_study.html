@@ -1,12 +1,9 @@
-{% extends "edd_base.html" %}
+{% extends "study.html" %}
 {% load staticfiles %}
 
 {% block js_css %}
     {{ block.super }}
     <script type="text/javascript" src="{% static 'main/js/lib/jquery/jquery.cookie.js' %}"></script>
-    <script type="text/javascript" src="{% static 'dist/Utl.js' %}"></script>
-    <script type="text/javascript" src="{% static 'dist/EDDEditableElement.js' %}"></script>
-    <script type="text/javascript" src="{% static 'dist/Study-Create.js' %}"></script>
 {% endblock js_css %}
 
 {% block head_title %}

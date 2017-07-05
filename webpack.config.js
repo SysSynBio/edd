@@ -2,13 +2,11 @@
  * Created by tlopez on 6/13/17.
  */
 
-var CommonsPlugin = new require ('webpack/lib/optimize/CommonsChunkPlugin');
-
 var path = require('path');
 var webpack = require('webpack');
 module.exports = {
     devtool: 'source-map',
-    entry: {
+     entry: {
         AssayTableDataGraphing: "./typescript/src/AssayTableDataGraphing.ts",
         BiomassCalculationUI: "./typescript/src/BiomassCalculationUI.ts",
         CarbonSummation: "./typescript/src/CarbonSummation.ts",
@@ -32,15 +30,9 @@ module.exports = {
         StudySBMLExport: "./typescript/src/StudySBMLExport.ts",
         Utl: "./typescript/src/Utl.ts"
     },
-    plugins: [
-      new CommonsPlugin({
-          minChunks: 3,
-          name: "common"
-      })
-    ],
     output: {
         path: path.resolve(__dirname, './main/static/dist'),
-        filename: '[name].js'
+        filename: 'bundle.js'
     },
     resolve: {
         extensions: ["", ".webpack.js", ".web.js", ".ts", ".js", ".vue"],
@@ -49,7 +41,7 @@ module.exports = {
     module: {
         loaders: [
             { test: /\.vue$/, loader: 'vue-loader' },
-            { test: /\.ts$/, loader: "awesome-typescript-loader" },
+            { test: /\.ts$/, loader: "ts-loader" },
             { enforce: "pre", test: /\.js$/, loader: "source-map-loader" }
         ]
     }

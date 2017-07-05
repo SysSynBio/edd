@@ -4,20 +4,9 @@
 
 {% block js_css %}
   {{ block.super }}
-  <script type="text/javascript" src="{% static 'main/js/Dragboxes.js' %}"></script>
   <script type="text/javascript">
-  // FIXME move this somewhere central
-  function disclose() {
-    $(this).closest('.disclose').toggleClass('discloseHide');
-    return false;
-  }
-  $(window).on('load', function () {
-    $('.disclose').find('a.discloseLink').on('click', disclose);
-  });
   </script>
-  <script type="text/javascript" src="{% static 'dist/Utl.js' %}"></script>
-  <script type="text/javascript" src="{% static 'dist/DataGrid.js' %}"></script>
-  <script type="text/javascript" src="{% static 'dist/StudySBMLExport.js' %}"></script>
+    <script type="text/javascript" src="{% static 'dist/bundle.js' %}"></script>
 
   <style type="text/css">
     /* style for SVG graphics */

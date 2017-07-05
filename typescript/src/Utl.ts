@@ -613,7 +613,7 @@ module Utl {
 
     // Used by FileDropZone to pass around additional info for each dropped File object without
     // messing with the filedrop-min.js internals.
-    interface FileDropZoneFileContainer {
+    export interface FileDropZoneFileContainer {
         file: any;                  // The file object as created by filedrop-min.js
         fileType: string;           // A guess at the file's type, expressed as a string, as returned by Utl.JS.guessFileType .
         extraHeaders:{[id:string]: string}; // Any extra headers to send with the POST to the server.
