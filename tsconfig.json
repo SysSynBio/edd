@@ -7,8 +7,7 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "noImplicitAny": false,
-    "rootDir": "./typescript/src/",
-    "outDir": "dist"
+    "rootDir": "./typescript/src/"
   },
   "exclude": [
     "node_modules",

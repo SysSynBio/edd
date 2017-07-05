@@ -11,6 +11,7 @@
   "devDependencies": {
     "awesome-typescript-loader": "^3.2.1",
     "css-loader": "0.23.1",
+    "dts-bundle": "^0.7.3",
     "generator-karma": "^2.0.0",
     "grunt": "^1.0.1",
     "grunt-cli": "^1.2.0",
@@ -44,7 +45,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "NODE_ENV=production webpack -p --progress --profile --colors",
-    "watch": "webpack-dev-server --hot --inline --progress --colors --watch-poll"
+    "watch": "webpack-dev-server --hot --inline --progress --colors --watch-poll",
+    "dev": "webpack-dev-server --devtool eval --progress --content-base build"
   },
   "repository": {
     "type": "git",

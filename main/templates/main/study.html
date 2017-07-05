@@ -19,11 +19,11 @@
         EDDData.Studies[{{ study.id }}] = {{ study.to_json_str|safe }};
 
     </script>
-    <script type="text/javascript" src="{% static 'main/js/Utl.js' %}"></script>
-    <script type="text/javascript" src="{% static 'main/js/Dragboxes.js' %}"></script>
-    <script type="text/javascript" src="{% static 'main/js/EDDAutocomplete.js' %}"></script>
-    <script type="text/javascript" src="{% static 'main/js/EDDEditableElement.js' %}"></script>
-    <script type="text/javascript" src="{% static 'main/js/Study.js' %}"></script>
+    <script type="text/javascript" src="{% static 'dist/Utl.js' %}"></script>
+    <script type="text/javascript" src="{% static 'dist/Dragboxes.js' %}"></script>
+    <script type="text/javascript" src="{% static 'dist/EDDAutocomplete.js' %}"></script>
+    <script type="text/javascript" src="{% static 'dist/EDDEditableElement.js' %}"></script>
+    <script type="text/javascript" src="{% static 'dist/Study.js' %}"></script>
 {% endblock js_css %}
 
 {% block head_title %}

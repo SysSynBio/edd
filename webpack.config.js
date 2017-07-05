@@ -2,6 +2,8 @@
  * Created by tlopez on 6/13/17.
  */
 
+var CommonsPlugin = new require ('webpack/lib/optimize/CommonsChunkPlugin');
+
 var path = require('path');
 var webpack = require('webpack');
 module.exports = {
@@ -30,8 +32,14 @@ module.exports = {
         StudySBMLExport: "./typescript/src/StudySBMLExport.ts",
         Utl: "./typescript/src/Utl.ts"
     },
+    plugins: [
+      new CommonsPlugin({
+          minChunks: 3,
+          name: "common"
+      })
+    ],
     output: {
-        path: path.resolve(__dirname, './dist'),
+        path: path.resolve(__dirname, './main/static/dist'),
         filename: '[name].js'
     },
     resolve: {
