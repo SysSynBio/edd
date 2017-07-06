@@ -1,8 +1,8 @@
-/// <reference path="typescript-declarations.d.ts" />
+/// <reference path="../src/typescript-declarations.d.ts" />
 
 // Code for supporting drag-select
 
-module Dragboxes {
+export module Dragboxes {
     'use strict';
 
     var globalChecked:boolean = null;

@@ -1,4 +1,4 @@
-/// <reference path="typescript-declarations.d.ts" />
+/// <reference path="../src/typescript-declarations.d.ts" />
 
 
 // This file contains various utility classes under the Utl module.

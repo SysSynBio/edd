@@ -1,7 +1,8 @@
-/// <reference path="typescript-declarations.d.ts" />
-/// <reference path="Utl.ts" />
+/// <reference path="../src/typescript-declarations.d.ts" />
+/// <reference path="./Utl.ts" />
 
 var EDD_auto = EDD_auto || {};
+import { Utl } from "./Utl"
 
 // At this point, this class is experimental. It's supposed to make modal dialog boxes
 // easier to create and configure.
@@ -125,7 +126,7 @@ interface MetabolicMapChooserResult {
 
 // This UI lets the user pick a metabolic map and a biomass reaction inside of it to use for the
 // specified study.
-class StudyMetabolicMapChooser {
+export class StudyMetabolicMapChooser {
 
     private _dialogBox:DialogBox;
 

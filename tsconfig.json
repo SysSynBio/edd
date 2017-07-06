@@ -10,7 +10,7 @@
     "rootDir": "./typescript/src/"
   },
   "include": [
-    "./typescript/src/DataGrid.ts"
+    "./typescript/modules/DataGrid.ts"
   ],
   "exclude": [
     "node_modules",

@@ -1,9 +1,11 @@
-/// <reference path="typescript-declarations.d.ts" />
-/// <reference path="Utl.ts" />
-/// <reference path="CarbonSummation.ts" />
+/// <reference path="../src/typescript-declarations.d.ts" />
+/// <reference path="./Utl.ts" />
+/// <reference path="./CarbonSummation.ts" />
 
+import { Utl } from "./Utl"
+import { CarbonBalance2 } from "./CarbonSummation"
 
-module CarbonBalance {
+export module CarbonBalance {
 
 	export class ImbalancedTimeSample
 	{
@@ -18,8 +20,8 @@ module CarbonBalance {
 		private _biomassCalculation:number;
 		static graphDiv = null;
 		allCBGraphs = [];
-		mergedTimelinesByLineID:{[lineID:number]:MergedLineSamples} = {};
-		carbonSum:CarbonBalance.Summation = null;
+		mergedTimelinesByLineID:{[lineID:number]:CarbonBalance2.MergedLineSamples} = {};
+		carbonSum:CarbonBalance2.Summation = null;
 
 
 		// Called as the page is loading to initialize and precalculate CB data.
@@ -27,7 +29,7 @@ module CarbonBalance {
 			this._metabolicMapID = metabolicMapID; 
 			this._biomassCalculation = biomassCalculation;
 			// Calculate carbon balance sums.
-			this.carbonSum = CarbonBalance.Summation.create(biomassCalculation);
+			this.carbonSum = CarbonBalance2.Summation.create(biomassCalculation);
 
 			// Now build a structure for each line that merges all assay and metabolite data into one timeline.
 			this.mergedTimelinesByLineID = {};
@@ -38,7 +40,7 @@ module CarbonBalance {
 
 
 		getDebugTextForTime(metabolicMapID:number, biomassCalculation:number, lineID:number, timeStamp:number):string {
-			return CarbonBalance.Summation.generateDebugText(biomassCalculation, lineID, timeStamp);
+			return CarbonBalance2.Summation.generateDebugText(biomassCalculation, lineID, timeStamp);
 		}
 
 
@@ -85,9 +87,9 @@ module CarbonBalance {
 			var ret:ImbalancedTimeSample[] = [];
 
 	    	// For each time sample that we have for this line, figure out which ones are imbalanced.
-	    	var timeline:MergedLineSample[] = this.mergedTimelinesByLineID[lineID].mergedLineSamples;
+	    	var timeline:CarbonBalance2.MergedLineSample[] = this.mergedTimelinesByLineID[lineID].mergedLineSamples;
 	    	for (var iTimesample:number=0; iTimesample < timeline.length; iTimesample++) {
-	    		var timeSample:MergedLineSample = timeline[iTimesample];
+	    		var timeSample:CarbonBalance2.MergedLineSample = timeline[iTimesample];
 
 	    		var normalizedError:number = this._calcNormalizedError(timeSample.totalCarbonIn, timeSample.totalCarbonOut);
 
@@ -116,13 +118,13 @@ module CarbonBalance {
 			));
 
 	    	// Now for each time sample that we have for this line, add a dot.
-	    	var mergedLineSamples:MergedLineSamples = this.mergedTimelinesByLineID[lineID];
+	    	var mergedLineSamples:CarbonBalance2.MergedLineSamples = this.mergedTimelinesByLineID[lineID];
 	    	if (mergedLineSamples != null) {
-		    	var timeline:MergedLineSample[] = mergedLineSamples.mergedLineSamples;
+		    	var timeline:CarbonBalance2.MergedLineSample[] = mergedLineSamples.mergedLineSamples;
 		    	var imbalances:ImbalancedTimeSample[] = this._getTimeSamplesForLine(lineID, false);
 		    	for (var iImbalance in imbalances) {
 		    		var imbalance = imbalances[iImbalance];
-		    		var timeSample:MergedLineSample = timeline[imbalance.iTimeSample];
+		    		var timeSample:CarbonBalance2.MergedLineSample = timeline[imbalance.iTimeSample];
 		    		var normalizedError = imbalance.normalizedError;
 
 		    		var clr:Utl.Color = Utl.Color.red;
@@ -192,7 +194,7 @@ module CarbonBalance {
 		// Used by _generateDebugTextForPopup to generate a list like:
 		// == Inputs    (0.2434 Cmol/L)
 		//     Formate : 0.2434
-		private _printCarbonBalanceList(header:string, list:InOutSumMeasurement[], showSum:boolean) {
+		private _printCarbonBalanceList(header:string, list:CarbonBalance2.InOutSumMeasurement[], showSum:boolean) {
 
 			var padding:number = 10;
 
@@ -200,7 +202,7 @@ module CarbonBalance {
 			var text:string = header;
 
 			if (showSum && list.length > 0) {
-				var sum:number = list.reduce( (p:number,c:InOutSumMeasurement) => p + Math.abs(c.carbonDelta), 0.0 );
+				var sum:number = list.reduce( (p:number,c:CarbonBalance2.InOutSumMeasurement) => p + Math.abs(c.carbonDelta), 0.0 );
 				text += Utl.JS.repeatString(' ', padding - header.length + 3) + "[" + sum.toFixed(4) + " CmMol/gdw/hr]";
 			}
 
@@ -245,7 +247,7 @@ module CarbonBalance {
 			$(el).css('font-size', '8pt');
 			el.setAttribute('wrap','off');
 
-			var sortedList:InOutSumMeasurement[] = balance.measurements.slice(0);
+			var sortedList:CarbonBalance2.InOutSumMeasurement[] = balance.measurements.slice(0);
 			sortedList.sort( (a,b) => {return a.carbonDelta - b.carbonDelta;} )
 
 			var prevTimeStamp:number = this._getPreviousMergedTimestamp(lineID, timeStamp);
@@ -261,7 +263,7 @@ module CarbonBalance {
 			// Show the summation details for this study.
 			text += "\nDETAILS\n" + divider + "\n";
 
-			var details:string = CarbonBalance.Summation.generateDebugText(
+			var details:string = CarbonBalance2.Summation.generateDebugText(
 				this._biomassCalculation,
 				lineID,
 				timeStamp);
@@ -343,7 +345,7 @@ module CarbonBalance {
 		private _getPreviousMergedTimestamp(lineID:number, timeStamp:number) {
 			var prevTimeStamp:number = 0;
 			
-			var samples:MergedLineSample[] = this.mergedTimelinesByLineID[lineID].mergedLineSamples;
+			var samples:CarbonBalance2.MergedLineSample[] = this.mergedTimelinesByLineID[lineID].mergedLineSamples;
 			for (var i:number=0; i < samples.length; i++) {
 				if (samples[i].timeStamp == timeStamp)
 					break;
@@ -429,7 +431,7 @@ module CarbonBalance {
 			};
 
 			// Get everything in a list sorted by height.
-			var sortedList:InOutSumMeasurement[] = [];
+			var sortedList:CarbonBalance2.InOutSumMeasurement[] = [];
 			for (var iMeasurement in balance.measurements) {
 				sortedList.push( balance.measurements[iMeasurement] );
 				var carbonDelta:number = balance.measurements[iMeasurement].carbonDelta;
@@ -598,8 +600,8 @@ module CarbonBalance {
 
 
 		private _checkLineSampleBalance(lineID, timeStamp) {
-			var lineData:LineData = this.carbonSum.getLineDataByID(lineID);
-			var sum:CarbonBalance.InOutSum = lineData.getInOutSumAtTime(timeStamp);
+			var lineData:CarbonBalance2.LineData = this.carbonSum.getLineDataByID(lineID);
+			var sum:CarbonBalance2.InOutSum = lineData.getInOutSumAtTime(timeStamp);
 
 			// We need at least 2 measurements in order to register an imbalance.
 			if (sum.measurements.length < 2)
@@ -619,7 +621,7 @@ module CarbonBalance {
 
 
 	class LineSampleBalance {
-		constructor(public isBalanced:boolean, public totalIn:number, public totalOut:number, public measurements:InOutSumMeasurement[]) {}
+		constructor(public isBalanced:boolean, public totalIn:number, public totalOut:number, public measurements:CarbonBalance2.InOutSumMeasurement[]) {}
 	}
 
 } // end CarbonBalance module

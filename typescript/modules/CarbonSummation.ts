@@ -1,8 +1,9 @@
-/// <reference path="typescript-declarations.d.ts" />
-/// <reference path="Utl.ts" />
-/// <reference path="StudyCarbonBalance.ts" />
+/// <reference path="../src/typescript-declarations.d.ts" />
+/// <reference path="./Utl.ts" />
+/// <reference path="../src/StudyCarbonBalance.ts" />
+import { Utl } from "./Utl"
 
-module CarbonBalance {
+export module CarbonBalance {
     'use strict';
 
     interface ValidatedValue {

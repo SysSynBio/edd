@@ -8,26 +8,17 @@ module.exports = {
     devtool: 'source-map',
     entry: {
         AssayTableDataGraphing: "./typescript/src/AssayTableDataGraphing.ts",
-        BiomassCalculationUI: "./typescript/src/BiomassCalculationUI.ts",
-        CarbonSummation: "./typescript/src/CarbonSummation.ts",
-        Dragboxes: "./typescript/src/Dragboxes.ts",
         EDDAutocomplete: "./typescript/src/EDDAutocomplete.ts",
         EDDDataInterface: "./typescript/src/EDDDataInterface.ts",
-        EDDEditableElement: "./typescript/src/EDDEditableElement.ts",
-        EDDGraphingTools: "./typescript/src/EDDGraphingTools.ts",
         EDDRest: "./typescript/src/EDDRest.ts",
         ExperimentDescHelp: "./typescript/src/Experiment-Desc-Help.ts",
-        FileDropZone: "./typescript/src/FileDropZone.ts",
         Import: "./typescript/src/Import.ts",
         index: "./typescript/src/index.ts",
         StudyCreate: "./typescript/src/Study-Create.ts",
         StudyData: "./typescript/src/Study-Data.ts",
         StudyLines: "./typescript/src/Study-Lines.ts",
         StudyOverview: "./typescript/src/Study-Overview.ts",
-        Study: "./typescript/src/Study.ts",
-        StudyCarbonBalance: "./typescript/src/StudyCarbonBalance.ts",
-        StudySBMLExport: "./typescript/src/StudySBMLExport.ts",
-        Utl: "./typescript/src/Utl.ts"
+        StudySBMLExport: "./typescript/src/StudySBMLExport.ts"
     },
     output: {
         path: path.resolve(__dirname, './main/static/dist'),
@@ -35,7 +26,7 @@ module.exports = {
     },
     resolve: {
         extensions: ["", ".webpack.js", ".web.js", ".ts", ".js", ".vue"],
-        modulesDirectories: ['node_modules',  './typescript/src/DataGrid']
+        modulesDirectories: ['node_modules',  './typescript/modules']
         },
     module: {
         loaders: [

@@ -1,27 +1,31 @@
 /// <reference path="typescript-declarations.d.ts" />
-/// <reference path="Utl.ts" />
-/// <reference path="Dragboxes.ts" />
-/// <reference path="BiomassCalculationUI.ts" />
-/// <reference path="CarbonSummation.ts" />
-/// <reference path="DataGrid.ts" />
-/// <reference path="FileDropZone.ts" />
+/// <reference path="../modules/Utl.ts" />
+/// <reference path="../modules/Dragboxes.ts" />
+/// <reference path="../modules/BiomassCalculationUI.ts" />
+/// <reference path="../modules/CarbonSummation.ts" />
+/// <reference path="../modules/DataGrid.ts" />
+/// <reference path="../modules/FileDropZone.ts" />
 
 declare var require: any;
 declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
-import {DataGrid} from "./DataGrid"
-import {DataGridSpecBase} from "./DataGrid"
-import {DataGridDataCell} from "./DataGrid"
-import {DGSelectAllWidget} from "./DataGrid"
-import {DataGridColumnSpec} from "./DataGrid"
-import {DataGridTableSpec} from "./DataGrid"
-import {DataGridHeaderWidget} from "./DataGrid"
-import {DataGridColumnGroupSpec} from "./DataGrid"
-import {DataGridSort} from "./DataGrid"
-import {DataGridHeaderSpec} from "./DataGrid"
-import {DGPagingWidget} from "./DataGrid"
-import {DataGridOptionWidget} from "./DataGrid"
-import {DGSearchWidget} from "./DataGrid"
-import {DataGridDataRow} from "./DataGrid"
+import {DataGrid} from "../modules/DataGrid"
+import {DataGridSpecBase} from "../modules/DataGrid"
+import {DataGridDataCell} from "../modules/DataGrid"
+import {DGSelectAllWidget} from "../modules/DataGrid"
+import {DataGridColumnSpec} from "../modules/DataGrid"
+import {DataGridTableSpec} from "../modules/DataGrid"
+import {DataGridHeaderWidget} from "../modules/DataGrid"
+import {DataGridColumnGroupSpec} from "../modules/DataGrid"
+import {DataGridHeaderSpec} from "../modules/DataGrid"
+import {DataGridOptionWidget} from "../modules/DataGrid"
+import {DGSearchWidget} from "../modules/DataGrid"
+import { Utl } from "../modules/Utl"
+import { FileDropZone } from "../modules/FileDropZone"
+import { StudyMetabolicMapChooser } from "../modules/BiomassCalculationUI"
+import { CarbonBalance } from "../modules/StudyCarbonBalance"
+import { MetabolicMapChooserResult } from "../modules/BiomassCalculationUI"
+import { FullStudyBiomassUI } from "../modules/BiomassCalculationUI"
+import { FullStudyBiomassUIResultsCallback } from "../modules/BiomassCalculationUI"
 
 namespace StudyLines {
     'use strict';

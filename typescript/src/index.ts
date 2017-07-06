@@ -1,22 +1,23 @@
 /// <reference path="typescript-declarations.d.ts" />
-/// <reference path="Utl.ts" />
+/// <reference path="../modules/Utl.ts" />
 
 declare var require: any;
 declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
-import {DataGrid} from "./DataGrid"
-import {DataGridSpecBase} from "./DataGrid"
-import {DataGridDataCell} from "./DataGrid"
-import {DGPageDataSource} from "./DataGrid"
-import {DataGridColumnSpec} from "./DataGrid"
-import {DataGridTableSpec} from "./DataGrid"
-import {DataGridHeaderWidget} from "./DataGrid"
-import {DataGridColumnGroupSpec} from "./DataGrid"
-import {DataGridSort} from "./DataGrid"
-import {DataGridHeaderSpec} from "./DataGrid"
-import {DGPagingWidget} from "./DataGrid"
-import {DataGridOptionWidget} from "./DataGrid"
-import {DGSearchWidget} from "./DataGrid"
-import {DataGridDataRow} from "./DataGrid"
+import {DataGrid} from "../modules/DataGrid"
+import {DataGridSpecBase} from "../modules/DataGrid"
+import {DataGridDataCell} from "../modules/DataGrid"
+import {DGPageDataSource} from "../modules/DataGrid"
+import {DataGridColumnSpec} from "../modules/DataGrid"
+import {DataGridTableSpec} from "../modules/DataGrid"
+import {DataGridHeaderWidget} from "../modules/DataGrid"
+import {DataGridColumnGroupSpec} from "../modules/DataGrid"
+import {DataGridSort} from "../modules/DataGrid"
+import {DataGridHeaderSpec} from "../modules/DataGrid"
+import {DGPagingWidget} from "../modules/DataGrid"
+import {DataGridOptionWidget} from "../modules/DataGrid"
+import {DGSearchWidget} from "../modules/DataGrid"
+import {DataGridDataRow} from "../modules/DataGrid"
+import { Utl } from "../modules/Utl"
 //DataGridDataRow
 // 'use strict';
 //

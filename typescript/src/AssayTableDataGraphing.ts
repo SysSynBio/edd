@@ -1,5 +1,5 @@
 /// <reference path="typescript-declarations.d.ts" />
-/// <reference path="EDDGraphingTools.ts" />
+/// <reference path="../modules/EDDGraphingTools.ts" />
 
 var EDDATDGraphing:any;
 

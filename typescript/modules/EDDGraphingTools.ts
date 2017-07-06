@@ -1,4 +1,4 @@
-/// <reference path="typescript-declarations.d.ts" />
+/// <reference path="../src/typescript-declarations.d.ts" />
 /// <reference path="../typings/d3/d3.d.ts"/>;
 var EDDGraphingTools:any;
 

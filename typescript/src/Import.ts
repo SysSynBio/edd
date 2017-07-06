@@ -2,10 +2,11 @@
 /// <reference path="../typings/d3/d3.d.ts"/>
 /// <reference path="AssayTableDataGraphing.ts" />
 /// <reference path="EDDAutocomplete.ts" />
-/// <reference path="EDDGraphingTools.ts" />
-/// <reference path="Utl.ts" />
+/// <reference path="../modules/EDDGraphingTools.ts" />
+/// <reference path="../modules/Utl.ts" />
 
 
+import { Utl } from "../modules/Utl"
 
 declare var ATData: any; // Setup by the server.
 declare var EDDATDGraphing: any;

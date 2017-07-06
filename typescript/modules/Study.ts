@@ -1,11 +1,11 @@
-/// <reference path="typescript-declarations.d.ts" />
-/// <reference path="EDDEditableElement.ts" />
-/// <reference path="Utl.ts" />
+/// <reference path="../src/typescript-declarations.d.ts" />
+/// <reference path="./EDDEditableElement.ts" />
+/// <reference path="./Utl.ts" />
 
-
+import { EDDEditable } from "./EDDEditableElement"
 // Code that all Study sub-pages have in common
 
-module StudyBase {
+export module StudyBase {
     'use strict';
 
     

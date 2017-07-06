@@ -1,8 +1,8 @@
-/// <reference path="typescript-declarations.d.ts" />
-/// <reference path="Utl.ts" />
+/// <reference path="../src/typescript-declarations.d.ts" />
+/// <reference path="./Utl.ts" />
+import { Utl } from "./Utl"
 
-
-module FileDropZone {
+export module FileDropZone {
 
     export class FileDropZoneHelpers {
         

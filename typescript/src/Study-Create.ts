@@ -1,6 +1,9 @@
 /// <reference path="typescript-declarations.d.ts" />
-/// <reference path="Utl.ts" />
+/// <reference path="typescript-declarations.d.ts" />
+/// <reference path="typescript-declarations.d.ts" />
+/// <reference path="../modules/Utl.ts" />
 
+import { EDDEditable } from "../modules/EDDEditableElement"
 
 module CreateStudy {
     'use strict';

@@ -1,14 +1,20 @@
 /// <reference path="typescript-declarations.d.ts" />
-/// <reference path="BiomassCalculationUI.ts" />
-/// <reference path="Dragboxes.ts" />
-/// <reference path="DataGrid.ts" />
+/// <reference path="../modules/BiomassCalculationUI.ts" />
+/// <reference path="../modules/Dragboxes.ts" />
+/// <reference path="../modules/DataGrid.ts" />
 /// <reference path="EDDAutocomplete.ts" />
-/// <reference path="EDDEditableElement.ts" />
-/// <reference path="Study.ts" />
-/// <reference path="Utl.ts" />
-/// <reference path="FileDropZone.ts" />
+/// <reference path="../modules/EDDEditableElement.ts" />
+/// <reference path="../modules/Study.ts" />
+/// <reference path="../modules/Utl.ts" />
+/// <reference path="../modules/FileDropZone.ts" />
 
 declare var EDDData:EDDData;
+import { Utl } from "../modules/Utl"
+import { EDDEditable } from "../modules/EDDEditableElement"
+import { FileDropZone } from "../modules/FileDropZone"
+import { StudyMetabolicMapChooser } from "../modules/BiomassCalculationUI"
+import { MetabolicMapChooserResult } from "../modules/BiomassCalculationUI"
+import { StudyBase } from "../modules/Study"
 
 
 module StudyOverview {

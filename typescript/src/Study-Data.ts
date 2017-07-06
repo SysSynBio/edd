@@ -1,23 +1,27 @@
 /// <reference path="typescript-declarations.d.ts" />
-/// <reference path="Utl.ts" />
-/// <reference path="Dragboxes.ts" />
-/// <reference path="DataGrid.ts" />
-/// <reference path="EDDGraphingTools.ts" />
+/// <reference path="../modules/Utl.ts" />
+/// <reference path="../modules/Dragboxes.ts" />
+/// <reference path="../modules/DataGrid.ts" />
+/// <reference path="../modules/EDDGraphingTools.ts" />
 /// <reference path="../typings/d3/d3.d.ts"/>
 
 declare var require: any;
 declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
-import {DataGrid} from "./DataGrid"
-import {DataGridSpecBase} from "./DataGrid"
-import {DataGridDataCell} from "./DataGrid"
-import {DataGridColumnSpec} from "./DataGrid"
-import {DataGridTableSpec} from "./DataGrid"
-import {DataGridHeaderWidget} from "./DataGrid"
-import {DataGridColumnGroupSpec} from "./DataGrid"
-import {DataGridHeaderSpec} from "./DataGrid"
-import {DataGridOptionWidget} from "./DataGrid"
-import {DataGridLoadingCell} from "./DataGrid"
-import {DGSelectAllWidget} from "./DataGrid"
+import {DataGrid} from "../modules/DataGrid"
+import {DataGridSpecBase} from "../modules/DataGrid"
+import {DataGridDataCell} from "../modules/DataGrid"
+import {DataGridColumnSpec} from "../modules/DataGrid"
+import {DataGridTableSpec} from "../modules/DataGrid"
+import {DataGridHeaderWidget} from "../modules/DataGrid"
+import {DataGridColumnGroupSpec} from "../modules/DataGrid"
+import {DataGridHeaderSpec} from "../modules/DataGrid"
+import {DataGridOptionWidget} from "../modules/DataGrid"
+import {DataGridLoadingCell} from "../modules/DataGrid"
+import {DGSelectAllWidget} from "../modules/DataGrid"
+import { Utl } from "../modules/Utl"
+import { Dragboxes } from "../modules/Dragboxes"
+import { EDDGraphingTools } from "../modules/EDDGraphingTools"
+
 
 namespace StudyDataPage {
     'use strict';
