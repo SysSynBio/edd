@@ -166,22 +166,6 @@ module CreateLines {
                         manager = ev.data.manager;
 
                         console.log('In handler. rowIndex = ' + rowIndex);
-
-                        // TODO: show a confirm dialog if this is used in line naming and it's the last value?
-
-                        /*$('#dialog-confirm').dialog({
-                            resizable: false,
-                            modal: true,
-                            buttons: {
-                                'Remove row': function() {
-                                    $(this).dialog('close');
-                                    manager.removeRow(rowIndex);
-                                },
-                                Cancel: function() {
-                                    $(this).dialog('close');
-                                }
-                            }
-                        });*/
                         manager.removeRow(rowIndex);
                     });
         }
@@ -301,10 +285,44 @@ module CreateLines {
 
     export class LineMetadataInput extends LineCreationInput {  // TODO: consider merging with sibling following initial test
         autoInput: EDDAuto.BaseAuto;
+        metaTypeIndexes:any = {};
 
         constructor(options:any) {
             super(options);
         }
+
+        // TODO: override parent behavior to launch a modal dialog...prompt for metadata type first to avoid problems
+        // in allowing selection in the main form
+        // appendRow(): void {
+        //
+        //     var newRow: JQuery, parent: JQuery, atMax: boolean, prevRow: JQuery;
+        //
+        //     if(this.getRowCount() > 1) {
+        //         // TODO: show a confirm dialog if this is used in line naming and it's the last value?
+        //
+        //                 $('#dialog-confirm').dialog({
+        //                     resizable: false,
+        //                     modal: true,
+        //                     buttons: {
+        //                         'Remove row': function() {
+        //                             $(this).dialog('close');
+        //                             creationManager.removeRow(rowIndex);
+        //                         },
+        //                         Cancel: function() {
+        //                             $(this).dialog('close');
+        //                         }
+        //                     }
+        //                 });
+        //     }
+        //     prevRow = this.rows[this.rows.length-1];
+        //
+        //     newRow = $('<div>')
+        //         .addClass('row')
+        //         .insertAfter(prevRow);
+        //     this.fillRow(newRow);
+        //
+        //     this.addButton.prop('disabled', !this.canAddRows());
+        // }
 
         hasValidInput(rowIndex: number ): boolean {
             var row: JQuery, hasType: boolean, hasValue: boolean, selectedType:any;
@@ -333,6 +351,10 @@ module CreateLines {
                 // once the user has selected a metadata type, remove the autocomplete and replace it with a label.
                 // this simplifies the visual display and prevents things like having to move rows around to make rows
                 // for the same metadata type move together after some values have been entered.
+                if (!hiddenType.val()) {
+                    return;
+                }
+
                 visibleType.remove();
                 $('<label>')
                     .text(visibleType.val())

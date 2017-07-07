@@ -7,12 +7,12 @@
     <link rel="stylesheet" type="text/css" href="common.css"/>
     <link rel="stylesheet" type="text/css" href="create_lines_bulk.css"/>
     <link rel="stylesheet"
-          href="file:///Users/forrer/Documents/work/JBEI/edd/main/static/main/js/lib/jquery-ui/jquery-ui.min.css">
-  <script src="file:///Users/forrer/Documents/work/JBEI/edd/main/static/main/js/lib/jquery/jquery-3.1.0.min.js"></script>
+          href="file:///Users/mark.forrer/edd/main/static/main/js/lib/jquery-ui/jquery-ui.min.css">
+  <script src="file:///Users/mark.forrer/edd/main/static/main/js/lib/jquery/jquery-3.1.0.min.js"></script>
     <script
-          src="file:///Users/forrer/Documents/work/JBEI/edd/main/static/main/js/lib/jquery-ui/jquery-ui.min.js"></script>
-    <script src="file:///Users/forrer/Documents/work/JBEI/edd/main/static/main/js/CreateLines.js"></script>
-    <script src="file:///Users/forrer/Documents/work/JBEI/edd/main/static/main/js/EDDAutocomplete.js"></script>
+          src="file:///Users/mark.forrer/edd/main/static/main/js/lib/jquery-ui/jquery-ui.min.js"></script>
+    <script src="file:///Users/mark.forrer/edd/main/static/main/js/CreateLines.js"></script>
+    <script src="file:///Users/mark.forrer/edd/main/static/main/js/EDDAutocomplete.js"></script>
 
   <script src="/resources/demos/external/jquery-mousewheel/jquery.mousewheel.js"></script>
 
@@ -55,7 +55,10 @@
     <!-- end of copied JQueryUI spinner sample code-->
 </head>
 <body>
-<div id="dialog-confirm" title="Empty the recycle bin?">
+<div id="dialog-confirm" title="Add Line Metadata">
+    <p>Choose which type of line metadata to add</p>
+    <input type="text" placeholder="Line metadata type"/>
+    <input type="hidden"/>
   <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>These items will be permanently deleted and cannot be recovered. Are you sure?</p>
 </div>
 <h1>Create lines for <a href="/study/{{ study.id }}">{{ study.name }}</a></h1>

@@ -375,6 +375,10 @@ class StudyUpdateView(StudyObjectMixin, generic.edit.BaseUpdateView):
 class ExperimentDescriptionHelp(generic.TemplateView):
     template_name = 'main/experiment_description_help.html'
 
+# TODO: read up on / enforce user permissions...copied existing views and got this to render, but that doesn't mean
+# the form should be visible to non-study-editers (e.g. via the URL)
+class BulkLineCreation(StudyDetailBaseView):
+    template_name = 'main/create_lines_bulk.html'
 
 class StudyOverviewView(StudyDetailBaseView):
     """
