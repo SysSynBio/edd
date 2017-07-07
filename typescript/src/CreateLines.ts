@@ -1,33 +1,50 @@
 /// <reference path="typescript-declarations.d.ts" />
 /// <reference path="EDDAutocomplete.ts" />
 
-/**
- * Created by mark.forrer on 7/7/16.
- */
-
 module CreateLines {
+    'use strict';
     const DATA_FORMAT_STRING:string = 'string';
     const ROW_INDEX = 'rowIndex';
 
+    class NameElement {
+        jsonId: any;
+        displayText: string;
+
+        constructor(json_elt, displayText) {
+            this.jsonId = json_elt;
+            this.displayText = displayText;
+        }
+
+        toString(): string {
+            return '(' + this.jsonId.toString() + ', ' + this.displayText + ')';
+        }
+    }
+
+    //TODO: for immediate development
+    // 1. differentiate naming / json output from un-implemented controls (e.g. strain)
+    // 2. compute / test JSON generation from supported controls
+    // 3. implement / test back end communication / review / line creation
+    // 4. error handling!! / wizard
+    // 5. implement & test abbreviations & custom name elements...nice-to-have, but not necessary to extract value
+    //TODO: revisit meta / attribute subclasses after some integration testing / review of back-end code. May be able to
+    // combine some of these.
     export class LineCreationInput {
         uiLabel: JQuery;
         jsonId: string;
-        dataFormat: string;
         maxRows: number;
         minEntries: number;
 
         supportsMultiValue: boolean;
         supportsCombinations: boolean;
 
-        parentContainer: JQuery;
         rows: JQuery[] = [];
         addButton: JQuery;
 
         constructor(options:any) {
-
-            // TODO: make these optional based on other recent examples
-            this.uiLabel = $('<label>').text(options.labelText + ':');
-            this.jsonId = options['jsonId'];
+            this.uiLabel = $('<label>')
+                .text(options.labelText + ':')
+                .addClass('not-in-use');
+            this.jsonId = options.jsonId;
             this.maxRows = options.maxRows === undefined ? 30 : options.maxRows;
             this.minEntries = options['minEntries'] || 1;
             this.supportsCombinations = options.supportsCombinations === undefined ? true: options.supportsCombinations;
@@ -43,12 +60,62 @@ module CreateLines {
 
         }
 
-        hasValidInput(): boolean {
-            return false;  // TODO: implement
+        hasValidInput(rowIndex: number ): boolean {
+            return this.rows[rowIndex].find('input').first().val().trim() != '';
         }
 
-        toJSON(): any {
-            return {'': ''}
+        hasAnyValidInput(): boolean {
+            for(var i=0; i<this.rows.length; i++) {
+                if(this.hasValidInput(i)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        highlightRowLabel(anyValidInput:boolean): void {
+            this.rows[0].find('label')
+                .first()
+                .toggleClass('in-use', anyValidInput)
+                .toggleClass('not-in-use', !anyValidInput);
+        }
+
+        getInput(rowIndex: number): string {
+            return this.rows[rowIndex].find('input').first().val().trim();
+        }
+
+        getNameElements(): NameElement[] {
+            // only allow naming inputs to be used if there's at least one valid value to insert into line names.
+            // note that allowing non-unique values to be used in line names during bulk creation can be helpful since
+            // they may differentiate new lines from those already in the study.
+            if(!this.hasAnyValidInput()) {
+                return [];
+            }
+
+            switch(this.jsonId) {
+                case 'contact':
+                case 'experimenter':
+                case 'carbon_source':
+                case 'description':
+                    return [new NameElement(this.jsonId, 'Description')];
+                case 'replicate_num':
+                    return [new NameElement(this.jsonId, 'Replicate #')];
+                case 'strain':
+                    return [new NameElement('strain_name', 'Strain Name'), new NameElement('strain_id', 'Strain Part ID'),
+                            new NameElement('strain_alias', 'Strain Alias')];
+            }
+
+        }
+
+        getValueJson(): any {
+            var values: string[];
+            values = [];
+            this.rows.forEach((currentValue, index, arr) => {
+                if( this.hasValidInput(index)) {
+                    values.push(this.getInput(index));
+                }
+            });
+            return values;
         }
 
         getLabel(): JQuery {
@@ -62,6 +129,7 @@ module CreateLines {
         buildNoComboButton(): JQuery {
             return $('<input type="radio">')
                 .prop('name', this.jsonId)
+                .prop('checked', true)
                 .val('No')
                 .addClass('property_radio');
         }
@@ -78,9 +146,10 @@ module CreateLines {
             if (this.getRowCount() > this.minEntries) {
                 rowIndex = this.getRowCount() -1;
                 btn = $('<button>')
-                    .text('-')
                     .addClass('removeButton')
                     .appendTo(container);
+                $('<span>').addClass('ui-icon')
+                    .addClass('ui-icon-trash').appendTo(btn);
                 this.registerRemoveEvtHandler(btn, rowIndex);
 
             }
@@ -97,18 +166,36 @@ module CreateLines {
                         manager = ev.data.manager;
 
                         console.log('In handler. rowIndex = ' + rowIndex);
+
+                        // TODO: show a confirm dialog if this is used in line naming and it's the last value?
+
+                        /*$('#dialog-confirm').dialog({
+                            resizable: false,
+                            modal: true,
+                            buttons: {
+                                'Remove row': function() {
+                                    $(this).dialog('close');
+                                    manager.removeRow(rowIndex);
+                                },
+                                Cancel: function() {
+                                    $(this).dialog('close');
+                                }
+                            }
+                        });*/
                         manager.removeRow(rowIndex);
                     });
         }
 
         buildAddControl(container: JQuery) {
             // only add the control to the first row
-            if (this.getRowCount() == 1) {
-                console.log(this.uiLabel.text() + 'Adding a "+" control');  // TODO: remove
+            if ((this.getRowCount() == 1) && (this.getRowCount() < this.maxRows)) {
                 this.addButton = $('<button>')
-                    .text('+')
+                    .addClass('addButton')
                     .on('click', this.appendRow.bind(this))
                     .appendTo(container);
+
+                $('<span>').addClass('ui-icon')
+                    .addClass('ui-icon-plusthick').appendTo(this.addButton);
             }
         }
 
@@ -129,8 +216,9 @@ module CreateLines {
         }
 
         removeRow(rowIndex: number): void {
-            var row: JQuery;
-            console.log(this.uiLabel.text() + ': removing row ' + rowIndex);  // TODO: remove
+            var row: JQuery, hadInput: boolean;
+
+            hadInput = this.hasValidInput(rowIndex);
 
             // remove this row from our tracking and from the DOM
             row = this.rows[rowIndex];
@@ -146,6 +234,10 @@ module CreateLines {
                 removeBtn = row.find('.removeButton').first();
                 console.log('Updating ' + removeBtn.length + ' event handlers for index ' + rowIndex);
                 this.registerRemoveEvtHandler(removeBtn, i);
+            }
+
+            if(hadInput) {
+                creationManager.updateNameElements();
             }
 
             // re-enable the add button if appropriate / if it was disabled
@@ -195,14 +287,10 @@ module CreateLines {
                 .addClass('centered_radio_btn_parent')
                 .appendTo(row);
 
-            if(firstRow) {
+            if(firstRow && this.supportsCombinations) {
                 yesComboButton = this.buildYesComboButton()
                     .appendTo(makeComboCell);
-
-                yesComboButton.attr('disabled', this.supportsCombinations ? 'enabled' : 'disabled');
-
                 noComboButton.prop('checked', true);
-                noComboButton.attr('disabled', this.supportsCombinations ? 'enabled' : 'disabled');
             }
         }
 
@@ -211,30 +299,77 @@ module CreateLines {
         }
     }
 
-    export class LineMetadataInput extends LineCreationInput {
+    export class LineMetadataInput extends LineCreationInput {  // TODO: consider merging with sibling following initial test
+        autoInput: EDDAuto.BaseAuto;
 
         constructor(options:any) {
             super(options);
         }
 
+        hasValidInput(rowIndex: number ): boolean {
+            var row: JQuery, hasType: boolean, hasValue: boolean, selectedType:any;
+            row = this.rows[rowIndex];
+            selectedType = row.find('.meta-type').first().val();
+            hasType =  (selectedType != undefined) && selectedType.toString().trim();
+            hasValue = row.find('.meta-value').val() != undefined;
+            return  hasType && hasValue;
+        }
+
         fillInputControls(rowContainer: JQuery): void {
-            var visibleType: JQuery, hiddenType: JQuery, visibleVal: JQuery, hiddenVal: JQuery;
+            var visibleType: JQuery, hiddenType: JQuery, valueInput: JQuery, hiddenVal: JQuery;
             visibleType = $('<input type="text" name="type">')
-                .addClass('single_meta_value_input')
+                .prop('placeholder', 'Metadata Type')
+                .addClass('step2-text-input')
                 .appendTo(rowContainer);
             hiddenType = $('<input type="hidden" name="type">')
+                .addClass('meta-type')
                 .appendTo(rowContainer);
-            visibleVal = $('<input type="text" name="value">')
-                .addClass('single_meta_value_input')
+            valueInput = $('<input type="text" name="value">')
+                .addClass('step2-text-input')
+                .addClass('meta-value')
                 .appendTo(rowContainer);
-            hiddenVal = $('<input type="hidden" name="value">')
-                .appendTo(rowContainer);
+
+            hiddenType.on('change', function() {
+                // once the user has selected a metadata type, remove the autocomplete and replace it with a label.
+                // this simplifies the visual display and prevents things like having to move rows around to make rows
+                // for the same metadata type move together after some values have been entered.
+                visibleType.remove();
+                $('<label>')
+                    .text(visibleType.val())
+                    .insertBefore(hiddenType);
+                creationManager.updateNameElements();
+            });
+            valueInput.on('change', function() {
+                creationManager.updateNameElements();
+            });
+
+            this.autoInput = new EDDAuto.LineMetadataType({
+                        'container': rowContainer,
+                        'visibleInput': visibleType,
+                        'hiddenInput': hiddenType,
+                    });
+
             this.buildRemoveControl(rowContainer);
+        }
+
+        getNameElements(): NameElement[] {
+            var elts: NameElement[];
+            elts = [];
+            this.rows.forEach((row: JQuery, index:number):void => {
+                var metaPk: number, displayName: string;
+
+                if(this.hasValidInput(index)) {
+                    metaPk = row.find(':hidden').first().val();
+                    displayName = row.find(':input').first().val();
+                    elts.push(new NameElement(metaPk, displayName));
+                }
+            });
+
+            return elts;
         }
     }
 
     export class LineAttributeInput extends LineCreationInput {
-        entryControl: JQuery;
 
         constructor(options: any) {
             if (options.minRows === undefined) {
@@ -243,11 +378,20 @@ module CreateLines {
             super(options);
         }
 
+        hasValidInput(rowIndex: number): boolean {
+            var temp:any;
+            temp = this.rows[rowIndex].find('.step2-value-input').val();
+            return (temp != undefined) && temp.toString().trim();
+        }
+
         fillInputControls(rowContainer: JQuery): void {
-            switch (this.jsonId) {
-                case 'description':
-                    this.entryControl = $('<input type="text">');
-            }
+            $('<input type="text">')
+                .addClass('step2-text-input')
+                .addClass('step2-value-input')
+                .on('change', function() {
+                    creationManager.updateNameElements();
+                })
+                .appendTo(rowContainer);
             this.buildRemoveControl(rowContainer);
         }
     }
@@ -266,25 +410,80 @@ module CreateLines {
         fillInputControls(rowContainer: JQuery): void {
             var visible: JQuery, hidden: JQuery;
 
-            visible = $('<input type="text">').addClass('single_meta_value_input');
-            hidden = $('<input type="hidden">');
+            visible = $('<input type="text">')
+                .addClass('step2-text-input');
+            hidden = $('<input type="hidden">')
+                .addClass('step2-value-input');
+
+            hidden.on('change', function() {
+                creationManager.updateNameElements();
+            });
 
             rowContainer.append(visible).append(hidden);
 
             switch (this.jsonId) {
                 case 'experimenter':
                 case 'contact':
+                    this.autoInput = new EDDAuto.User({
+                        'container': rowContainer,
+                        'visibleInput': visible,
+                        'hiddenInput': hidden,
+                    });
+                    break;
                 case 'carbon_source':
+                    this.autoInput = new EDDAuto.CarbonSource({
+                        'container': rowContainer,
+                        'visibleInput': visible,
+                        'hiddenInput': hidden,
+                    });
+                    break;
                 case 'strain':
-
-                    // this.autoInput = new EDDAuto.User({
-                    //     container: container,
-                    //     'visibleInput': visible,
-                    //     'hiddenInput': hidden,
-                    // });
+                    this.autoInput = new EDDAuto.Registry({
+                        'container': rowContainer,
+                        'visibleInput': visible,
+                        'hiddenInput': hidden,
+                    });
                     break;
             }
             this.buildRemoveControl(rowContainer);
+        }
+    }
+
+    export class ControlInput extends LineCreationInput {
+        yesCheckbox: JQuery;
+        noCheckbox: JQuery;
+
+        fillInputControls(rowContainer: JQuery): void {
+            this.yesCheckbox = $('<input type="checkbox">')
+                .on('change', function() {
+                    creationManager.updateNameElements();
+                })
+                .appendTo(rowContainer);
+            $('<label>')
+                .text('Yes')
+                .appendTo(rowContainer);
+            this.noCheckbox = $('<input type="checkbox">')
+                .on('change', function() {
+                    creationManager.updateNameElements();
+                })
+                .appendTo(rowContainer);
+            $('<label>')
+                .text('No')
+                .appendTo(rowContainer);
+        }
+
+        hasValidInput(rowIndex: number) {
+            return this.yesCheckbox.prop('checked') || this.noCheckbox.prop('checked');
+        }
+
+        getNameElements(): NameElement[] {
+            var hasInput: boolean;
+            hasInput = this.hasAnyValidInput();
+            this.highlightRowLabel(hasInput);
+            if(hasInput) {
+                return [new NameElement('control', 'Control')];
+            }
+            return [];
         }
     }
 
@@ -292,18 +491,40 @@ module CreateLines {
         constructor(options:any) {
             options.maxRows = 1;
             options.minRows = 1;
+            options.supportsCombinations = false;
             super(options);
+        }
+
+        hasValidInput(rowIndex: number):boolean {
+            return $('#spinner').val() > 1;
         }
 
         fillInputControls(rowContainer: JQuery): void {
             $('<input id="spinner">')
+                .val(1)
+                .addClass('step2-text-input')
+                .addClass('step2-value-input')
                 .appendTo(rowContainer);
+        }
+
+        getNameElements(): NameElement[] {
+            var hasInput: boolean;
+            hasInput = this.hasAnyValidInput();
+            this.highlightRowLabel(hasInput);
+
+            return [new NameElement('replicate_num', 'Replicate #')];
         }
     }
 
     export class CreationManager {
 
-        dataElements:LineCreationInput[];
+        indicatorColorIndex:number = 0;
+        dataElements:LineCreationInput[] = [];
+        nameElements:NameElement[] = [];
+        unusedNameElements:NameElement[] = [];
+
+        colors = ['red', 'blue', 'yellow', 'orange', 'purple'];
+        colorIndex = 0;
 
         constructor() {
             console.log('In constructor!');
@@ -319,11 +540,15 @@ module CreateLines {
                     'jsonId': 'carbon_source', }),
                 new LineAttributeAutoInput(
                     {'labelText':'Strain',
-                    'jsonId': 'strain', }),
+                    'jsonId': 'combinatorial_strain_id_groups', }),
                 new LineMetadataInput(
                     {'labelText': 'Metadata',
                     'jsonId': 'N/A', }),
-                new LineAttributeAutoInput(
+                new ControlInput({
+                    'labelText': 'Control',
+                    'jsonId': 'control',
+                    'maxRows': 1}),
+                new LineAttributeInput(
                     {'labelText':'Description',
                     'jsonId': 'description', }),
                 new ReplicateInput({
@@ -348,6 +573,111 @@ module CreateLines {
             });
         }
 
+        updateNameElements(): void {
+            var availableElts: NameElement[], removedFromNameElts: NameElement[], newElts: NameElement[], unusedList: JQuery,
+                newElt:any;
+            console.log('updating available naming elements');
+
+            //build an updated list of available naming elements based on user entries in step 1
+            availableElts = [];
+            this.dataElements.forEach((input: LineCreationInput): void => {
+                var elts: NameElement[] = input.getNameElements();
+                availableElts = availableElts.concat(elts);
+            });
+
+            newElts = availableElts.slice();
+            $('#line_name_elts').children().each(function() {
+                var text:string, element:any, index:number, data:any;
+
+                // start to build up a list of newly-available selections. we'll clear out more of them from the
+                // list of unavailable ones
+                index = newElts.indexOf($(this).data());
+                if(index >= 0) {
+                    newElts.splice(index, 1);
+                    return true;  // continue looping
+                }
+                else {
+                    console.log('removing ' + this.text + 'from name elts list');
+                    this.remove();
+                }
+            });
+
+            console.log('Available name elements: ' + availableElts);
+
+            unusedList = $('#unused_line_name_elts');
+            unusedList.children().each(function() {
+                var availableElt: any, index: number;
+                for(index = 0; index < newElts.length; index++) {
+                    availableElt = newElts[index];
+                    if(availableElt.displayText == this.textContent) {
+                        console.log('Found matching element ' + this.textContent);
+                        newElts.splice(index, 1);
+                        return true;
+                    }
+                }
+                console.log('Removing ' + this.textContent + ' from unused list');
+                this.remove();
+                return true;
+            });
+
+            // add newly-inserted elements into the 'unused' section. that way previous configuration stays unaltered
+            newElts.forEach((elt:NameElement) => {
+                var li: JQuery;
+                li = $('<li>')
+                    .text(elt.displayText)
+                    .addClass('ui-state-default')
+                    .data(elt)
+                    .appendTo(unusedList);
+
+                // add an arrow to indicate the item can be dragged between lists
+                $('<span>')
+                    .addClass('ui-icon')
+                    .addClass('ui-icon-arrowthick-2-n-s')
+                    .appendTo(li);
+            });
+            this.updateResults();
+        }
+
+        updateResults(): void {
+            //TODO: remove the color-based indicator here following testing
+            var color: string;
+            console.log('updating JSON results');
+            color = this.colors[this.colorIndex];
+            $('#indicator').css('background',color);
+            this.colorIndex = (this.colorIndex+1) % this.colors.length;
+            console.log('Color index = ' + this.colorIndex);
+
+            this.buildJson();
+        }
+
+        buildJson(): string {
+            var result: any, json: string, nameElements: string[], combinatorialValues: string[], commonValues: string[];
+            //build an updated list of available naming elements based on user entries in step 1
+
+            nameElements = [];
+            $('#line_name_elts').children().each(function() {
+                var elt: JQuery, data: any, text: string;
+                elt = $(this);
+                data = elt.data();
+                text = elt.text();
+                console.log('buildJson(' + this.innerText + '): name elt = ' + data.toString());
+                nameElements.push(data.jsonId);
+            });
+            result = {name_elements: {elements: nameElements}};
+
+            //TODO: abbreviations / custom additions...see the mockup
+
+            result.replicate_count = $('#spinner').val();
+
+            commonValues = [];
+            this.dataElements.forEach((input: LineCreationInput): void => {
+                result[input.jsonId] = input.getValueJson();
+            });
+
+            json = JSON.stringify(result)
+            $('#jsonTest').text(json);
+            return json;
+        }
 
     }
 
@@ -356,7 +686,22 @@ module CreateLines {
     // As soon as the window load signal is sent, call back to the server for the set of reference
     // records that will be used to disambiguate labels in imported data.
     export function onDocumentReady(): void {
-        creationManager.buildInputs()
+        creationManager.buildInputs();
+
+        // set up connected lists for naming elements
+        $( "#line_name_elts, #unused_line_name_elts" ).sortable({
+          connectWith: ".connectedSortable",
+            update: function(event, ui) {
+                  creationManager.updateResults();
+            },
+        }).disableSelection();
+
+        // style the spinner
+        $( "#spinner" ).spinner({
+            min: 1,
+            change: function(event, ui) {
+                    creationManager.updateNameElements();
+                }});
     }
 
 }

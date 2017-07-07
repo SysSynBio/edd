@@ -25,7 +25,16 @@
     display: table-row;
     /* font-weight: bold; */
     text-decoration:underline;
+    font-weight: bold;
     text-align: left;
+}
+
+.heading div {
+    vertical-align: bottom;
+}
+
+.subsection {
+    text-decoration: underline;
 }
 
 .property_radio
@@ -35,6 +44,12 @@
 .row
 {
     display: table-row;
+}
+
+#indicator {
+    height: 100px;
+    width: 100px;
+    background: brown;
 }
 
 .cell
@@ -88,6 +103,12 @@ input[type="radio"] {
 #name_ordering_table,#name_customization_table {
     /* margin-left: 10px; */
     margin-top: 25px;
+    min-width: 50px;
+    vertical-align: text-top;
+}
+
+#dialog-confirm {
+    display: none;
 }
 
 #name_ordering_table {
@@ -95,6 +116,22 @@ input[type="radio"] {
 
 #name_customization_table {
 
+}
+
+.in-use {
+    font-weight: bold;
+}
+
+.not-in-use {
+    font-weight: 300;
+}
+
+.name_elt_cell {
+    vertical-align: top;
+}
+
+.name_elt_cell ul {
+    flex-grow: 1;
 }
 
 .inputCell {
@@ -110,22 +147,43 @@ input[type="radio"] {
     margin-left: 5px;
 }
 
-.single_meta_value_input {
+.step2-text-input {
     flex-grow: 1;
 }
 
-.single_meta_value_input span {
+.step2-text-input span {
     display: inline-block;
 }
 
 
 .meta_type_input {
-    /*width: 50%;*/
     flex-grow: 1;
 }
 
 .meta_value_input {
-    /*width: 50%;*/
     flex-grow: 1;
 }
 
+#line_name_elts, #unused_line_name_elts {
+    vertical-align: text-top;
+    min-height: 100px;
+    list-style-type: none;
+    border: 1px solid #eee;
+  }
+
+#line_name_elts li, #unused_line_name_elts li {
+    height: 100%;
+}
+
+#line_name_elts li, #unused_line_name_elts li {
+    margin: 0 5px 5px 5px;
+    padding: 5px;
+}
+#line_name_elts li span, #unused_line_name_elts li span {
+    float: right;
+    margin-left: 1.3em;
+}
+
+.addButton {
+    margin-left: 5px;
+}
