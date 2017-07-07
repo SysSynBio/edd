@@ -4,10 +4,10 @@
 // see copyright notice below
 //
 
-/// <reference path="typescript-declarations.d.ts" />
+/// <reference path="../src/typescript-declarations.d.ts" />
 
 
-module EDDAuto {
+export module EDDAuto {
 
     export interface AutocompleteOptions {
         // Mandatory: A JQuery object identifying the DOM element that contains, or will contain,

@@ -1,8 +1,8 @@
 /// <reference path="../src/typescript-declarations.d.ts" />
 /// <reference path="./Utl.ts" />
 
-var EDD_auto = EDD_auto || {};
 import { Utl } from "./Utl"
+import { EDDAuto } from "../modules/EDDAutocomplete"
 
 // At this point, this class is experimental. It's supposed to make modal dialog boxes
 // easier to create and configure.
@@ -115,12 +115,12 @@ interface ServerBiomassSpeciesEntry {
                                 // that matches the species, or '' if not matched yet)
 }
 
-interface MetabolicMapChooserResult {
+export interface MetabolicMapChooserResult {
     (err:string,
         metabolicMapID?:number,
         metabolicMapFilename?:string,
         biomassCalculation?:number): void;
-};
+}
 
 
 
@@ -463,11 +463,11 @@ class BiomassCalculationUI {
 // AND calculate biomass if necessary. Note that it could succeed in choosing a new metabolic map
 // but the user could cancel the biomass calculation. In that case, your callback would be called
 // with a valid metabolicMapFilename but finalBiomass=-1 (and err would be set).
-interface FullStudyBiomassUIResultsCallback {
+export interface FullStudyBiomassUIResultsCallback {
     (err:string, metabolicMapID?:number, metabolicMapFilename?:string, finalBiomass?:number): void;
 };
 
-class FullStudyBiomassUI {
+export class FullStudyBiomassUI {
     constructor(callback:FullStudyBiomassUIResultsCallback) {
         var chooser:StudyMetabolicMapChooser, chooserHandler:MetabolicMapChooserResult;
         chooserHandler = (error:string,

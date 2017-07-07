@@ -3,7 +3,7 @@
 
 // This file contains various utility classes under the Utl module.
 
-module Utl {
+export module Utl {
 
     export class EDD {
 

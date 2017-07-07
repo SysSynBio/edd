@@ -1,28 +1,21 @@
 /// <reference path="typescript-declarations.d.ts" />
 /// <reference path="../typings/d3/d3.d.ts"/>
-/// <reference path="AssayTableDataGraphing.ts" />
-/// <reference path="EDDAutocomplete.ts" />
+/// <reference path="../modules/AssayTableDataGraphing.ts" />
+/// <reference path="../modules/EDDAutocomplete.ts" />
 /// <reference path="../modules/EDDGraphingTools.ts" />
 /// <reference path="../modules/Utl.ts" />
 
 
+import { EDDATDGraphing } from "../modules/AssayTableDataGraphing"
 import { Utl } from "../modules/Utl"
+import { EDDAuto } from "../modules/EDDAutocomplete"
+import { EDDGraphingTools } from "../modules/EDDGraphingTools"
 
 declare var ATData: any; // Setup by the server.
-declare var EDDATDGraphing: any;
 declare var EDD_auto: any;
 
 // Doing this bullshit because TypeScript/InternetExplorer do not recognize static methods on Number
 declare var JSNumber: any;
-JSNumber = Number;
-JSNumber.isFinite = JSNumber.isFinite || function (value: any) {
-    return typeof value === 'number' && isFinite(value);
-};
-JSNumber.isNaN = JSNumber.isNaN || function (value: any) {
-    return value !== value;
-};
-
-
 // Type name for the grid of values pasted in
 interface RawInput extends Array<string[]> { }
 // type for the stats generated from parsing input text
@@ -47,7 +40,7 @@ module EDDTableImport {
     export var identifyStructuresStep: IdentifyStructuresStep;
     export var typeDisambiguationStep: TypeDisambiguationStep;
     export var reviewStep: ReviewStep;
-
+    export var atdGraphing: EDDATDGraphing;
 
     export interface RawModeProcessor {
         parse(rawInputStep: RawInputStep, rawData: string): RawInputStat;
@@ -2284,26 +2277,28 @@ module EDDTableImport {
         }
 
         remakeGraphArea():void {
-            var mode = this.selectMajorKindStep.interpretationMode;
-            var sets = this.graphSets;
-            var graph = $('#graphDiv');
-
+            let eddGraphing = new EDDGraphingTools(),
+                mode = this.selectMajorKindStep.interpretationMode,
+                sets = this.graphSets,
+                graph = $('#graphDiv'),
+                dataSets = []
+                atdGraphing = new EDDATDGraphing();
+            
             this.graphRefreshTimerID = 0;
-            if (!EDDATDGraphing || !this.graphEnabled) { return; }
+            if (!atdGraphing || !this.graphEnabled) { return; }
 
             $('#processingStep2ResultsLabel').removeClass('off');
 
-            EDDATDGraphing.clearAllSets();
-            var sets = this.graphSets;
-            var dataSets = [];
+            atdGraphing.clearAllSets();
+            
             // If we're not in either of these modes, drawing a graph is nonsensical.
             if ((mode === "std" || mode === 'biolector' || mode === 'hplc') && (sets.length > 0)) {
                 graph.removeClass('off');
                 sets.forEach(function(set) {
-                    var singleAssayObj = EDDGraphingTools.transformNewLineItem(EDDData, set);
+                    var singleAssayObj = eddGraphing.transformNewLineItem(EDDData, set);
                     dataSets.push(singleAssayObj);
                 });
-                EDDATDGraphing.addNewSet(dataSets);
+                atdGraphing.addNewSet(dataSets);
             } else {
                 graph.addClass('off');
             }
@@ -3501,7 +3496,7 @@ module EDDTableImport {
                 // only watch for changes on the hidden portion, let autocomplete work
                 EDDTableImport.typeDisambiguationStep.userChangedMeasurementDisam(ev.target);
             });
-            EDD_auto.initial_search(this.typeAuto, name);
+            // EDD_auto.initial_search(this.typeAuto, name);
         }
     }
 

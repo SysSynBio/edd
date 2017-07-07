@@ -7,8 +7,6 @@ var webpack = require('webpack');
 module.exports = {
     devtool: 'source-map',
     entry: {
-        AssayTableDataGraphing: "./typescript/src/AssayTableDataGraphing.ts",
-        EDDAutocomplete: "./typescript/src/EDDAutocomplete.ts",
         EDDDataInterface: "./typescript/src/EDDDataInterface.ts",
         EDDRest: "./typescript/src/EDDRest.ts",
         ExperimentDescHelp: "./typescript/src/Experiment-Desc-Help.ts",

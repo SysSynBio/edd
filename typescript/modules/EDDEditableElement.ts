@@ -1,8 +1,9 @@
 /// <reference path="../src/typescript-declarations.d.ts" />
-/// <reference path="../src/EDDAutocomplete.ts" />
+/// <reference path="./EDDAutocomplete.ts" />
 /// <reference path="./Utl.ts" />
 
 import { Utl } from "./Utl"
+import { EDDAuto } from "../modules/EDDAutocomplete"
 // Creates a div element with the given styling, optionally hidden by default,
 // and provides a means to hide or show it.
 

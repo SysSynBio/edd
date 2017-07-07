@@ -2,7 +2,7 @@
 /// <reference path="./EDDEditableElement.ts" />
 /// <reference path="./Utl.ts" />
 
-import { EDDEditable } from "./EDDEditableElement"
+import { EDDEditable } from "../modules/EDDEditableElement"
 // Code that all Study sub-pages have in common
 
 export module StudyBase {

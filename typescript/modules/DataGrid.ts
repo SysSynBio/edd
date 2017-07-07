@@ -1,11 +1,13 @@
 /// <reference path="../src/typescript-declarations.d.ts" />
 /// <reference path="./Utl.ts" />
-/// <reference path="../src/Dragboxes.ts" />
+/// <reference path="./Dragboxes.ts" />
 
 //
 // This is a re-implementation of DataGridServerSide for wholly client-side tables.
 // Eventually DataGridServerSide should be phased out completely.
 
+import { Dragboxes } from "../modules/Dragboxes"
+import { Utl } from "../modules/Utl"
 
 export class DataGrid {
 
