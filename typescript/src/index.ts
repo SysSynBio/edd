@@ -1,30 +1,10 @@
-/// <reference path="typescript-declarations.d.ts" />
-/// <reference path="../modules/Utl.ts" />
-
-declare var require: any;
 declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
-import {DataGrid} from "../modules/DataGrid"
-import {DataGridSpecBase} from "../modules/DataGrid"
-import {DataGridDataCell} from "../modules/DataGrid"
-import {DGPageDataSource} from "../modules/DataGrid"
-import {DataGridColumnSpec} from "../modules/DataGrid"
-import {DataGridTableSpec} from "../modules/DataGrid"
-import {DataGridHeaderWidget} from "../modules/DataGrid"
-import {DataGridColumnGroupSpec} from "../modules/DataGrid"
-import {DataGridSort} from "../modules/DataGrid"
-import {DataGridHeaderSpec} from "../modules/DataGrid"
-import {DGPagingWidget} from "../modules/DataGrid"
-import {DataGridOptionWidget} from "../modules/DataGrid"
-import {DGSearchWidget} from "../modules/DataGrid"
-import {DataGridDataRow} from "../modules/DataGrid"
+
+import {DataGrid, DataGridSpecBase, DataGridDataCell, DGPageDataSource, DataGridColumnSpec,
+        DataGridTableSpec, DataGridHeaderWidget, DataGridColumnGroupSpec, DataGridSort, 
+        DataGridHeaderSpec, DGPagingWidget, DataGridOptionWidget, DGSearchWidget,
+        DataGridDataRow } from "../modules/DataGrid"
 import { Utl } from "../modules/Utl"
-//DataGridDataRow
-// 'use strict';
-//
-// require('DataGridSpecBase');
-// import DataGridSpecBase = require('DataGridSpecBase');
-// require('ClassB');
-// import ClassB = require('ClassB');
 
 module IndexPage {
 

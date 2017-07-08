@@ -1,24 +1,20 @@
 /// <reference path="../src/typescript-declarations.d.ts" />
 
 import {EDDGraphingTools} from "./EDDGraphingTools";
-var EDDATDGraphing:any;
 
-EDDATDGraphing = {
+export class EDDATDGraphing {
 
-	Setup:function() {
+		graphDiv: JQuery;
+    
+    constructor() {
+        this.graphDiv = $("#graphDiv")
+    }
 
-		EDDATDGraphing.graphDiv = $("#graphDiv");
-
-	},
-
-
-	clearAllSets:function() {
-
+	clearAllSets():void {
 		d3.selectAll("svg").remove();
-	},
-	
-
-	addNewSet:function(newSet) {
+	}
+    
+	addNewSet(newSet):void {
         let eddGraphing = new EDDGraphingTools();
         var barAssayObj  = eddGraphing.concatAssays(newSet);
 
@@ -44,8 +40,8 @@ EDDATDGraphing = {
 			$('#debug').text('Failed to fetch series.');
 			return;
 		}
-	},
+	}
 };
 
 
-window.addEventListener('load', EDDATDGraphing.Setup, false);
+window.addEventListener('load', this.graphDiv, false);

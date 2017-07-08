@@ -15,7 +15,9 @@
   "exclude": [
     "node_modules",
     "bower_components",
-    "typescript/src/typescript-declarations.d.ts"
+    "typescript/src/typescript-declarations.d.ts",
+    "typescript/typings",
+    "typescript/tests"
   ]
 }
 

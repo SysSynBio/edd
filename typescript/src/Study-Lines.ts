@@ -1,33 +1,20 @@
 /// <reference path="typescript-declarations.d.ts" />
-/// <reference path="../modules/Utl.ts" />
-/// <reference path="../modules/Dragboxes.ts" />
-/// <reference path="../modules/BiomassCalculationUI.ts" />
-/// <reference path="../modules/CarbonSummation.ts" />
-/// <reference path="../modules/DataGrid.ts" />
-/// <reference path="../modules/FileDropZone.ts" />
 
 declare var require: any;
 declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
-import {DataGrid} from "../modules/DataGrid"
-import {DataGridSpecBase} from "../modules/DataGrid"
-import {DataGridDataCell} from "../modules/DataGrid"
-import {DGSelectAllWidget} from "../modules/DataGrid"
-import {DataGridColumnSpec} from "../modules/DataGrid"
-import {DataGridTableSpec} from "../modules/DataGrid"
-import {DataGridHeaderWidget} from "../modules/DataGrid"
-import {DataGridColumnGroupSpec} from "../modules/DataGrid"
-import {DataGridHeaderSpec} from "../modules/DataGrid"
-import {DataGridOptionWidget} from "../modules/DataGrid"
-import {DGSearchWidget} from "../modules/DataGrid"
+
+
+import {DataGrid, DataGridSpecBase, DataGridDataCell, DataGridColumnSpec,
+        DataGridTableSpec, DataGridHeaderWidget, DataGridColumnGroupSpec,
+        DataGridHeaderSpec, DGSelectAllWidget, DataGridOptionWidget, DGSearchWidget
+        } from "../modules/DataGrid"
 import { Utl } from "../modules/Utl"
 import { FileDropZone } from "../modules/FileDropZone"
-import { StudyMetabolicMapChooser } from "../modules/BiomassCalculationUI"
+import { StudyMetabolicMapChooser, MetabolicMapChooserResult, FullStudyBiomassUI,
+        FullStudyBiomassUIResultsCallback } from "../modules/BiomassCalculationUI"
 import { CarbonBalance } from "../modules/StudyCarbonBalance"
-import { MetabolicMapChooserResult } from "../modules/BiomassCalculationUI"
-import { FullStudyBiomassUI } from "../modules/BiomassCalculationUI"
-import { FullStudyBiomassUIResultsCallback } from "../modules/BiomassCalculationUI"
 
-namespace StudyLines {
+module StudyLines {
     'use strict';
 
     var linesActionPanelRefreshTimer:any;
@@ -477,7 +464,7 @@ namespace StudyLines {
         }
     }
 
-    function clearLineForm() {
+    export function clearLineForm() {
         var form = $('#editLineModal');
         form.find('.line-meta').remove();
         form.find('[name^=line-]').not(':checkbox, :radio').val('');
@@ -489,7 +476,7 @@ namespace StudyLines {
         return form;
     }
 
-    function fillLineForm(record) {
+    export function fillLineForm(record) {
         var metaRow, experimenter, contact;
         var form = $('#editLineModal');
         experimenter = EDDData.Users[record.experimenter];
@@ -524,7 +511,7 @@ namespace StudyLines {
         form.find('[name=initial-line-meta_store]').val(JSON.stringify(record.meta));
     }
 
-    function insertLineMetadataRow(refRow, key, value) {
+    export function insertLineMetadataRow(refRow, key, value) {
         var row, type, label, input, postfixVal, prefixVal, id = 'line-meta-' + key;
         row = $('<p>').attr('id', 'row_' + id).addClass('line-meta').insertBefore(refRow);
         type = EDDData.MetaDataTypes[key];

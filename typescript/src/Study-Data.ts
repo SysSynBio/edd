@@ -23,7 +23,7 @@ import { Dragboxes } from "../modules/Dragboxes"
 import { EDDGraphingTools } from "../modules/EDDGraphingTools"
 
 
-namespace StudyDataPage {
+export namespace StudyDataPage {
     'use strict';
 
     var viewingMode;    // An enum: 'linegraph', 'bargraph', or 'table'
@@ -1357,6 +1357,7 @@ namespace StudyDataPage {
             $('#barGraphByTime').addClass('off');
             $('#barGraphByLine').addClass('off');
             $('#barGraphByMeasurement').addClass('off');
+            $('#mainFilterSection').appendTo('#content');
             queueRefreshDataDisplayIfStale();
         });
 
@@ -1383,6 +1384,7 @@ namespace StudyDataPage {
             $('#barGraphByTime').toggleClass('off', 'time' !== barGraphMode);
             $('#barGraphByLine').toggleClass('off', 'line' !== barGraphMode);
             $('#barGraphByMeasurement').toggleClass('off', 'measurement' !== barGraphMode);
+            $('#mainFilterSection').appendTo('#content');
             queueRefreshDataDisplayIfStale();
         });
         $("#timeBarGraphButton").click(function() {
@@ -1658,7 +1660,6 @@ namespace StudyDataPage {
         // then all the viewing modes are stale, no matter what.
         // So we mark them all.
         if (progressiveFilteringWidget.checkRedrawRequired(force)) {
-
             viewingModeIsStale['linegraph'] = true;
             viewingModeIsStale['bargraph-time'] = true;
             viewingModeIsStale['bargraph-line'] = true;
@@ -1667,8 +1668,7 @@ namespace StudyDataPage {
             // Pull out a fresh set of filtered measurements and assays
             var filterResults = progressiveFilteringWidget.buildFilteredMeasurements();
             postFilteringMeasurements = filterResults['filteredMeasurements'];
-            postFilteringAssays = filterResults['filteredAssays'];
-
+            postFilteringAssays = filterResults['filteredAssays']
         // If the filtering widget hasn't changed and the current mode doesn't claim to be stale, we're done.
         } else if (viewingMode == 'bargraph') {
             // Special case to handle the extra sub-modes of the bar graph

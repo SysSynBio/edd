@@ -194,12 +194,6 @@ module StudyOverview {
         new EditableStudyContact($('#editable-study-contact').get()[0]);
         new EditableStudyDescription($('#editable-study-description').get()[0]);
 
-        // put the click handler at the document level, then filter to any link inside a .disclose
-        $(document).on('click', '.disclose .discloseLink', (e) => {
-            $(e.target).closest('.disclose').toggleClass('discloseHide');
-            return false;
-        });
-
         $('#helpExperimentDescription').tooltip({
             content: function () {
                 return $(this).prop('title');
