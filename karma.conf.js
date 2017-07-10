@@ -1,54 +1,28 @@
-// Karma configuration
-// Generated on Tue Jul 12 2016 15:36:02 GMT-0700 (PDT)
+var webpackConfig = require('./webpack.config');
 
-module.exports = function(config) {
+module.exports = function (config) {
   config.set({
-
-    // base path that will be used to resolve all patterns (eg. files, exclude)
-    basePath: '.',
-
-    // frameworks to use
-    // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
+    basePath: '',
     frameworks: ['jasmine'],
-
-
-    // list of files / patterns to load in the browser
     files: [
-      'main/static/main/js/lib/d3/d3.min.js',
-      'main/static/main/js/lib/filedrop-min.js',
-      'main/static/main/js/lib/jquery/jquery.js',
-      'main/static/main/js/lib/jquery-ui/jquery-ui.min.js',
-      'main/static/main/js/lib/jasmine/jasmine-jquery.js',
-      'main/static/dist/StudyLines.js',
-        'main/static/dist/StudyData.js.map',
-      'main/static/dist/StudyData.js',
-      'main/static/dist/Import.js',
-      'main/static/main/js/test/*.js',
-      'main/static/main/js/lib/underscore/underscore.js',
-       // JSON fixture
-      { pattern:  'main/static/main/js/test/EDDData.json',
-        watched:  true,
-        served:   true,
-        included: false },
-        { pattern:  'main/static/main/js/test/SpecRunner.html',
-        watched:  true,
-        served:   true,
-        included: false }
+      'typescript/tests/**/*.ts'
     ],
-
-    proxies: {
-      '/edddata/': '/base/main/static/main/js/test/EDDData.json',
-      '/study/10/assaydata/': '/base/main/static/main/js/test/assay.json'
+    exclude: [
+    ],
+    preprocessors: {
+      'typescript/tests/**/*.ts': ['webpack']
     },
-
-    // enable / disable watching file and executing tests whenever any file changes
+    webpack: {
+      module: webpackConfig.module,
+      resolve: webpackConfig.resolve
+    },
+    reporters: ['progress'],
+    port: 9876,
+    colors: true,
+    logLevel: config.LOG_INFO,
     autoWatch: true,
-    
+    browsers: ['PhantomJS'],
     singleRun: true,
-    browsers: ['PhantomJS']
-
-    // start these browsers
-    // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-
+    concurrency: Infinity
   })
 };

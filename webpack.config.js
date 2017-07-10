@@ -4,6 +4,7 @@
 
 var path = require('path');
 var webpack = require('webpack');
+
 module.exports = {
     devtool: 'source-map',
     entry: {
@@ -22,15 +23,16 @@ module.exports = {
         path: path.resolve(__dirname, './main/static/dist'),
         filename: '[name].js'
     },
-    resolve: {
-        extensions: ["", ".webpack.js", ".web.js", ".ts", ".js", ".vue"],
-        modulesDirectories: ['node_modules',  './typescript/modules']
-        },
-    module: {
-        loaders: [
-            { test: /\.vue$/, loader: 'vue-loader' },
-            { test: /\.ts$/, loader: "ts-loader" },
-            { enforce: "pre", test: /\.js$/, loader: "source-map-loader" }
-        ]
-    }
+  resolve: {
+    extensions: ['.ts', '.js', '.tsx', '.jsx', '.vue']
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts?$/,
+        exclude: /node_modules/,
+        loader: 'ts-loader'
+      }
+    ]
+  }
 };

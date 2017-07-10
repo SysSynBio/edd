@@ -1,5 +1,3 @@
-/// <reference path="EDDRest.ts" />
-
 // This module contains code for dynamically loading lists of metadata types into the help page
 // for Experiment Description files.
 module ExperimentDescriptionHelp {

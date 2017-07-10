@@ -1,5 +1,3 @@
-/// <reference path="../src/typescript-declarations.d.ts" />
-/// <reference path="./Utl.ts" />
 import { Utl } from "./Utl"
 
 export module FileDropZone {

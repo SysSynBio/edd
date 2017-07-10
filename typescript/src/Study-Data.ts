@@ -1,8 +1,4 @@
 /// <reference path="typescript-declarations.d.ts" />
-/// <reference path="../modules/Utl.ts" />
-/// <reference path="../modules/Dragboxes.ts" />
-/// <reference path="../modules/DataGrid.ts" />
-/// <reference path="../modules/EDDGraphingTools.ts" />
 /// <reference path="../typings/d3/d3.d.ts"/>
 
 declare var require: any;
@@ -735,7 +731,7 @@ export namespace StudyDataPage {
         anyFilterSettingsChangedSinceLastInquiry():boolean {
             var changed:boolean = false,
                 currentCheckboxState: ValueToString = {},
-                v: string = $(this.searchBox).val();
+                v: any = $(this.searchBox).val();
             this.anyCheckboxesChecked = false;
 
             this.uniqueValuesOrder.forEach((uniqueId: number): void => {

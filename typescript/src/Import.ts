@@ -1,10 +1,4 @@
 /// <reference path="typescript-declarations.d.ts" />
-/// <reference path="../typings/d3/d3.d.ts"/>
-/// <reference path="../modules/AssayTableDataGraphing.ts" />
-/// <reference path="../modules/EDDAutocomplete.ts" />
-/// <reference path="../modules/EDDGraphingTools.ts" />
-/// <reference path="../modules/Utl.ts" />
-
 
 import { EDDATDGraphing } from "../modules/AssayTableDataGraphing"
 import { Utl } from "../modules/Utl"
@@ -73,9 +67,9 @@ module EDDTableImport {
         protocol_id:number;
         // Value of 'null' or string 'new' indicates new Line should be created with
         // name line_name.
-        line_id:string;
-        assay_id:string;
-        measurement_id:string;
+        line_id:string | number;
+        assay_id:string | number;
+        measurement_id:string ;
         compartment_id:string;
         units_id:string;
         metadata_by_id:{[id:string]: string};
@@ -249,7 +243,7 @@ module EDDTableImport {
         masterProtocol: number;
         // The main mode we are interpreting data in.
         // Valid values sofar are "std", "mdv", "tr", "hplc", "pr", and "biolector".
-        interpretationMode: string;
+        interpretationMode: string | any;
         inputRefreshTimerID: number;
 
         nextStepCallback: any;
@@ -320,7 +314,7 @@ module EDDTableImport {
         // Otherwise return 'false'.
         checkMasterProtocol():boolean {
             var protocolRaw = $('#masterProtocol').val();
-            var p = (protocolRaw == DEFAULT_MASTER_PROTOCOL) ? 0 : parseInt(protocolRaw, 10);
+            var p:any = (protocolRaw == DEFAULT_MASTER_PROTOCOL) ? 0 : parseInt(protocolRaw, 10);
             if (this.masterProtocol === p) { return false; }
             this.masterProtocol = p;
             return true;
@@ -572,7 +566,7 @@ module EDDTableImport {
         // either measurements or metadata.
         ignoreDataGaps: boolean;
         userClickedOnIgnoreDataGaps: boolean;
-        separator: string;
+        separator: string | number;
 
         inputRefreshTimerID: any;
 
@@ -719,7 +713,7 @@ module EDDTableImport {
         // This way we're not bothering the user with the long redraw process when
         // they are making fast edits.
         queueReprocessRawData(): void {
-            var delay: number;
+            var delay: string | number;
 
             if (this.haveInputData) {
                 processingFileCallback();
@@ -1079,7 +1073,7 @@ module EDDTableImport {
         }
 
 
-        separatorType(value?: string): string {
+        separatorType(value?: any): string {
             var separatorPulldown = $('#rawdataformatp');
             if (value === undefined) {
                 value = separatorPulldown.val();
@@ -1090,7 +1084,7 @@ module EDDTableImport {
         }
 
 
-        rawText(value?: string): string {
+        rawText(value?: any): string {
             var rawArea: JQuery = $('#step2textarea');
             if (value === undefined) {
                 value = rawArea.val();
@@ -1116,7 +1110,7 @@ module EDDTableImport {
         // This handles insertion of a tab into the textarea.
         // May be glitchy.
         suppressNormalTab(e: JQueryKeyEventObject): boolean {
-            var input: HTMLInputElement, text: string, selStart: number, selEnd: number;
+            var input: HTMLInputElement, text: any, selStart: number, selEnd: number;
             this.haveInputData = true;
             if (e.which === 9) {
                 input = <HTMLInputElement>e.target;
@@ -1506,8 +1500,8 @@ module EDDTableImport {
                     that.toggleTableRow(ev.target);
                 }).on('change', '.pulldownCell > select', (ev: JQueryInputEventObject) => {
                     var targ: JQuery = $(ev.target),
-                        i: number = parseInt(targ.attr('i'), 10),
-                        val: number = parseInt(targ.val(), 10);
+                        i: any = parseInt(targ.attr('i'), 10),
+                        val: any = parseInt(targ.val(), 10);
                     that.changedRowDataTypePulldown(i, val);
                 })[0];
             // One of the objects here will be a column group, with col objects in it.
@@ -1806,7 +1800,7 @@ module EDDTableImport {
 
 
         toggleTableRow(box: Element): void {
-            var input: number, checkbox: JQuery, pulldown:JQuery;
+            var input: number | string, checkbox: JQuery, pulldown:JQuery;
             checkbox = $(box);
             pulldown = checkbox.next();
             input = parseInt(checkbox.val(), 10);
@@ -1827,7 +1821,7 @@ module EDDTableImport {
 
 
         toggleTableColumn(box: Element): void {
-            var value: number, input: JQuery;
+            var value: number | string, input: JQuery;
             input = $(box);
             value = parseInt(input.val(), 10);
             this.activeColFlags[value] = input.prop('checked');
@@ -2315,7 +2309,7 @@ module EDDTableImport {
         }
 
         requiredInputsProvided(): boolean {
-            var mode: string, hadInput: boolean;
+            var mode: any, hadInput: boolean;
             var mode = this.selectMajorKindStep.interpretationMode;
 
             // if the current mode doesn't require input from this step, just return true
@@ -3067,7 +3061,7 @@ module EDDTableImport {
                 if (rowIndex < this.currentlyVisibleMeasurementObjSets.length - 1) {
                     nextSets = this.currentlyVisibleMeasurementObjSets.slice(rowIndex + 1);
                     nextSets.some((obj: any): boolean => {
-                        var following: JQuery = $(obj[type]);
+                        var following: any = $(obj[type]);
                         if (following.length === 0 || following.data('setByUser')) {
                             return true;  // break; for the Array.some() loop
                         }
@@ -3116,14 +3110,14 @@ module EDDTableImport {
                 droppedDatasetsForMissingTime: number,
                 parsedSets: RawImportSet[],
                 resolvedSets: ResolvedImportSet[],
-                masterTime: number,
-                masterLine: string,
-                masterAssayLine: string,
-                masterAssay: string,
-                masterMType: string,
-                masterMComp: string,
-                masterMUnits: string,
-                masterUnits: string;
+                masterTime: any,
+                masterLine: any,
+                masterAssayLine: any,
+                masterAssay: any,
+                masterMType: any,
+                masterMComp: any,
+                masterMUnits: any,
+                masterUnits: any;
             this.errorMessages = [];
             this.warningMessages = [];
 
@@ -3149,11 +3143,11 @@ module EDDTableImport {
 
             parsedSets.forEach((set: RawImportSet, setIndex: number): void => {
                 var assayDisam: any,  // TODO: need types for the disam objects
-                    assay_id: string,
+                    assay_id: number | string,
                     assaySelect: JQuery,
                     compartmentId: string,
                     lineDisam: any,
-                    lineId: string,
+                    lineId: number | string,
                     lineIdInput: JQuery,
                     measDisam: any,
                     metaDisam: any,

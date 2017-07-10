@@ -1,8 +1,3 @@
-/// <reference path="../src/typescript-declarations.d.ts" />
-/// <reference path="./Utl.ts" />
-/// <reference path="./Dragboxes.ts" />
-
-//
 // This is a re-implementation of DataGridServerSide for wholly client-side tables.
 // Eventually DataGridServerSide should be phased out completely.
 
@@ -341,7 +336,7 @@ export class DataGrid {
                             .appendTo(item)
                             .attr('id', id)
                             .data('column', group)
-                            .click(group, (e) => this._clickedColVisibilityControl(e));
+                            .on('click', group, (e:any) => this._clickedColVisibilityControl(e));
                     group.checkboxElement = checkbox[0];
                     $('<label>').attr('for', id).text(group.name).appendTo(item);
                     if (!group.currentlyHidden) {
@@ -873,11 +868,11 @@ export class DataGrid {
      * @private
      */
     private _expandRowGroup(groupIndex, replicateIds):void {
-        var rowGroup = this._spec.tableRowGroupSpec[groupIndex];
+        var rowGroup:any = this._spec.tableRowGroupSpec[groupIndex];
         rowGroup.disclosed = true;
         var lines = this.addReplicateRows(replicateIds);
         $(rowGroup.replicateGroupTitleRow).addClass('replicate');
-        _.each(lines, function(line) {
+        _.each(lines, (line:any) => {
             $(line).show().addClass('replicateLineShow');
             $(rowGroup.replicateGroupTitleRow).after(line);
         });
@@ -890,8 +885,8 @@ export class DataGrid {
      * @private
      */
     private _groupReplicates():{} {
-        var lines = EDDData.Lines;
-        var rows = {};
+        var lines:any = EDDData.Lines;
+        var rows:any = {};
         $.each(lines, function(key) {
             if (lines[key].replicate) {
                 rows[lines[key].id] = lines[key].replicate
@@ -905,8 +900,8 @@ export class DataGrid {
      * @param idArray
      * @returns {Array}
      */
-    private addReplicateRows(idArray):string[] {
-        return $.map(idArray, (id) => $('[value=' + id + ']', this._table).parents('tr').filter(':first'))
+    private addReplicateRows(idArray):any {
+        return $.map(idArray, (id   ) => $('[value=' + id + ']', this._table).parents('tr').filter(':first'))
 
     }
 
@@ -1795,7 +1790,7 @@ export class DGSearchWidget extends DataGridHeaderWidget {
     typingTimeout:number;
     typingDelay:number;
     lastKeyPressCode:number;
-    previousSelection:string;
+    previousSelection:any;
     minCharsToTriggerSearch:number;
     getsFocus:boolean;    // If true, the search box should be configured to claim focus as soon as the page is loaded
 
@@ -1869,14 +1864,14 @@ export class DGSearchWidget extends DataGridHeaderWidget {
         }
         this.previousSelection = v;
         this.dataGridOwnerObject.clickedHeaderWidget(this);
-    }
+    };
 
 
     // This is called with an array of record IDs for filtering, and a filtered array is returned.
     // It is acceptable to just return the original array if no record filtering needs to be done.
     applyFilterToIDs(rowIDs:string[]):string[] {
 
-        var v = this.previousSelection;
+        var v:any = this.previousSelection;
         if (v == null) {
             return rowIDs;
         }

@@ -1,7 +1,3 @@
-/// <reference path="../src/typescript-declarations.d.ts" />
-/// <reference path="./EDDAutocomplete.ts" />
-/// <reference path="./Utl.ts" />
-
 import { Utl } from "./Utl"
 import { EDDAuto } from "../modules/EDDAutocomplete"
 // Creates a div element with the given styling, optionally hidden by default,
@@ -684,7 +680,7 @@ export module EDDEditable {
 
         // It is possible this will need to be altered further when subclassing EditableAutocomplete,
         // as some record string-equivalents can be ambiguous.
-        getDisplayValue():string {
+        getDisplayValue():any {
             var auto = this.getAutoCompleteObject();
             return auto.visibleInput.val();
         }

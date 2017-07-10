@@ -45,7 +45,7 @@ module StudyOverview {
 
         $('form#permissions')
             .on('submit', (ev: JQueryEventObject): boolean => {
-                var perm: any = {}, klass: string, auto: JQuery;
+                var perm: any = {}, klass: any, auto: JQuery;
                 auto = $('form#permissions').find('[name=class]:checked');
                 klass = auto.val();
                 perm.type = $(auto).siblings('select').val();

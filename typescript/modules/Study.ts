@@ -1,6 +1,3 @@
-/// <reference path="../src/typescript-declarations.d.ts" />
-/// <reference path="../typings/jquery/jquery.d.ts" />
-
 import { EDDEditable } from "../modules/EDDEditableElement"
 // Code that all Study sub-pages have in common
 

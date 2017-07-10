@@ -1,4 +1,3 @@
-/// <reference path="typescript-declarations.d.ts" />
 
 // This file contains utility functions for use in querying EDD's REST API.
 namespace EddRest {

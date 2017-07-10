@@ -1,12 +1,3 @@
-// requires: jQuery, jQuery-UI
-//
-// XXX obtained from http://jsfiddle.net/alforno/g4stL/
-// see copyright notice below
-//
-
-/// <reference path="../src/typescript-declarations.d.ts" />
-
-
 export module EDDAuto {
 
     export interface AutocompleteOptions {
@@ -193,7 +184,7 @@ export module EDDAuto {
         }
 
         init() {
-            var self: BaseAuto = this;
+            var self: any = this;
 
             // this.cacheId might have been set by a constructor in a subclass
             this.cacheId = this.opt['cacheId']
@@ -332,7 +323,7 @@ export module EDDAuto {
         }
 
         undo(): void {
-            var old = this.cache[this.hiddenInput.val()] || {};
+            var old:any = this.cache[parseInt(this.hiddenInput.val())] || {};
             this.visibleInput.val(this.loadDisplayValue(old));
         }
 

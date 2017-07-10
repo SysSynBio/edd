@@ -494,7 +494,7 @@ class ResultMatcher {
 // It's a search field that offers options for additional data types, querying the server for results.
 class DGStudiesSearchWidget extends DGSearchWidget {
 
-    private _spec:DataGridSpecStudies;
+    private _spec:any;
 
 	searchDisclosureElement:HTMLElement;
 

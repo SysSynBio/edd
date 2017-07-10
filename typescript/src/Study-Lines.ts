@@ -1,4 +1,3 @@
-/// <reference path="typescript-declarations.d.ts" />
 
 declare var require: any;
 declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
@@ -266,8 +265,8 @@ module StudyLines {
         $('#editLineModal').on('change', '.line-meta > :input', (ev) => {
             // watch for changes to metadata values, and serialize to the meta_store field
             var form = $(ev.target).closest('form'),
-                metaIn = form.find('[name=line-meta_store]'),
-                meta = JSON.parse(metaIn.val() || '{}');
+                metaIn:any = form.find('[name=line-meta_store]'),
+                meta:number | string = JSON.parse(metaIn.val() || '{}');
             form.find('.line-meta > :input').each((i, input) => {
                 var key = $(input).attr('id').match(/-(\d+)$/)[1];
                 meta[key] = $(input).val();
@@ -289,8 +288,8 @@ module StudyLines {
             // remove metadata row and insert null value for the metadata key
             var form = $(ev.target).closest('form'),
                 metaRow = $(ev.target).closest('.line-meta'),
-                metaIn = form.find('[name=line-meta_store]'),
-                meta = JSON.parse(metaIn.val() || '{}'),
+                metaIn:any = form.find('[name=line-meta_store]'),
+                meta:any = JSON.parse(metaIn.val() || '{}'),
                 key = metaRow.attr('id').match(/-(\d+)$/)[1];
             meta[key] = null;
             metaIn.val(JSON.stringify(meta));
@@ -713,9 +712,8 @@ class DataGridSpecLines extends DataGridSpecBase {
         });
         this.groupIDsToGroupNames = {};
         // For each group ID, just use parent replicate name
-        $.each(rowGroups, (group, lines) => {
-            if (EDDData.Lines[group] === undefined || EDDData.Lines[group].name === undefined ) {
-                this.groupIDsToGroupNames[group] = null;
+        $.each(rowGroups, (group:any, lines) => {
+            if (typeof(EDDData.Lines[group]) === undefined || typeof(EDDData.Lines[group].name) === undefined ) {
             } else {
                 this.groupIDsToGroupNames[group] = EDDData.Lines[group].name;
             }
@@ -1143,8 +1141,8 @@ class DGDisabledLinesWidget extends DataGridOptionWidget {
 
     createElements(uniqueID:any):void {
         var cbID:string = this.dataGridSpec.tableSpec.id+'ShowDLinesCB'+uniqueID;
-        var cb:HTMLInputElement = this._createCheckbox(cbID, cbID, '1');
-        $(cb).click( (e) => this.dataGridOwnerObject.clickedOptionWidget(e) );
+        var cb:any = this._createCheckbox(cbID, cbID, '1');
+        $(cb).click( (e:any) => this.dataGridOwnerObject.clickedOptionWidget(e) );
         if (this.isEnabledByDefault()) {
             cb.setAttribute('checked', 'checked');
         }

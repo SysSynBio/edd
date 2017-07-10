@@ -1,6 +1,3 @@
-/// <reference path="../src/typescript-declarations.d.ts" />
-
-
 // This file contains various utility classes under the Utl module.
 
 export module Utl {

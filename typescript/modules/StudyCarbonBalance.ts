@@ -1,7 +1,3 @@
-/// <reference path="../src/typescript-declarations.d.ts" />
-/// <reference path="./Utl.ts" />
-/// <reference path="./CarbonSummation.ts" />
-
 import { Utl } from "./Utl"
 import { CarbonBalance2 } from "./CarbonSummation"
 

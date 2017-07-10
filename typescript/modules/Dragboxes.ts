@@ -1,5 +1,3 @@
-/// <reference path="../src/typescript-declarations.d.ts" />
-
 // Code for supporting drag-select
 
 export module Dragboxes {
