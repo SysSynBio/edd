@@ -293,36 +293,32 @@ module CreateLines {
 
         // TODO: override parent behavior to launch a modal dialog...prompt for metadata type first to avoid problems
         // in allowing selection in the main form
-        // appendRow(): void {
-        //
-        //     var newRow: JQuery, parent: JQuery, atMax: boolean, prevRow: JQuery;
-        //
-        //     if(this.getRowCount() > 1) {
-        //         // TODO: show a confirm dialog if this is used in line naming and it's the last value?
-        //
-        //                 $('#dialog-confirm').dialog({
-        //                     resizable: false,
-        //                     modal: true,
-        //                     buttons: {
-        //                         'Remove row': function() {
-        //                             $(this).dialog('close');
-        //                             creationManager.removeRow(rowIndex);
-        //                         },
-        //                         Cancel: function() {
-        //                             $(this).dialog('close');
-        //                         }
-        //                     }
-        //                 });
-        //     }
-        //     prevRow = this.rows[this.rows.length-1];
-        //
-        //     newRow = $('<div>')
-        //         .addClass('row')
-        //         .insertAfter(prevRow);
-        //     this.fillRow(newRow);
-        //
-        //     this.addButton.prop('disabled', !this.canAddRows());
-        // }
+        appendRow(): void {
+
+            var newRow: JQuery, parent: JQuery, atMax: boolean, prevRow: JQuery;
+
+            $('#dialog-confirm').dialog({
+                resizable: false,
+                modal: true,
+                buttons: {
+                    'Add data': function() {
+                        $(this).dialog('close');
+                    },
+                    Cancel: function() {
+                        $(this).dialog('close');
+                    }
+                }
+            });
+
+            prevRow = this.rows[this.rows.length-1];
+
+            newRow = $('<div>')
+                .addClass('row')
+                .insertAfter(prevRow);
+            this.fillRow(newRow);
+
+            this.addButton.prop('disabled', !this.canAddRows());
+        }
 
         hasValidInput(rowIndex: number ): boolean {
             var row: JQuery, hasType: boolean, hasValue: boolean, selectedType:any;
@@ -672,6 +668,9 @@ module CreateLines {
             this.buildJson();
         }
 
+        addProperty(): void {
+        }
+
         buildJson(): string {
             var result: any, json: string, nameElements: string[], combinatorialValues: string[], commonValues: string[];
             //build an updated list of available naming elements based on user entries in step 1
@@ -718,14 +717,23 @@ module CreateLines {
             },
         }).disableSelection();
 
-        // style the spinner
+        // style the replicates spinner
         $( "#spinner" ).spinner({
             min: 1,
             change: function(event, ui) {
                     creationManager.updateNameElements();
                 }});
-    }
 
+        // add click behavior to the "add property" button
+        $('#addPropertyButton').on('click', creationManager.addProperty.bind(this));
+
+        // set up the autocomplete for line metadata type selection
+        new EDDAuto.LineMetadataType({
+                        'container': $('#dialog-confirm'),
+                        'visibleInput': $('#line-metadata-text'),
+                        'hiddenInput': $('#line-metadata-value'),
+                    });
+    }
 }
 
 $(CreateLines.onDocumentReady);

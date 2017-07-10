@@ -9,45 +9,6 @@
     <script type="text/javascript" src="{% static 'main/js/lib/jquery-ui/jquery-ui.min.js' %}"></script>
     <script src="{% static 'main/js/main/js/EDDAutocomplete.js' %}"></script>
     <script src="{% static 'main/js/CreateLines.js' %}"></script>
-
-    <!-- TODO: extract this code to the stylesheet. -- initial experimental version copied from
-    https://jqueryui.com/spinner/
-    <script src="/resources/demos/external/jquery-mousewheel/jquery.mousewheel.js"></script>
-    -->
-    <script>
-    $(function() {
-    var spinner = $( "#spinner" ).spinner({min: 1, decimals: 0});
-
-    /*$( "#disable" ).click(function() {
-      if ( spinner.spinner( "option", "disabled" ) ) {
-        spinner.spinner( "enable" );
-      } else {
-        spinner.spinner( "disable" );
-      }
-    });
-    $( "#destroy" ).click(function() {
-      if ( spinner.spinner( "instance" ) ) {
-        spinner.spinner( "destroy" );
-      } else {
-        spinner.spinner();
-      }
-    });
-    $( "#getvalue" ).click(function() {
-      alert( spinner.spinner( "value" ) );
-    });
-    */
-    // $( "button" ).button(); //TODO: figure this out -- hilariously enlarges all the other buttons
-        // too
-  });
-  </script>
-    <script>
-        // custom work-in-progress JavaScript to make the page thingy work
-        $("#clear_form").click(function(){
-            alert("Are you sure you want to clear the form?");
-            spinner.spinner("value", 3)
-        });
-    </script>
-    <!-- end of copied JQueryUI spinner sample code-->
 {% endblock js_css %}
 
 {% block head_title %}
@@ -58,14 +19,13 @@
     <h1>Bulk Line Creation for <a href="/study/{{ study.id }}">{{ study.name }}</a></h1>
 {% endblock body_title %}
 {% block content %}
-<div id="dialog-confirm" title="Add Line Metadata">
-    <p>Choose which type of line metadata to add</p>
-    <input type="text" placeholder="Line metadata type"/>
-    <input type="hidden"/>
-  <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>These items will be permanently deleted and cannot be recovered. Are you sure?</p>
+<div id="dialog-confirm" title="Add Line Property">
+    <p>Which type of line data do you want to add?</p>
+    <input id="line-metadata-text" type="text"/>
+    <input id="line-metadata-value" type="hidden"/>
+  <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span></p>
 </div>
 <h1>Create lines for <a href="/study/{{ study.id }}">{{ study.name }}</a></h1>
-<div>
     <!-- Step 1 -->
     <div class="pageSection" id="select_input_source_step">
         <div class="sectionHead">Step 1: Choose the source(s) for line definitions:</div>
@@ -93,22 +53,23 @@
     <!-- Step 2 (Dynamic) -->
     <div class="pageSection" id="select_line_properties_step_dynamic">
         <div class="sectionHead">Step 2: Choose properties to apply to each new line:</div>
-    <div class="sectionContent">
-        <div class="heading">
-            <div class="cell">
-                <label>Property</label>
-            </div>
-            <div class="cell"><!--empty for property user input--></div>
-            <div class="cell"><!--empty for add button column--></div>
-            <div class="cell">
-                <label>Apply to<br> All Lines</label>
-            </div>
-            <div class="cell">
-                <label>Make <br>Combinations</label>
+        <div class="sectionContent">
+            <div class="heading">
+                <div class="cell">
+                    <label>Property</label>
+                    <button id="addPropertyButton" class="addButton"><span class="ui-icon ui-icon-plusthick"></span></button>
+                </div>
+                <div class="cell"><!--empty for value input input--></div>
+                <div class="cell"><!--empty for add button column--></div>
+                <div class="cell">
+                    <label>Apply to<br> All Lines</label>
+                </div>
+                <div class="cell">
+                    <label>Make <br>Combinations</label>
+                </div>
             </div>
         </div>
     </div>
-</div>
     <!-- Step 3 -->
     <div class="pageSection" id="choose_line_names_step">
         <div class="sectionHead">Step 3: Choose the order of identifying data in line
@@ -169,7 +130,7 @@
         </div>
     </div>
 
-    <div class="pageSection" id="choose_line_names_step">
+    <div class="pageSection" id="review_step">
             <div class="sectionHead">Step 4: Review line creation summary</div>
             <div class="sectionContent">
                 <div id="indicator"></div>
@@ -187,15 +148,14 @@
                     <div class="row">
                         <div class="cell"><label>Sample Line Names</label></div>
                         <div class="cell"><label>Blah</label></div>
-    </div>
+                    </div>
 
                     </div>
+                <input type="hidden" id="jsonoutput" name="jsonoutput" />
+                <input type="hidden" name="studyID" value="{{ study.id }}"/>
                 <button disabled="disabled">Create 24 Lines...</button>
                 <button disabled="disabled">Create Spreadsheet</button>
                 <button disabled="disabled">Save As Template</button>
                 </div>
     </div>
-    <input type="hidden" id="jsonoutput" name="jsonoutput" />
-    <input type="hidden" name="studyID" value="{{ study.id }}"/>
-</form>
 {% endblock content %}
