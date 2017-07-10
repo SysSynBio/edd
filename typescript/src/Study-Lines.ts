@@ -885,12 +885,19 @@ class DataGridSpecLines extends DataGridSpecBase {
 
     generateLineNameCells(gridSpec:DataGridSpecLines, index:string):DataGridDataCell[] {
         var line = EDDData.Lines[index];
+        //move registration outsisde of funciton..just filter on class and attr with id. and
+        // pull out attr and
+        $(document).on('click', '.line-edit-link', function(e) {
+            var index:number = parseInt($(this).attr('dataIndex'), 10);
+            StudyLines.editLines([index]);
+        });
         return [
             new DataGridDataCell(gridSpec, index, {
                 'checkboxName': 'lineId',
                 'checkboxWithID': (id) => { return 'line' + id + 'include'; },
                 'sideMenuItems': [
-                    '<a href="#" class="line-edit-link" onclick="StudyLines.editLines([' + index + '])">Edit Line</a>',
+                    '<a href="#" dataIndex="' + index + '" id="lineEditLink' + index + '" class="line-edit-link">Edit' +
+                    ' Line </a>',
                     '<a href="/export?lineId=' + index + '">Export Data as CSV/Excel</a>',
                     '<a href="/sbml?lineId=' + index + '">Export Data as SBML</a>'
                 ],
