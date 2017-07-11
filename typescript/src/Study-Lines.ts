@@ -1,4 +1,3 @@
-
 declare var require: any;
 declare var EDDData:EDDData;  // sticking this here as IDE isn't following references
 
@@ -11,8 +10,8 @@ import { Utl } from "../modules/Utl"
 import { FileDropZone } from "../modules/FileDropZone"
 import { StudyMetabolicMapChooser, MetabolicMapChooserResult, FullStudyBiomassUI,
         FullStudyBiomassUIResultsCallback } from "../modules/BiomassCalculationUI"
-import { CarbonBalance } from "../modules/StudyCarbonBalance"
-
+import { CarbonBalance } from "../modules/StudyCarbonBalance" 
+import { StudyBase } from "../modules/Study"
 module StudyLines {
     'use strict';
 
@@ -98,8 +97,9 @@ module StudyLines {
             return false;
         });
 
-
-
+        //set up editable study name
+        new StudyBase.EditableStudyName($('#editable-study-name').get()[0]);
+        
         $('#content').tooltip({
             content: function () {
                 return $(this).prop('title');

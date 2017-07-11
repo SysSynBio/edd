@@ -13,7 +13,6 @@ module.exports = {
         ExperimentDescHelp: "./typescript/src/Experiment-Desc-Help.ts",
         Import: "./typescript/src/Import.ts",
         index: "./typescript/src/index.ts",
-        StudyCreate: "./typescript/src/Study-Create.ts",
         StudyData: "./typescript/src/Study-Data.ts",
         StudyLines: "./typescript/src/Study-Lines.ts",
         StudyOverview: "./typescript/src/Study-Overview.ts",

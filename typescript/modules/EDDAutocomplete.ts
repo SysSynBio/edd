@@ -71,7 +71,6 @@ export module EDDAuto {
         }
     }
 
-
     /**
      * Insert these items to display autocomplete messages which are not selectable values.
      */
@@ -821,18 +820,5 @@ EDD_auto.initial_search = function initial_search(auto: EDDAuto.BaseAuto, term: 
     autoInput.mcautocomplete('search', term);
     autoInput.mcautocomplete('close');
 };
-
-
-
-/***********************************************************************/
-
-$( window ).on("load", function() { // Shortcutting this to .load confuses jQuery
-    EDDAuto.BaseAuto.initPreexisting();
-    // this makes the autocomplete work like a dropdown box
-    // fires off a search as soon as the element gains focus
-    $(document).on('focus', '.autocomp', function (ev) {
-        $(ev.target).addClass('autocomp_search').mcautocomplete('search');
-    });
-});
 
 }(jQuery));

@@ -1,4 +1,4 @@
-import { EDDEditable } from "../modules/EDDEditableElement"
+import { EDDEditable } from "./EDDEditableElement"
 
 module CreateStudy {
     'use strict';

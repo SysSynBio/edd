@@ -226,8 +226,6 @@ export module EDDEditable {
             this.cancelButtonElement.appendChild(document.createTextNode(String.fromCharCode(160)));
             this.waitButtonElement.appendChild(document.createTextNode(String.fromCharCode(160)));
 
-            this.cancelButtonElement.setAttribute('title', 'Click to cancel editing.\nYou can also cancel editing by pressing the ESC key.');
-
             $(this.acceptButtonElement).click(this.clickToAcceptHandler.bind(this));
             $(this.cancelButtonElement).click(this.clickToCancelHandler.bind(this));
         }
@@ -254,9 +252,7 @@ export module EDDEditable {
             }
 
             this.elementJQ.removeClass('saving');
-
-            this.element.setAttribute('title', 'click to edit');
-
+            
             var c = this.editControlsPositioner;
             var p = this.element;
             // We want this to be the first element so the vertical height of the rest of the content

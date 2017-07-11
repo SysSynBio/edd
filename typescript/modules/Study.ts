@@ -1,10 +1,19 @@
 import { EDDEditable } from "../modules/EDDEditableElement"
+import { EDDAuto } from "../modules/EDDAutocomplete"
 // Code that all Study sub-pages have in common
 
 export module StudyBase {
     'use strict';
 
-    
+    $( window ).on("load", function() { // Shortcutting this to .load confuses jQuery
+        EDDAuto.BaseAuto.initPreexisting();
+        // this makes the autocomplete work like a dropdown box
+        // fires off a search as soon as the element gains focus
+        $(document).on('focus', '.autocomp', function (ev) {
+            $(ev.target).addClass('autocomp_search').mcautocomplete('search');
+        });
+    });
+
     // Base class for the non-autocomplete inline editing fields for the Study
     export class EditableStudyElement extends EDDEditable.EditableElement {
         constructor(inputElement: HTMLElement, style?: string) {

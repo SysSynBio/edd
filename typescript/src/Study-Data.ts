@@ -17,7 +17,7 @@ import {DGSelectAllWidget} from "../modules/DataGrid"
 import { Utl } from "../modules/Utl"
 import { Dragboxes } from "../modules/Dragboxes"
 import { EDDGraphingTools } from "../modules/EDDGraphingTools"
-
+import { StudyBase } from "../modules/Study"
 
 export namespace StudyDataPage {
     'use strict';
@@ -1266,6 +1266,9 @@ export namespace StudyDataPage {
                 });
             }
         });
+
+        //set up editable study name
+        new StudyBase.EditableStudyName($('#editable-study-name').get()[0]);
         // This only adds code that turns the other buttons off when a button is made active,
         // and does the same to elements named in the 'for' attributes of each button.
         // We still need to add our own responders to actually do stuff.
