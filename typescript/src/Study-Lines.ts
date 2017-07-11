@@ -90,11 +90,8 @@ module StudyLines {
             e.preventDefault();
             $(".linesDropZone").removeClass('off');
         });
-        $(document).on('dragEnd dragend drop mouseleave mouseup mousedown', function(e:any) {
-            e.stopPropagation();
-            e.preventDefault();
-            $(".linesDropZone").addClass('off');
-            return false;
+        $('#content').on('dragend, dragleave, mouseleave', function(e:any) {
+           $(".linesDropZone").addClass('off');
         });
 
         //set up editable study name
