@@ -1,6 +1,6 @@
 import { EDDEditable } from "./EDDEditableElement"
 
-module CreateStudy {
+export module CreateStudy {
     'use strict';
 
     // Called when the page loads.

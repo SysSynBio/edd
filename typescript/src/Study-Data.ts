@@ -2664,8 +2664,12 @@ class DataGridSpecAssays extends DataGridSpecBase {
 
     generateAssayNameCells(gridSpec:DataGridSpecAssays, index:string):DataGridDataCell[] {
         var record = EDDData.Assays[index], line = EDDData.Lines[record.lid];
+        $(document).on('click', '.assay-edit-link', function(e) {
+            let index:number = parseInt($(this).attr('dataIndex'), 10);
+            StudyDataPage.editAssay(index);
+        });
         var sideMenuItems = [
-            '<a class="assay-edit-link" onclick="StudyDataPage.editAssay([' + index + '])">Edit Assay</a>',
+            '<a class="assay-edit-link" dataIndex="' + index + '">Edit Assay</a>',
             '<a href="/export?assayId=' + index + '">Export Data as CSV</a>'
         ];
 
