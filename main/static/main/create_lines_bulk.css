@@ -9,7 +9,7 @@
        sub-sections of step 2 that apple to different meta-data types. Don't make it too complex!
     4. Center the radio buttons in their columns
 */
-.table
+.step2-table
 {
     display: table;
 }
@@ -20,8 +20,7 @@
     font-weight: bold;
     font-size: larger;
 }
-.heading
-{
+.step2_table_heading {
     display: table-row;
     /* font-weight: bold; */
     text-decoration:underline;
@@ -29,7 +28,7 @@
     text-align: left;
 }
 
-.heading div {
+.step2_table_heading div {
     vertical-align: bottom;
 }
 
@@ -37,12 +36,10 @@
     text-decoration: underline;
 }
 
-.property_radio
-{
+.property_radio {
     margin: auto;
 }
-.row
-{
+.row {
     display: table-row;
 }
 
@@ -52,8 +49,7 @@
     background: brown;
 }
 
-.cell
-{
+.step2_table_cell {
     display: table-cell;
     /*border: solid;
     border-width: thin; */
@@ -63,8 +59,7 @@
 }
 
 /* TODO: unused! fix and use! */
-.odd_row
-{
+.odd_row {
     background: linear-gradient(top, rgba(183,253,25,0.5) 100%, rgba(200,200,200,0.1) 100%);
     background: -o-linear-gradient(top, rgba(183,253,25,0.5) 100%, rgba(200,200,200,0.1) 100%);
     background: -moz-linear-gradient(top, rgba(183,253,25,0.5) 100%, rgba(200,200,200,0.1) 100%);
@@ -73,8 +68,7 @@
 }
 
 /* TODO: unused! fix and use! */
-.even_row
-{
+.even_row {
     background: linear-gradient(top, rgba(200,200,200,0.5) 0%, rgba(200,200,200,0.1) 100%);
     background: -o-linear-gradient(top, rgba(200,200,200,0.5) 0%, rgba(200,200,200,0.1) 100%);
     background: -moz-linear-gradient(top, rgba(200,200,200,0.5) 0%, rgba(200,200,200,0.1) 100%);

@@ -91,16 +91,16 @@
     <div class="pageSection" id="select_line_properties_step_dynamic">
         <div class="sectionHead">Step 2: Choose properties to apply to each new line:</div>
     <div class="sectionContent">
-        <div class="heading">
-            <div class="cell">
+        <div class="step2_table_heading">
+            <div class="step2_table_cell">
                 <label>Property</label>
             </div>
-            <div class="cell"><!--empty for property user input--></div>
-            <div class="cell"><!--empty for add button column--></div>
-            <div class="cell">
+            <div class="step2_table_cell"><!--empty for property user input--></div>
+            <div class="step2_table_cell"><!--empty for add button column--></div>
+            <div class="step2_table_cell">
                 <label>Apply to<br> All Lines</label>
             </div>
-            <div class="cell">
+            <div class="step2_table_cell">
                 <label>Make <br>Combinations</label>
             </div>
         </div>
@@ -112,55 +112,55 @@
             names:</div>
         <div class="sectionContent">
             <div id="line_naming_summary"> <label>Sample Line Name: </label></div>
-            <div class="table" id="name_ordering_table">
-                <div class="heading">
-                    <div class="cell"><label>Ordering:</label></div>
-                    <div class="cell"></div>
+            <div class="step2-table" id="name_ordering_table">
+                <div class="step2_table_heading">
+                    <div class="step2_table_cell"><label>Ordering:</label></div>
+                    <div class="step2_table_cell"></div>
                 </div>
-                <div class="row">
-                    <div class="cell subsection"><label>Line Name Elements:</label></div>
-                    <div class="cell subsection"><label>Unused Elements:</label></div>
+                <div class="step2_table_row">
+                    <div class="step2_table_cell subsection"><label>Line Name Elements:</label></div>
+                    <div class="step2_table_cell subsection"><label>Unused Elements:</label></div>
                 </div>
-                <div class="row">
+                <div class="step2_table_row">
                     <!-- Line Name Elements List -->
-                    <div class="cell name_elt_cell">
+                    <div class="step2_table_cell name_elt_cell">
                         <div>
                             <ul id="line_name_elts" class="connectedSortable"></ul>
                         </div>
                     </div>
                     <!-- Unused Elements List -->
-                    <div class="cell name_elt_cell">
+                    <div class="step2_table_cell name_elt_cell">
                         <div>
                             <ul id="unused_line_name_elts" class="connectedSortable"></ul>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="table" id="name_customization_table">
-                <div class="heading">
-                    <div class="cell"><label>Custom Name Elements:</label></div>
-                    <div class="cell"><button name="add_custom_label">+</button></div>
-                    <div class="cell"><label>Abbreviations:</label></div>
-                    <div class="cell"><button name="add_abbreviation">+</button></div>
+            <div class="step2-table" id="name_customization_table">
+                <div class="step2_table_heading">
+                    <div class="step2_table_cell"><label>Custom Name Elements:</label></div>
+                    <div class="step2_table_cell"><button name="add_custom_label">+</button></div>
+                    <div class="step2_table_cell"><label>Abbreviations:</label></div>
+                    <div class="step2_table_cell"><button name="add_abbreviation">+</button></div>
                 </div>
-                <div class="row">
-                    <div class="cell"><label>Label</label></div>
-                    <div class="cell"><label>Value</label></div>
-                    <div class="cell"><label>Element</label></div>
-                    <div class="cell"><label>Value</label></div>
-                    <div class="cell"><label>Abbreviation</label></div>
+                <div class="step2_table_row">
+                    <div class="step2_table_cell"><label>Label</label></div>
+                    <div class="step2_table_cell"><label>Value</label></div>
+                    <div class="step2_table_cell"><label>Element</label></div>
+                    <div class="step2_table_cell"><label>Value</label></div>
+                    <div class="step2_table_cell"><label>Abbreviation</label></div>
                 </div>
-                <div class="cell"><input type="text" name="lbl_descriptor_1"
-                                         value="Experimental
+                <div class="step2_table_cell"><input type="text" name="lbl_descriptor_1"
+                                                     value="Experimental
                                                 Platform"/></div>
-                <div class="cell">
+                <div class="step2_table_cell">
                     <input type="text" name="lbl_value_1" value="BioHector">
                     <button name="delete_lbl_1">-</button></div>
-                <div class="cell"><input type="text" name="abbrev_elt_1" value="Strain Name"/></div>
-                <div class="cell"><input type="text" name="abbrev_value_1"
-                                         value="JW1058"/></div>
-                <div class="cell"><input type="text" name="abbrev_text_1"
-                                         value="58"/><button
+                <div class="step2_table_cell"><input type="text" name="abbrev_elt_1" value="Strain Name"/></div>
+                <div class="step2_table_cell"><input type="text" name="abbrev_value_1"
+                                                     value="JW1058"/></div>
+                <div class="step2_table_cell"><input type="text" name="abbrev_text_1"
+                                                     value="58"/><button
                         name="remove_abbreviation">-</button></div>
             </div>
         </div>
@@ -171,19 +171,19 @@
             <div class="sectionContent">
                 <div id="indicator"></div>
                 <textarea id="jsonTest"/>
-                <div class="table">
-                    <div class="row">
-                        <div class="cell"><label>Total lines to be created</label></div>
-                        <div class="cell"><label>24</label></div>
+                <div class="step2-table">
+                    <div class="step2_table_row">
+                        <div class="step2_table_cell"><label>Total lines to be created</label></div>
+                        <div class="step2_table_cell"><label>24</label></div>
                     </div>
-                    <div class="row">
-                        <div class="cell"><label>Other important stats (e.g. # variations /
+                    <div class="step2_table_row">
+                        <div class="step2_table_cell"><label>Other important stats (e.g. # variations /
                             metadata type)</label></div>
-                        <div class="cell"><label>TBD</label></div>
+                        <div class="step2_table_cell"><label>TBD</label></div>
                     </div>
-                    <div class="row">
-                        <div class="cell"><label>Sample Line Names</label></div>
-                        <div class="cell"><label>Blah</label></div>
+                    <div class="step2_table_row">
+                        <div class="step2_table_cell"><label>Sample Line Names</label></div>
+                        <div class="step2_table_cell"><label>Blah</label></div>
     </div>
 
                     </div>

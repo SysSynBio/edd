@@ -236,7 +236,7 @@ module CreateLines {
             this.rows.push(row);
 
             labelCell = $('<div>')
-                .addClass('cell')
+                .addClass('step2_table_cell')
                 .appendTo(row);
 
             firstRow = this.getRowCount() == 1;
@@ -246,19 +246,19 @@ module CreateLines {
             }
 
             inputCell = $('<div>')
-                .addClass('cell')
+                .addClass('step2_table_cell')
                 .addClass('inputCell')
                 .appendTo(row);
 
             this.fillInputControls(inputCell);
 
             addCell = $('<div>')
-                .addClass('cell')
+                .addClass('step2_table_cell')
                 .appendTo(row);
             this.buildAddControl(addCell);
 
             applyAllCell = $('<div>')
-                .addClass('cell')
+                .addClass('step2_table_cell')
                 .addClass('centered_radio_btn_parent')
                 .appendTo(row);
 
@@ -267,7 +267,7 @@ module CreateLines {
             }
 
             makeComboCell = $('<div>')
-                .addClass('cell')
+                .addClass('step2_table_cell')
                 .addClass('centered_radio_btn_parent')
                 .appendTo(row);
 
@@ -331,7 +331,7 @@ module CreateLines {
 
         fillInputControls(rowContainer: JQuery): void {
             var visibleType: JQuery, hiddenType: JQuery, valueInput: JQuery, hiddenVal: JQuery;
-            visibleType = $('<input type="text" name="type">')
+            visibleType = $('<input type="text" name="type" eddautocompletetype="MeasurementCompartment">')
                 .prop('placeholder', 'Metadata Type')
                 .addClass('step2-text-input')
                 .appendTo(rowContainer);
@@ -547,7 +547,7 @@ module CreateLines {
         constructor() {
             console.log('In constructor!');
             this.dataElements = [
-                new LineAttributeAutoInput(
+  /*              new LineAttributeAutoInput(
                     {'labelText':'Contact',
                     'jsonId': 'contact', }),
                 new LineAttributeAutoInput(
@@ -561,7 +561,7 @@ module CreateLines {
                     'jsonId': 'combinatorial_strain_id_groups', }),
                 new LineMetadataInput(
                     {'labelText': 'Metadata',
-                    'jsonId': 'N/A', }),
+                    'jsonId': 'N/A', }),*/
                 new ControlInput({
                     'labelText': 'Control',
                     'jsonId': 'control',
@@ -669,6 +669,18 @@ module CreateLines {
         }
 
         addProperty(): void {
+            $('#dialog-confirm').dialog({
+                resizable: false,
+                modal: true,
+                buttons: {
+                    'Add data': function() {
+                        $(this).dialog('close');
+                    },
+                    Cancel: function() {
+                        $(this).dialog('close');
+                    }
+                }
+            });
         }
 
         buildJson(): string {
