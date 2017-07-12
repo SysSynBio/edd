@@ -4,6 +4,7 @@
   "description": "Nodejs code associated with the Django port of EDD.",
   "main": "index.js",
   "dependencies": {
+    "@types/d3": "^4.9.0",
     "@types/jasmine": "^2.5.53",
     "@types/karma": "^0.13.36",
     "grunt-protractor-runner": "^4.0.0",
@@ -50,10 +51,9 @@
     "source-map-loader": "^0.2.1",
     "style-loader": "0.13.0",
     "typescript": "^2.4.1",
-     "typings": "^2.1.0",
+    "typings": "^2.1.0",
     "webpack": "^2.3.0",
     "webpack-dev-server": "1.14.1"
-
   },
   "scripts": {
     "test": "karma start karma.conf.js",

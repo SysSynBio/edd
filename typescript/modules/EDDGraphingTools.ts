@@ -415,10 +415,10 @@ export class EDDGraphingTools {
             .attr('width', squareSize)
             .attr('height', squareSize)
             .style("fill", color)
-            .on("mouseover", function (d) {
-                this.lineOnHover(div, this, d)
+            .on("mouseover", (d) => {
+                this.lineOnHover(div, d)
             })
-            .on("mouseout", function () {
+            .on("mouseout", () => {
                 this.lineOnMouseOut(div)
             });
     }
@@ -443,10 +443,10 @@ export class EDDGraphingTools {
                 return 3;
             })
             .style("fill", color)
-            .on("mouseover", function (d) {
-                this.lineOnHover(div, this, d)
+            .on("mouseover", (d) => {
+                this.lineOnHover(div, d)
             })
-            .on("mouseout", function () {
+            .on("mouseout", () => {
                 this.lineOnMouseOut(div)
             });
     }
@@ -482,10 +482,10 @@ export class EDDGraphingTools {
             .attr('width', squareSize - 3)
             .attr('height', squareSize + 3)
             .style("fill", color)
-            .on("mouseover", function (d) {
-                this.lineOnHover(div, this, d)
+            .on("mouseover", (d) => {
+                this.lineOnHover(div, d)
             })
-            .on("mouseout", function () {
+            .on("mouseout", () => {
                 this.lineOnMouseOut(div)
             });
     }
@@ -498,14 +498,14 @@ export class EDDGraphingTools {
         triangle
             .enter()
             .append('svg:polygon')
-            .attr('points', function (d) {
+            .attr('points', (d) => {
                 return [[x(d.x), y(d.y) - 4], [x(d.x) + 4, y(d.y) + 4], [x(d.x) - 4, y(d.y) + 4]];
             })
             .style("fill", color)
-            .on("mouseover", function (d) {
-                this.lineOnHover(div, this, d)
+            .on("mouseover", (d) => {
+                this.lineOnHover(div, d)
             })
-            .on("mouseout", function () {
+            .on("mouseout", () => {
                 this.lineOnMouseOut(div)
             });
     }
@@ -521,21 +521,16 @@ export class EDDGraphingTools {
                     .attr('stroke-width', 2)
                     .attr("class", 'lineClass')
                     .attr('fill', 'none')
-                    .on('mouseover', function(d) {
-                        var selectedLine = this;
-                        d3.selectAll('.lineClass').style('opacity',function () {
-                            return (this === selectedLine) ? 1.0 : 0.1;
-                        });
-                        d3.selectAll('.lineClass').style('stroke-width',function () {
-                            return (this === selectedLine) ? 3.0 : 1;
-                        });
+                    .on('mouseover', (d) => {
+                        d3.selectAll('.lineClass').style('opacity', 0.1);
+                        $(event.target).css('opacity', 1);
                         d3.selectAll('circle').style('opacity', 0.1);
                         d3.selectAll('rect').style('opacity', 0.1);
                         d3.selectAll('polygon').style('opacity', 0.1);
-                        $(this).next().children().css('opacity', 1);
+                        $(event.target).next().children().css('opacity', 1);
                         $('.icon').css('opacity', 1);
                     })
-            .on('mouseout', function() {
+            .on('mouseout', () => {
                 d3.selectAll('.lineClass').style('opacity', 1).style('stroke-width', 2);
                 d3.selectAll('circle').style('opacity', 1);
                 d3.selectAll('rect').style('opacity', 1);
@@ -548,7 +543,8 @@ export class EDDGraphingTools {
      *  function takes in the svg shape type, div and returns the tooltip and hover elements for each
      *  shape
      */
-    lineOnHover(div, hoverSvg, d):void {
+    lineOnHover(div, d):void {
+        var hoverSvg = event.target;
         div.transition()
             .duration(200)
             .style("opacity", 0.9);
@@ -608,10 +604,10 @@ export class EDDGraphingTools {
             yMin = [];
 
         //get x values
-        var xDomain = assayMeasurements.map(function(assayMeasurement) { return assayMeasurement.x; });
+        var xDomain = assayMeasurements.map((assayMeasurement) => { return assayMeasurement.x; });
 
         //sort x values
-        xDomain.sort(function(a, b) {
+        xDomain.sort((a, b) => {
             return a - b;
         });
 
@@ -626,7 +622,7 @@ export class EDDGraphingTools {
 
         //nest data based off y_unit. ie g/l, cmol, n/a
         var meas = d3.nest()
-            .key(function (d:any) {
+            .key((d:any) => {
                 return d.y_unit;
             })
             .entries(assayMeasurements);
@@ -639,8 +635,8 @@ export class EDDGraphingTools {
                     return d.y;
                 })
                 .entries(meas[i].values));
-            yMin.push(d3.min(unitMeasurementData[i], function (d:any) {
-                return d3.min(d.values, function (d:any) {
+            yMin.push(d3.min(unitMeasurementData[i], (d:any) => {
+                return d3.min(d.values, (d:any) => {
                     return d.y;
                 });
             }))
@@ -657,8 +653,8 @@ export class EDDGraphingTools {
             }
 
             //y axis domain for specific unit group
-            y.domain([yMin[index], d3.max(unitMeasurementData[index], function (d:any) {
-                return d3.max(d.values, function (d:any) {
+            y.domain([yMin[index], d3.max(unitMeasurementData[index], (d:any)  => {
+                return d3.max(d.values, (d:any) => {
                     return d.y;
                 });
             })]);

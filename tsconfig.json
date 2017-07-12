@@ -7,12 +7,8 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "noImplicitAny": false,
-    "rootDir": "./typescript/src/",
-    "types": [ "jasmine" ]
+    "rootDir": "./typescript/src/"
   },
-  "include": [
-    "./typescript/modules/DataGrid.ts"
-  ],
   "exclude": [
     "node_modules",
     "bower_components",
