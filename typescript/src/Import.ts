@@ -4,9 +4,9 @@ import { EDDATDGraphing } from "../modules/AssayTableDataGraphing"
 import { Utl } from "../modules/Utl"
 import { EDDAuto } from "../modules/EDDAutocomplete"
 import { EDDGraphingTools } from "../modules/EDDGraphingTools"
-
+import { EDD_auto } from "../modules/EDDAutocomplete"
 declare var ATData: any; // Setup by the server.
-declare var EDD_auto: any;
+// declare var EDD_auto: any;
 
 // Doing this bullshit because TypeScript/InternetExplorer do not recognize static methods on Number
 declare var JSNumber: any;
@@ -122,7 +122,7 @@ module EDDTableImport {
         $(document).on('focus', '.autocomp', function (ev) {
             $(ev.target).addClass('autocomp_search').mcautocomplete('search');
         });
-        
+
         $('.disclose').find('a.discloseLink').on('click', EDDTableImport.disclose);
         // Populate ATData and EDDData objects via AJAX calls
         jQuery.ajax(atdata_url, {
@@ -3497,7 +3497,7 @@ module EDDTableImport {
                 // only watch for changes on the hidden portion, let autocomplete work
                 EDDTableImport.typeDisambiguationStep.userChangedMeasurementDisam(ev.target);
             });
-            // EDD_auto.initial_search(this.typeAuto, name);
+            EDD_auto.initial_search(this.typeAuto, name);
         }
     }
 

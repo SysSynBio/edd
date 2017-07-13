@@ -677,7 +677,8 @@ export module EDDAuto {
 }
 
 
-var EDD_auto = EDD_auto || {}, EDDData:EDDData = EDDData || <EDDData>{};
+export var EDD_auto = EDD_auto || {}, 
+    EDDData:EDDData = EDDData || <EDDData>{};
 (function ($) { // immediately invoked function to bind jQuery to $
 
     var meta_columns;
