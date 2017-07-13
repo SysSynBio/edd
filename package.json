@@ -11,9 +11,11 @@
     "jquery": "^3.2.1",
     "phantomjs": "^2.1.7",
     "tinymce": "^4.6.4",
-    "ts-loader": "^2.2.1"
+    "ts-loader": "^2.2.1",
+    "typescript": "^2.4.1"
   },
   "devDependencies": {
+    "@types/jquery": "^3.2.6",
     "chai": "^4.0.2",
     "css-loader": "0.23.1",
     "generator-karma": "^2.0.0",
@@ -57,7 +59,7 @@
   "scripts": {
     "test": "karma start karma.conf.js",
     "test2": "tsc && concurrently \"tsc -w\" \"karma start karma.conf.js\"",
-    "build": "NODE_ENV=production webpack -p --progress --profile --colors --watch",
+    "build": "NODE_ENV=production webpack -p --progress --profile --colors",
     "watch": "webpack-dev-server --hot --inline --progress --colors --watch-poll",
     "dev": "webpack-dev-server --devtool eval --progress --content-base build",
     "clean": "rm -r main/static/dist/*"

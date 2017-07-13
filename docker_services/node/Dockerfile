@@ -8,7 +8,6 @@ COPY package.json /node/
 
 WORKDIR /node
 
-RUN npm install -g \
-    && npm install
+RUN npm install
 
 CMD ["bash"]
