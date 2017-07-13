@@ -15,8 +15,7 @@ module.exports = {
         index: "./typescript/src/index.ts",
         StudyData: "./typescript/src/Study-Data.ts",
         StudyLines: "./typescript/src/Study-Lines.ts",
-        StudyOverview: "./typescript/src/Study-Overview.ts",
-        StudySBMLExport: "./typescript/src/StudySBMLExport.ts"
+        StudyOverview: "./typescript/src/Study-Overview.ts"
     },
     output: {
         path: path.resolve(__dirname, './main/static/dist'),

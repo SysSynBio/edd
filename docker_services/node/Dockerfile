@@ -8,7 +8,7 @@ COPY package.json /node/
 
 WORKDIR /node
 
-RUN npm install -g bower grunt-cli \
+RUN npm install -g \
     && npm install
 
 CMD ["bash"]
