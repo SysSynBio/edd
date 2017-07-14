@@ -35,6 +35,15 @@ study_url_patterns = [
     url(r'^describe/$', login_required(views.study_describe_experiment), name='describe'),
     url(
         # NOTE: leaving off the $ end-of-string regex is important! Further matching in include()
+        r'^import2/',
+        include([
+            url(r'^$', login_required(views.study_import_table2), name='table-import'),
+            # TODO these should be folded into the main import page at some point
+            url(r'^rnaseq/$', login_required(views.study_import_rnaseq), name='rnaseq'),
+        ])
+    ),
+    url(
+        # NOTE: leaving off the $ end-of-string regex is important! Further matching in include()
         r'^import/',
         include([
             url(r'^$', login_required(views.study_import_table), name='table-import'),

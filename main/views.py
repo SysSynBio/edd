@@ -1298,6 +1298,29 @@ class StudyPermissionJSONView(StudyObjectMixin, generic.detail.BaseDetailView):
             manager.update_or_create(**kwargs)
 
 
+# /study/<study_id>/import2/
+@ensure_csrf_cookie
+def study_import_table2(request, pk=None, slug=None):
+    """
+    View for importing tabular data (replaces AssayTableData.cgi).
+    :raises: Exception if an error occurrs during the import attempt
+    """
+    study = load_study(request, pk=pk, slug=slug, permission_type=CAN_EDIT)
+    user_can_write = study.user_can_write(request.user)
+
+    # FIXME protocol display on import page should be an autocomplete
+    protocols = Protocol.objects.order_by('name')
+    return render(
+        request,
+        "main/import2.html",
+        context={
+            "study": study,
+            "protocols": protocols,
+            "writable": user_can_write,
+        },
+    )
+
+
 # /study/<study_id>/import/
 @ensure_csrf_cookie
 def study_import_table(request, pk=None, slug=None):

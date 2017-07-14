@@ -12,6 +12,7 @@ module.exports = {
         EDDRest: "./typescript/src/EDDRest.ts",
         ExperimentDescHelp: "./typescript/src/Experiment-Desc-Help.ts",
         Import: "./typescript/src/Import.ts",
+        Import2: "./typescript/src/Import2.ts",
         index: "./typescript/src/index.ts",
         StudyData: "./typescript/src/Study-Data.ts",
         StudyLines: "./typescript/src/Study-Lines.ts",
