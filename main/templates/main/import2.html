@@ -1,0 +1,67 @@
+{% extends "main/study.html" %}
+{% load staticfiles %}
+
+{% block js_css %}
+  {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'main/import2.css' %}" />
+    <script type="text/javascript" src="{% static 'main/js/lib/vue/dist/vue.js' %}"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vue-form-wizard/dist/vue-form-wizard.min.css">
+    <script src="https://unpkg.com/vue-form-wizard/dist/vue-form-wizard.js"></script>
+    <script type="text/javascript" src="{% static 'dist/Import2.js' %}"></script>
+{% endblock js_css %}
+
+{% block head_title %}
+  {% if selection.studies|length == 1 %}
+    Data Import For {{ selection.studies.0.name }}
+  {% else %}
+    Data Import For {{ selection.studies|length }} Studies
+  {% endif %}
+{% endblock head_title %}
+
+{% block body_title %}
+  Data Import For
+   <a href="{% url 'main:detail' slug=study.slug %}">{{ study.name }}</a>
+{% endblock body_title %}
+<!-- Step 1 -->
+
+{% block content %}
+    <form method="post" id="assayTableForm" action="{% url 'main:table-import' slug=study.slug %}">
+        {% csrf_token %}
+        <div id="app">
+        <div>
+            <form-wizard @on-complete="onComplete"
+                         @on-loading="setLoading"
+                         @on-validate="handleValidation"
+                         shape="tab"
+                         color="#23527c"
+                         title=""
+                         subtitle="">
+              <tab-content title="Types of Data"
+                           :before-change="validateAsync"
+                           icon="ti-user">
+                      <h3>What Category of Data do you have?</h3>
+                    <category-selector></category-selector>
+              </tab-content>
+              <tab-content title="Upload File"
+                           icon="ti-settings">
+                      <h3>Upload file</h3>
+              </tab-content>
+              <tab-content title="Resolve"
+                           icon="ti-check">
+                     <h3>Data to Import</h3>
+              </tab-content>
+                <tab-content title="Inspect"
+                           icon="ti-check">
+                      <h3>Graph of data</h3>
+              </tab-content>
+                <tab-content title="Import"
+                           icon="ti-check">
+                      <h3>Ready to import</h3>
+              </tab-content>
+
+              <div class="loader" v-if="loadingWizard"></div>
+            </form-wizard>
+         </div>
+        </div>
+</form>
+{% endblock content %}

@@ -1,0 +1,53 @@
+.container {
+    background-color: #fff;
+}
+
+.step-wrapper {
+    padding: 20px 0;
+    display: none;
+}
+
+
+
+.step-indicator {
+    border-collapse: separate;
+    display: table;
+    margin-left: 0px;
+    position: relative;
+    table-layout: fixed;
+    text-align: center;
+    vertical-align: middle;
+    padding-left: 0;
+    padding-top: 20px;
+}
+
+.step-indicator > li {
+    display: table-cell;
+    position: relative;
+    float: none;
+    padding: 0;
+    width: 1%;
+}
+
+.step-indicator > li:after {
+            background-color: beige;
+            content: "";
+            display: block;
+            height: 1px;
+            position: absolute;
+            width: 100%;
+
+}
+
+.step {
+    background-color: #fff;
+    border-radius: 50%;
+    border: 1px solid beige;
+    color: beige;
+    font-size: 12px;
+    height: 64px;
+    margin: 0 auto;
+    position: relative;
+    width: 64px;
+    z-index: 1;
+}
