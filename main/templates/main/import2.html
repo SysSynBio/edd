@@ -40,11 +40,29 @@
                            :before-change="validateAsync"
                            icon="ti-user">
                       <h3>What Category of Data do you have?</h3>
-                    <category-selector></category-selector>
-                    <protocol-selector></protocol-selector>
+                          {% for protocol in protocols %}
+                          <button class="categories btn btn-default" v-on:click.prevent="selectCategory"
+                                  value="{{ protocol.id }}"> {{ protocol.name }} </button>
+                          {% endfor %}
+
+                <div id="protocols" hidden>
+                    <h3>What Protocol did you use?</h3>
+                    <p v-if="selectedCategory === ' Targeted Proteomics '">
+                        <button class="btn btn-default"  v-for="item in proteomics"
+                                v-on:click.prevent="selectProtocol">
+                           ${ item.name }
+                        </button>
+                    </p>
+                    <p v-else-if="selectedCategory === ' HPLC '">
+                        <button class="btn btn-default" v-for="item in metabolomics"
+                                v-on:click.prevent="selectProtocol">
+                            ${ item.name }
+                        </button>
+                    </p>
+                </div>
                     <div id="fileFormat" hidden>
-                      <h3>File format for ${ protocol }</h3>
-                      <input v-model="protocol" placeholder="edit me">
+                      <h3>File format</h3>
+                        <input type="checkbox"> General
                     </div>
               </tab-content>
               <tab-content title="Upload File"
