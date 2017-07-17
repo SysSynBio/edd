@@ -41,10 +41,16 @@
                            icon="ti-user">
                       <h3>What Category of Data do you have?</h3>
                     <category-selector></category-selector>
+                    <protocol-selector></protocol-selector>
+                    <div id="fileFormat" hidden>
+                      <h3>File format for ${ protocol }</h3>
+                      <input v-model="protocol" placeholder="edit me">
+                    </div>
               </tab-content>
               <tab-content title="Upload File"
                            icon="ti-settings">
                       <h3>Upload file</h3>
+{#                  <dropzone ref="myUniqueID"></dropzone>#}
               </tab-content>
               <tab-content title="Resolve"
                            icon="ti-check">
