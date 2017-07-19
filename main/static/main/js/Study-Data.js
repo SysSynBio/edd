@@ -1215,11 +1215,13 @@ var StudyDataPage;
             $('#filterControlsArea').removeClass('off');
             queueActionPanelRefresh();
             viewingMode = 'linegraph';
+            updateGraphViewFlag({ 'buttonElem': "#lineGraphButton", 'type': viewingMode });
             barGraphTypeButtonsJQ.addClass('off');
             $('#lineGraph').removeClass('off');
             $('#barGraphByTime').addClass('off');
             $('#barGraphByLine').addClass('off');
             $('#barGraphByMeasurement').addClass('off');
+            $('#mainFilterSection').appendTo('#content');
             queueRefreshDataDisplayIfStale();
         });
         //one time click event handler for loading spinner
@@ -1246,17 +1248,21 @@ var StudyDataPage;
             $('#barGraphByLine').toggleClass('off', 'line' !== barGraphMode);
             $('#barGraphByMeasurement').toggleClass('off', 'measurement' !== barGraphMode);
             queueRefreshDataDisplayIfStale();
+            $('#mainFilterSection').appendTo('#content');
         });
         $("#timeBarGraphButton").click(function () {
             barGraphMode = 'time';
+            updateGraphViewFlag({ 'buttonElem': "#timeBarGraphButton", 'type': barGraphMode });
             queueRefreshDataDisplayIfStale();
         });
         $("#lineBarGraphButton").click(function () {
             barGraphMode = 'line';
+            updateGraphViewFlag({ 'buttonElem': '#lineBarGraphButton', 'type': barGraphMode });
             queueRefreshDataDisplayIfStale();
         });
         $("#measurementBarGraphButton").click(function () {
             barGraphMode = 'measurement';
+            updateGraphViewFlag({ 'buttonElem': '#measurementBarGraphButton', 'type': barGraphMode });
             queueRefreshDataDisplayIfStale();
             $('#graphLoading').addClass('off');
         });
@@ -1296,6 +1302,15 @@ var StudyDataPage;
             }
         });
         fetchEDDData(onSuccess);
+        fetchSettings('measurement', function (data) {
+            if (data.type === 'linegraph') {
+                $(data.buttonElem).click();
+            }
+            else {
+                $("#barGraphButton").click();
+                $(data.buttonElem).click();
+            }
+        }, []);
         // Simply setting display:none doesn't work on flex items.
         // They still occupy space in the layout.
         // barGraphTypeButtonsJQ.detach();
@@ -1314,6 +1329,16 @@ var StudyDataPage;
             .on('keydown', filterTableKeyDown.bind(this));
     }
     StudyDataPage.prepareIt = prepareIt;
+    function basePayload() {
+        var token = document.cookie.replace(/(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/, '$1');
+        return { 'csrfmiddlewaretoken': token };
+    }
+    function updateGraphViewFlag(type) {
+        $.ajax('/profile/settings/measurement', {
+            'data': $.extend({}, basePayload(), { 'data': JSON.stringify(type) }),
+            'type': 'POST'
+        });
+    }
     function copyActionButtons() {
         // create a copy of the buttons in the flex layout bottom bar
         // the original must stay inside form
@@ -1337,6 +1362,22 @@ var StudyDataPage;
         });
     }
     StudyDataPage.fetchEDDData = fetchEDDData;
+    function fetchSettings(propKey, callback, defaultValue) {
+        $.ajax('/profile/settings/' + propKey, {
+            'dataType': 'json',
+            'success': function (data) {
+                data = data || defaultValue;
+                if (typeof data === 'string') {
+                    try {
+                        data = JSON.parse(data);
+                    }
+                    catch (e) { }
+                }
+                callback.call({}, data);
+            }
+        });
+    }
+    StudyDataPage.fetchSettings = fetchSettings;
     function onSuccess(data) {
         EDDData = $.extend(EDDData || {}, data);
         colorObj = EDDGraphingTools.renderColor(EDDData.Lines);
