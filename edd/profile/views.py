@@ -39,7 +39,7 @@ def settings(request):
                 user.userprofile.prefs = json.loads(request.POST['data'])
                 user.userprofile.save()
                 return HttpResponse(status=204)
-            except Exception, e:
+            except Exception as e:
                 # TODO: logging
                 return HttpResponse(status=500)
         elif request.method == 'DELETE':
@@ -47,7 +47,7 @@ def settings(request):
                 user.userprofile.prefs = {}
                 user.userprofile.save()
                 return HttpResponse(status=204)
-            except Exception, e:
+            except Exception as e:
                 # TODO: logging
                 return HttpResponse(status=500)
         else:
@@ -68,7 +68,7 @@ def settings_key(request, key):
                 prefs.update({ key: request.POST['data'], })
                 user.userprofile.save()
                 return HttpResponse(status=204)
-            except Exception, e:
+            except Exception as e:
                 # TODO: logging
                 return HttpResponse(status=500)
         elif request.method == 'DELETE':
@@ -76,7 +76,7 @@ def settings_key(request, key):
                 del prefs[key]
                 user.userprofile.save()
                 return HttpResponse(status=204)
-            except Exception, e:
+            except Exception as e:
                 # TODO: logging
                 return HttpResponse(status=500)
         else:

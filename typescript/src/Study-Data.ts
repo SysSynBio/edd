@@ -1351,6 +1351,7 @@ export namespace StudyDataPage {
             $('#filterControlsArea').removeClass('off');
             queueActionPanelRefresh();
             viewingMode = 'linegraph';
+            updateGraphViewFlag({'buttonElem': "#lineGraphButton", 'type': viewingMode});
             barGraphTypeButtonsJQ.addClass('off');
             $('#lineGraph').removeClass('off');
             $('#barGraphByTime').addClass('off');
@@ -1389,13 +1390,16 @@ export namespace StudyDataPage {
         $("#timeBarGraphButton").click(function() {
             barGraphMode = 'time';
             queueRefreshDataDisplayIfStale();
+            updateGraphViewFlag({'buttonElem': "#timeBarGraphButton", 'type': barGraphMode});
         });
         $("#lineBarGraphButton").click(function() {
             barGraphMode = 'line';
             queueRefreshDataDisplayIfStale();
+            updateGraphViewFlag({'buttonElem':'#lineBarGraphButton', 'type': barGraphMode});
         });
         $("#measurementBarGraphButton").click(function() {
             barGraphMode = 'measurement';
+            updateGraphViewFlag({'buttonElem': '#measurementBarGraphButton', 'type': barGraphMode});
             queueRefreshDataDisplayIfStale();
             $('#graphLoading').addClass('off');
         });
@@ -1441,6 +1445,15 @@ export namespace StudyDataPage {
 
         fetchEDDData(onSuccess);
 
+        fetchSettings('measurement', (data) => {
+            if (data.type === 'linegraph') {
+                $(data.buttonElem).click();
+            } else {
+                $("#barGraphButton").click();
+                $(data.buttonElem).click();
+            }
+            }, []);
+        
         // Simply setting display:none doesn't work on flex items.
         // They still occupy space in the layout.
         // barGraphTypeButtonsJQ.detach();
@@ -1460,6 +1473,20 @@ export namespace StudyDataPage {
         // Callbacks to respond to the filtering section
         $('#mainFilterSection').on('mouseover mousedown mouseup', queueRefreshDataDisplayIfStale.bind(this))
             .on('keydown', filterTableKeyDown.bind(this));
+    }
+    
+    function basePayload():any {
+        var token:string = document.cookie.replace(
+            /(?:(?:^|.*;\s*)csrftoken\s*\=\s*([^;]*).*$)|^.*$/,
+            '$1');
+        return { 'csrfmiddlewaretoken': token };
+    }
+    
+    function updateGraphViewFlag(type) {
+        $.ajax('/profile/settings/measurement', {
+                'data': $.extend({}, basePayload(), { 'data': JSON.stringify(type) }),
+                'type': 'POST'
+            });
     }
 
     function copyActionButtons() {
@@ -1483,6 +1510,21 @@ export namespace StudyDataPage {
                 console.log(['Loading EDDData failed: ', status, ';', e].join(''));
             },
             'success': success
+        });
+    }
+    
+    export function fetchSettings(propKey:string, callback:(value:any)=>void, defaultValue?:any):void {
+        $.ajax('/profile/settings/' + propKey, {
+            'dataType': 'json',
+            'success': (data:any):void => {
+                data = data || defaultValue;
+                if (typeof data === 'string') {
+                    try {
+                        data = JSON.parse(data);
+                    } catch (e) { /* ParseError, just use string value */ }
+                }
+                callback.call({}, data);
+            }
         });
     }
 

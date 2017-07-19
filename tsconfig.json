@@ -7,7 +7,8 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "noImplicitAny": false,
-    "rootDir": "./typescript/src/"
+    "allowSyntheticDefaultImports": true,
+    "rootDir": "./typescript/"
   },
   "exclude": [
     "node_modules",
@@ -17,4 +18,3 @@
     "typescript/tests"
   ]
 }
-
