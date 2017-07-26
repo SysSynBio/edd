@@ -679,12 +679,6 @@ export module Utl {
 
             this.progressBar = options.progressBar || null;
 
-            // If there's a cleaner way to force-disable event logging in filedrop-min.js, do please put it here!
-            // (<any>window).fd.logging = false;
-            
-            // var z = new Dropzone("#" + options.elementId, {});
-            // http://www.dropzonejs.com/
-            // this.zone = dropzone;
             this.csrftoken = EDD.findCSRFToken();
             
             this.dropzone = new Dropzone("div#" + options.elementId, {
@@ -693,167 +687,42 @@ export module Utl {
                 'maxFilesize': 2,
                 'dicDefaultMessage': 'Drag a file here to upload',
                 'headers': {'X-CSRFToken': this.csrftoken, 'X-EDD-File-Type': 'xlsx'},
-                'acceptedFiles': ".doc,.docx,.pdf,.txt,.xls,.xlsx"
+                'acceptedFiles': ".doc,.docx,.pdf,.txt,.xls,.xlsx",
+                'processErrorFn': options.processErrorFn,
+                'processWarningFn': options.processWarningFn,
+                'processResponseFn': options.processResponseFn
             });
 
-            // if (!(typeof options.multiple === "undefined")) {
-            //     dropzone.multiple(options.multiple);
-            // } else {
-            //     dropzone.multiple(false);
-            // }
-
-            // this.fileInitFn = options.fileInitFn;
-            // this.processRawFn = options.processRawFn;
-            // this.processResponseFn = options.processResponseFn;
-            // this.processErrorFn = options.processErrorFn;
-            // this.processWarningFn = options.processWarningFn;
-            this.url = options.url;
         }
 
 
         // Helper function to create and set up a FileDropZone.
         static create(options:any): void {
             var h = new FileDropZone(options);
-            h.setup();
+            h.uploadFile();
         }
 
 
-        setup():void {
-            var t = this;
-            // Dropzone.options.addToLinesDropZone = {
-            //      init: function () {
-            //     this.on("complete", function (data) {
-            //         console.log(data)
-            //     });
-            //     this.on("addedfile", handleFileAdded);
-            //     this.on("removedfile", handleFileRemoved);
-            //     this.on("error", function(file){if (!file.accepted) this.removeFile(file);});
-            // },
-            //     acceptedFiles: ".doc,.docx,.pdf,.txt,.xls,.xlsx"
-            // };
-            this.dropzone.on('complete', function(data) {
-                console.log(data)
-            });
-            this.dropzone.on('error', function(event) {
-                console.log(event)
-            })
+        uploadFile():void {
 
-
-            // this.dropzone.options.init = function() {
-            //       this.on('addedFile', function(file) {
-            //         alert(file);
-            //     })
-            //     this.on('success', function( file, resp ){
-            //       console.log( file );
-            //       console.log( resp );
-            //     });
-            //     this.on('thumbnail', function(file) {
-            //       if ( file.width < 640 || file.height < 480 ) {
-            //         file.rejectDimensions();
-            //       }
-            //       else {
-            //         file.acceptDimensions();
-            //       }
-            //     });
-            //   };
-
-              // this.dropzone.options.accept = function(file, done) {
-              //     console.log(file);
-              //     console.log(done);
-              //     done(function(event) {
-              //         console.log(event)
-              //     });
-              //   file.acceptDimensions = done;
-              //   file.rejectDimensions = function() {
-              //     done('The image must be at least 640 x 480px')
-              //   };
-              // };
-            // this.dropzone.options.init();
-
-            // function handleFileAdded(event) {
-            //     console.log(event)
-            // }
-            // function handleFileRemoved(event) {
-            //     console.log(event)
-            // }
-            // this.dropzone.headers = this.csrftoken;
-            // this.dropzone.autoDiscover = false;
-            // this.dropzone.forceFallback = true;
-            // this.dropzone.on("sending", function(file, xhr, formData) {
-            //   // Will send the filesize along with the file as POST data.
-            //   file.csrfmiddlewaretoken = this.headers;
-            //   formData.append("X-CSRFToken", this.headers);
-            //   formData.append("filesize", file.size);
-            //   formData.append("X-EDD-File-Type", file.type);
-            //   formData.append("X-File-Name", file.name);
-            // });
             this.dropzone.on('complete', function(file) {
-                console.log(file)
-            })
-            };
-
-            // this.zone.event('send', function(files) {
-            //     files.each(function(file) {
-
-                    
-
-                    // callInitFile may set fileContainer's internal stopProcessing flag, or any of the others.
-                    // So it's possible for callInitFile to act as a gatekeeper, rejecting the dropped file
-                    // and halting any additional processing, or it can decide whether to read and process
-                    // this file locally, or upload it to the server, or even both.
-                    // Another trick: callInitFile may swap in a custom ProgressBar object just for this file,
-                    // so multiple files can have their own separate progress bars, while they are all uploaded
-                    // in parallel.
-                    // t.callInitFile.call(t, fileContainer);
-                    // if (fileContainer.stopProcessing) { fileContainer.allWorkFinished = true; return; }
-                    //
-                    // t.callProcessRaw.call(t, fileContainer);
-            //     });
-            // });
+                var xhr = file.xhr;
+                var response = JSON.parse(xhr.response);
+                 if (file.status === 'error') {
+                    this.options.processErrorFn(file, xhr)
+                }
+                if (response.warnings) {
+                    this.options.processWarningFn(file, response)
+                }
+                else if (file.status === 'success' && !response.warnings) {
+                    this.options.processResponseFn(file, response)
+                }
+            });
+        };
 
 
 
-        // If there is a fileInitFn set, call it with the given FileDropZoneFileContainer.
-        callInitFile(fileContainer: FileDropZoneFileContainer) {
-            if (typeof this.fileInitFn === "function") {
-                this.fileInitFn(fileContainer);
-            }
-        }
-
-
-        // If processRawFn is defined, we read the entire file into a variable,
-        // then pass that to processRawFn along with the FileDropZoneFileContainer object.
-        // FileDropZoneFileContainer's contents might be modofied - specifically, the flags - so we check them afterwards
-        // to decide how to proceed.
-        callProcessRaw(fileContainer: FileDropZoneFileContainer) {
-            var t = this;
-            if (typeof this.processRawFn === "function" && !fileContainer.skipProcessRaw) {
-                fileContainer.file.read({
-                    //start: 5,
-                    //end: -10,
-                    //func: 'cp1251',
-                    onDone: function(str) {
-                        t.processRawFn(fileContainer, str);
-                        if (!fileContainer.stopProcessing && !fileContainer.skipUpload) {
-                            t.uploadFile.call(t, fileContainer);
-                        } else {
-                            fileContainer.allWorkFinished = true;
-                        }
-                    },
-                    onError: function(e) {
-                        alert('Failed to read the file! Error: ' + e.fdError)
-                    },
-                    func: 'text'
-                });
-            // No need to check stopProcessing - there's no way it could have been modified since the last step.
-            } else if (!fileContainer.skipUpload) {
-                this.uploadFile(fileContainer);
-            }
-        }
-
-
-
-        uploadFile(fileContainer: FileDropZoneFileContainer) {
+        processFile(fileContainer: FileDropZoneFileContainer) {
 
             var t = this;
             var f = fileContainer.file;
@@ -886,8 +755,8 @@ export module Utl {
                 }
                 fileContainer.allWorkFinished = true;
             });
-            
-          
+
+
 
             f.event('xhrSetup', function(xhr) {
                 // This ensures that the CSRF middleware in Django doesn't reject our HTTP request.
@@ -915,7 +784,7 @@ export module Utl {
                 }
             });
 
-            f.sendTo(this.url);
+            // f.sendTo(this.url);
         }
     }
 

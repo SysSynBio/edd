@@ -214,19 +214,17 @@ module StudyOverview {
         });
 
         this.fileUploadProgressBar = new Utl.ProgressBar('fileUploadProgressBar');
-        // var fileDropZoneHelper = new FileDropZone.FileDropZoneHelpers({
-        //    pageRedirect: 'experiment-description',
-        //    haveInputData: false,
-        // });
+        var fileDropZoneHelper = new FileDropZone.FileDropZoneHelpers({
+           pageRedirect: 'experiment-description',
+           haveInputData: false,
+        });
 
         Utl.FileDropZone.create({
             elementId: "templateDropZone",
-            // fileInitFn: fileDropZoneHelper.fileDropped.bind(fileDropZoneHelper),
-            // processRawFn: fileDropZoneHelper.fileRead.bind(fileDropZoneHelper),
             url: '/study/' + EDDData.currentStudyID + '/describe/',
-            // processResponseFn: fileDropZoneHelper.fileReturnedFromServer.bind(fileDropZoneHelper),
-            // processErrorFn: fileDropZoneHelper.fileErrorReturnedFromServer.bind(fileDropZoneHelper),
-            // processWarningFn: fileDropZoneHelper.fileWarningReturnedFromServer.bind(fileDropZoneHelper),
+            processResponseFn: fileDropZoneHelper.fileReturnedFromServer.bind(fileDropZoneHelper),
+            processErrorFn: fileDropZoneHelper.fileErrorReturnedFromServer.bind(fileDropZoneHelper),
+            processWarningFn: fileDropZoneHelper.fileWarningReturnedFromServer.bind(fileDropZoneHelper),
             progressBar: this.fileUploadProgressBar
         });
 

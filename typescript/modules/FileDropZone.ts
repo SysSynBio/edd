@@ -3,13 +3,12 @@ import { Utl } from "./Utl"
 export module FileDropZone {
 
     export class FileDropZoneHelpers {
-        
-        haveInputData:boolean;
-        pageRedirect: string;
 
-        activeDraggedFile: any;
-        actionPanelIsCopied: boolean;
-        
+        haveInputData:boolean;
+        pageRedirect:string;
+
+        actionPanelIsCopied:boolean;
+
         constructor(options:any) {
             this.haveInputData = options.haveInputData;
             this.pageRedirect = options.pageRedirect;
@@ -21,8 +20,8 @@ export module FileDropZone {
         fileReturnedFromServer(fileContainer, result):void {
 
             let currentPath = window.location.pathname;
-            let linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 
-                                this.pageRedirect;
+            let linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) +
+                this.pageRedirect;
             $('<p>', {
                 text: 'Success! ' + result['lines_created'] + ' lines added!',
                 style: 'margin:auto'
@@ -36,9 +35,9 @@ export module FileDropZone {
         fileWarningReturnedFromServer(fileContainer, result):void {
             let currentPath = window.location.pathname;
             let newWarningAlert = $('.alert-warning').eq(0).clone();
-            let linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) + 
-                                this.pageRedirect;
-  
+            let linesPathName = currentPath.slice(0, currentPath.lastIndexOf('overview')) +
+                this.pageRedirect;
+
             this.copyActionButtons();
 
             $('#acceptWarnings').find('.acceptWarnings').on('click', (ev:JQueryMouseEventObject):boolean => {
@@ -58,15 +57,15 @@ export module FileDropZone {
             this.generateAcceptWarning();
         }
 
-        successfulRedirect(linesPathName):void {
+        successfulRedirect=(linesPathName):void => {
             //redirect to lines page
             setTimeout(function () {
                 window.location.pathname = linesPathName;
             }, 1000);
-        }
+        };
 
 
-        copyActionButtons() {
+        copyActionButtons=():void=> {
             let original:JQuery, copy:JQuery, originalDismiss:JQuery, copyDismiss:JQuery,
                 originalAcceptWarnings:JQuery, copyAcceptWarnings:JQuery;
             if (!this.actionPanelIsCopied) {
@@ -90,10 +89,11 @@ export module FileDropZone {
                 });
                 this.actionPanelIsCopied = true;
             }
-        }
+        };
 
-        // This is called upon receiving an errror in a file upload operation, and
+        // This is called upon receiving an error in a file upload operation, and
         // is passed an unprocessed result from the server as a second argument.
+
         fileErrorReturnedFromServer(fileContainer, xhr):void {
 
             this.copyActionButtons();
@@ -172,21 +172,21 @@ export module FileDropZone {
             });
         }
 
-        generateMessages(type, response) {
+        generateMessages=(type, response) => {
             var responseMessages = this.organizeMessages(response);
-            for (var key in responseMessages) {
+            for (var key in response) {
                 let div;
                 if (type === 'error') {
                     div = $('.alert-danger').eq(0).clone();
                 } else {
                     div = $('.alert-warning').eq(0).clone();
                 }
-                this.alertMessage(key, responseMessages[key], div, type)
+                this.alertMessage(key, response[key], div, type)
             }
-        }
+        };
 
 
-        generateAcceptWarning():void {
+        generateAcceptWarning=():void => {
             var warningAlerts:JQuery, acceptWarningDiv:JQuery;
             warningAlerts = $('.alert-warning:visible');
             acceptWarningDiv = $('#acceptWarnings').find('.acceptWarnings');
@@ -196,11 +196,11 @@ export module FileDropZone {
                 $('#alert_placeholder').prepend(acceptWarningDiv)
             }
             acceptWarningDiv.show();
-        }
+        };
 
-        organizeMessages(responses) {
+        organizeMessages=(responses)=>{
             var obj = {};
-            responses.forEach(function (response) {
+            for (var response of responses) {
                 if (response.category === "ICE-related error") {
                     // create dismissible error alert
                     this.alertIceWarning(response);
@@ -219,46 +219,46 @@ export module FileDropZone {
                         obj[response.category] = [message]
                     }
                 }
-            });
+            };
             return obj;
-        }
+        };
 
-        generate504Error() {
+        generate504Error=():void =>{
             let response = {
                 category: "",
                 summary: "EDD timed out",
                 details: "Please reload page and reupload file or try again later"
             };
             this.alertError(response)
-        }
+        };
 
-        alertIceWarning(response):void {
+        alertIceWarning=(response):void => {
             let iceError = $('#iceError');
             response.category = "Warning! " + response.category;
             this.createAlertMessage(iceError, response);
-        }
+        };
 
-        alertDuplicateError(response):void {
+        alertDuplicateError=(response):void => {
             var duplicateElem = $('#duplicateError');
             this.createAlertMessage(duplicateElem, response)
-        }
+        };
 
 
-        alertError(response):void {
+        alertError=(response):void => {
             var newErrorAlert = $('.alert-danger').eq(0).clone();
             this.createAlertMessage(newErrorAlert, response);
             this.clearDropZone();
-        }
+        };
 
-        createAlertMessage(alertClone, response) {
+        createAlertMessage=(alertClone, response) => {
             $(alertClone).children('h4').text(response.category);
             $(alertClone).children('p').text(response.summary + ": " + response.details);
             $('#alert_placeholder').append(alertClone);
             $(alertClone).show();
-        }
+        };
 
 
-        alertMessage(subject, messages, newAlert, type):void {
+        alertMessage=(subject, messages, newAlert, type):void => {
             if (type === "warnings") {
                 $(newAlert).children('h4').text("Warning! " + subject);
             } else {
@@ -274,73 +274,14 @@ export module FileDropZone {
             });
             $('#alert_placeholder').append(newAlert);
             $(newAlert).show();
-        }
+        };
 
-        clearDropZone():void {
+        clearDropZone=():void => {
             $('#templateDropZone').removeClass('off');
             $('#fileDropInfoIcon').addClass('off');
             $('#fileDropInfoName').addClass('off');
             $('#fileDropInfoSending').addClass('off');
             $(".linesDropZone").addClass('off');
-        }
-
-
-        // Here, we take a look at the type of the dropped file and decide whether to
-        // send it to the server, or process it locally.
-        // We inform the FileDropZone of our decision by setting flags in the fileContainer object,
-        // which will be inspected when this function returns.
-        fileDropped(fileContainer, iceError?:boolean):void {
-            this.haveInputData = true;
-            //processingFileCallback();
-            var ft = fileContainer.fileType;
-            // We'll signal the dropzone to upload this, and receive processed results.
-            if (ft === 'xlsx') {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // HPLC reports need to be sent for server-side processing
-            // if (!fileContainer.skipProcessRaw || !fileContainer.skipUpload) {
-            //     this.showFileDropped(fileContainer, iceError);
-            // }
-        }
-
-
-        // Reset and show the info box that appears when a file is dropped,
-        // and reveal the text entry area.
-        showFileDropped(fileContainer):void {
-            var processingMessage:string = '';
-            // Set the icon image properly
-            $('#fileDropInfoIcon').removeClass('xml');
-            $('#fileDropInfoIcon').removeClass('text');
-            $('#fileDropInfoIcon').removeClass('excel');
-            if (fileContainer.fileType === 'xml') {
-                $('#fileDropInfoIcon').addClass('xml');
-            } else if (fileContainer.fileType === 'xlsx') {
-                $('#fileDropInfoIcon').addClass('excel');
-            } else if (fileContainer.fileType === 'plaintext') {
-                $('#fileDropInfoIcon').addClass('text');
-            }
-            $('#templateDropZone').addClass('off');
-            $('#fileDropInfoArea').removeClass('off');
-            $('#fileDropInfoSending').removeClass('off');
-            $('#fileDropInfoName').text(fileContainer.file.name);
-
-            if (!fileContainer.skipUpload) {
-                processingMessage = 'Sending ' + Utl.JS.sizeToString(fileContainer.file.size) + ' To Server...';
-                $('#fileDropInfoLog').empty();
-            } else if (!fileContainer.skipProcessRaw) {
-                processingMessage = 'Processing ' + Utl.JS.sizeToString(fileContainer.file.size) + '...';
-                $('#fileDropInfoLog').empty();
-            }
-            $('#fileUploadMessage').text(processingMessage);
-            this.activeDraggedFile = fileContainer;
-        }
-
-
-        // This function is passed the usual fileContainer object, but also a reference to the
-        // full content of the dropped file.
-        fileRead(fileContainer, result):void {
-            this.haveInputData = true;
         }
     }
 }
