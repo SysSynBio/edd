@@ -12,6 +12,7 @@ import { StudyMetabolicMapChooser, MetabolicMapChooserResult, FullStudyBiomassUI
         FullStudyBiomassUIResultsCallback } from "../modules/BiomassCalculationUI"
 import { CarbonBalance } from "../modules/StudyCarbonBalance" 
 import { StudyBase } from "../modules/Study"
+
 module StudyLines {
     'use strict';
 
@@ -76,13 +77,13 @@ module StudyLines {
 
         Utl.FileDropZone.create({
             elementId: "addToLinesDropZone",
-            fileInitFn: fileDropZoneHelper.fileDropped.bind(fileDropZoneHelper),
-            processRawFn: fileDropZoneHelper.fileRead.bind(fileDropZoneHelper),
+            // fileInitFn: fileDropZoneHelper.fileDropped.bind(fileDropZoneHelper),
+            // processRawFn: fileDropZoneHelper.fileRead.bind(fileDropZoneHelper),
             url: '/study/' + EDDData.currentStudyID + '/describe/',
-            processResponseFn: fileDropZoneHelper.fileReturnedFromServer.bind(fileDropZoneHelper),
-            processErrorFn: fileDropZoneHelper.fileErrorReturnedFromServer.bind(fileDropZoneHelper),
-            processWarningFn: fileDropZoneHelper.fileWarningReturnedFromServer.bind(fileDropZoneHelper),
-            progressBar: this.fileUploadProgressBar
+            // processResponseFn: fileDropZoneHelper.fileReturnedFromServer.bind(fileDropZoneHelper),
+            // processErrorFn: fileDropZoneHelper.fileErrorReturnedFromServer.bind(fileDropZoneHelper),
+            // processWarningFn: fileDropZoneHelper.fileWarningReturnedFromServer.bind(fileDropZoneHelper),
+            // progressBar: this.fileUploadProgressBar
         });
 
         $('#content').on('dragover', function(e:any) {
