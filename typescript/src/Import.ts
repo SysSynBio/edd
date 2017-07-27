@@ -7,6 +7,16 @@ import { EDDGraphingTools } from "../modules/EDDGraphingTools"
 import { EDD_auto } from "../modules/EDDAutocomplete"
 declare var ATData: any; // Setup by the server.
 
+// Doing this bullshit because TypeScript/InternetExplorer do not recognize static methods on Number
+var JSNumber: any;
+JSNumber = Number;
+JSNumber.isFinite = JSNumber.isFinite || function (value: any) {
+    return typeof value === 'number' && isFinite(value);
+};
+JSNumber.isNaN = JSNumber.isNaN || function (value: any) {
+    return value !== value;
+};
+
 // Type name for the grid of values pasted in
 interface RawInput extends Array<string[]> { }
 // type for the stats generated from parsing input text
@@ -692,7 +702,6 @@ module EDDTableImport {
             if (mode === 'std') {
                  $('#prSampleFile').hide();
                 $('#gcmsSampleFile').show();
-                $('#step2textarea').addClass('fd-zone')
             } else {
                 $('#gcmsSampleFile').hide();
             }
@@ -1443,7 +1452,7 @@ module EDDTableImport {
             var body: HTMLTableElement,
                 colgroup: JQuery,
                 controlCols: string[],
-                legendCopy: JQuery,
+                flegendCopy: JQuery,
                 lowerLegend: JQuery,
                 lowerLegendId: string,
                 pulldownOptions: RowPulldownOption[],
@@ -1951,15 +1960,25 @@ module EDDTableImport {
                     // Validate the provided set of time/value points
                     rawSet.data.forEach((xy: any[]): void => {
                         var time: number, value: number;
-                        time = +xy[0];
-
-                        if (!xy[1] && +xy[1] !== 0) {
+                        if (!JSNumber.isFinite(xy[0])) {
+                            // Sometimes people - or Excel docs - drop commas into large numbers.
+                            time = parseFloat((xy[0] || '0').replace(/,/g, ''));
+                        } else {
+                            time = <number>xy[0];
+                        }
+                        // If we can't get a usable timestamp, discard this point.
+                        if (JSNumber.isNaN(time)) {
+                            return;
+                        }
+                        if (!xy[1] && <Number>xy[1] !== 0) {
                             // If we're ignoring gaps, skip any undefined/null values.
                             //if (ignoreDataGaps) { return; }    // Note: Forced always-off for now
                             // A null is our standard placeholder value
                             value = null;
+                        } else if (!JSNumber.isFinite(xy[1])) {
+                            value = parseFloat((xy[1] || '').replace(/,/g, ''));
                         } else {
-                            value = +xy[1];
+                            value = <number>xy[1];
                         }
                         if (!times[time]) {
                             times[time] = value;

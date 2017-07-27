@@ -691,7 +691,7 @@ export module Utl {
                  if (file.status === 'error') {
                     //unique class for ice related errors
                     if (response['errors'][0].category === 'ICE-related error') {
-                        //first remove all files
+                        //first remove all files in upload
                         this.removeAllFiles();
                         file.status = undefined;
                         file.accepted = undefined;
