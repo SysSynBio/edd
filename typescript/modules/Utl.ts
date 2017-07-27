@@ -686,7 +686,6 @@ export module Utl {
                 'params': {'csrfmiddlewaretoken': this.csrftoken},
                 'maxFilesize': 2,
                 'dicDefaultMessage': 'Drag a file here to upload',
-                'headers': {'X-CSRFToken': this.csrftoken, 'X-EDD-File-Type': 'xlsx'},
                 'acceptedFiles': ".doc,.docx,.pdf,.txt,.xls,.xlsx",
                 'processErrorFn': options.processErrorFn,
                 'processWarningFn': options.processWarningFn,
@@ -711,12 +710,22 @@ export module Utl {
 
             this.dropzone.on('complete', function(file) {
                 var xhr = file.xhr;
+                var dropzone = this;
                 var response = JSON.parse(xhr.response);
                  if (file.status === 'error') {
                     if (response['errors'][0].category === 'ICE-related error') {
-                        file.status = this.QUEUED;
-                        this.options.url = this.options.url + '/?IGNORE_ICE_RELATED_ERRORS';
-                        this.options.processICEerror(this, file, response.errors)
+                        this.removeAllFiles();
+                            if (file.status === Dropzone.ERROR) {
+                                file.status = undefined;
+                                file.accepted = undefined;
+                                // file.xhr.response = undefined;
+                                // file.xhr.reponseText = undefined;
+                            }
+                            this.options.processICEerror(this, file, response.errors);
+                             $('#alert_placeholder').find('.omitStrains').on('click', (ev:any):void => {
+                                 dropzone.options.url = dropzone.options.url + '?IGNORE_ICE_RELATED_ERRORS=true';
+                                 dropzone.addFile(file);
+                             });
                     } else {
                        this.options.processErrorFn(file, xhr);
                     }

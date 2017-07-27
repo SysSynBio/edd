@@ -187,15 +187,15 @@ export module FileDropZone {
         };
 
         processICEerror=(dropzone, type, responses):void => {
-            $('#alert_placeholder').find('.omitStrains').on('click', (ev:JQueryMouseEventObject):boolean => {
-                // Dropzone.processQueue();
-                var myDropzone = Dropzone.forElement("#templateDropZone");
-                myDropzone.processQueue();
-                ev.preventDefault();
-                ev.stopPropagation();
-                $('#iceError').hide();
-                return false;
-            });
+            // $('#alert_placeholder').find('.omitStrains').on('click', (ev:JQueryMouseEventObject):boolean => {
+            //     // Dropzone.processQueue();
+            //     var myDropzone = Dropzone.forElement("#templateDropZone");
+            //     myDropzone.processQueue();
+            //     ev.preventDefault();
+            //     ev.stopPropagation();
+            //     $('#iceError').hide();
+            //     return false;
+            // });
             for (var response of responses) {
                 // create dismissible error alert
                 this.alertIceWarning(response);
