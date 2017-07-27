@@ -225,7 +225,9 @@ module StudyOverview {
             processResponseFn: fileDropZoneHelper.fileReturnedFromServer.bind(fileDropZoneHelper),
             processErrorFn: fileDropZoneHelper.fileErrorReturnedFromServer.bind(fileDropZoneHelper),
             processWarningFn: fileDropZoneHelper.fileWarningReturnedFromServer.bind(fileDropZoneHelper),
-            progressBar: this.fileUploadProgressBar
+            progressBar: this.fileUploadProgressBar,
+            processICEerror: fileDropZoneHelper.processICEerror.bind(fileDropZoneHelper),
+            
         });
 
         Utl.Tabs.prepareTabs();

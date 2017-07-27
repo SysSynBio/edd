@@ -1,4 +1,7 @@
 import { Utl } from "./Utl"
+declare function require(name: string): any;
+
+var Dropzone = require('dropzone');
 
 export module FileDropZone {
 
@@ -94,7 +97,7 @@ export module FileDropZone {
         // This is called upon receiving an error in a file upload operation, and
         // is passed an unprocessed result from the server as a second argument.
 
-        fileErrorReturnedFromServer(fileContainer, xhr):void {
+        fileErrorReturnedFromServer(dropzone, fileContainer, xhr):void {
 
             this.copyActionButtons();
 
@@ -134,8 +137,6 @@ export module FileDropZone {
             parent.find('.omitStrains').on('click', (ev:JQueryMouseEventObject):boolean => {
                 ev.preventDefault();
                 ev.stopPropagation();
-                var f = fileContainer.file;
-                f.sendTo(currentPath.split('overview')[0] + 'describe/?IGNORE_ICE_RELATED_ERRORS=true');
                 $('#iceError').hide();
                 return false;
             });
@@ -183,6 +184,22 @@ export module FileDropZone {
                 }
                 this.alertMessage(key, response[key], div, type)
             }
+        };
+
+        processICEerror=(dropzone, type, responses):void => {
+            $('#alert_placeholder').find('.omitStrains').on('click', (ev:JQueryMouseEventObject):boolean => {
+                // Dropzone.processQueue();
+                var myDropzone = Dropzone.forElement("#templateDropZone");
+                myDropzone.processQueue();
+                ev.preventDefault();
+                ev.stopPropagation();
+                $('#iceError').hide();
+                return false;
+            });
+            for (var response of responses) {
+                // create dismissible error alert
+                this.alertIceWarning(response);
+                }
         };
 
 

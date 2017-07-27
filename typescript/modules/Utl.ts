@@ -690,9 +690,9 @@ export module Utl {
                 'acceptedFiles': ".doc,.docx,.pdf,.txt,.xls,.xlsx",
                 'processErrorFn': options.processErrorFn,
                 'processWarningFn': options.processWarningFn,
-                'processResponseFn': options.processResponseFn
+                'processResponseFn': options.processResponseFn,
+                'processICEerror': options.processICEerror,
             });
-
         }
 
 
@@ -709,7 +709,14 @@ export module Utl {
                 var xhr = file.xhr;
                 var response = JSON.parse(xhr.response);
                  if (file.status === 'error') {
-                    this.options.processErrorFn(file, xhr)
+                    if (response['errors'][0].category === 'ICE-related error') {
+                        file.status = this.QUEUED;
+                        this.options.url = this.options.url + '/?IGNORE_ICE_RELATED_ERRORS';
+                        this.options.processICEerror(this, file, response.errors)
+                    } else {
+                       this.options.processErrorFn(file, xhr);
+                    }
+
                 }
                 if (response.warnings) {
                     this.options.processWarningFn(file, response)
