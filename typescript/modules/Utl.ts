@@ -693,6 +693,10 @@ export module Utl {
                 'processResponseFn': options.processResponseFn,
                 'processICEerror': options.processICEerror,
             });
+
+            $('.cancel').on('click', function() {
+                  this.dropzone.removeAllFiles(true);
+             });
         }
 
 

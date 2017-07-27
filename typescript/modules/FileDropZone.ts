@@ -97,7 +97,7 @@ export module FileDropZone {
         // This is called upon receiving an error in a file upload operation, and
         // is passed an unprocessed result from the server as a second argument.
 
-        fileErrorReturnedFromServer(dropzone, fileContainer, xhr):void {
+        fileErrorReturnedFromServer(fileContainer, xhr):void {
 
             this.copyActionButtons();
 
@@ -175,14 +175,14 @@ export module FileDropZone {
 
         generateMessages=(type, response) => {
             var responseMessages = this.organizeMessages(response);
-            for (var key in response) {
+            for (var key in responseMessages) {
                 let div;
                 if (type === 'error') {
                     div = $('.alert-danger').eq(0).clone();
                 } else {
                     div = $('.alert-warning').eq(0).clone();
                 }
-                this.alertMessage(key, response[key], div, type)
+                this.alertMessage(key, responseMessages[key], div, type)
             }
         };
 
@@ -282,13 +282,13 @@ export module FileDropZone {
                 $(newAlert).children('h4').text("Error! " + subject);
                 this.clearDropZone();
             }
-            messages.forEach(function (m) {
+            for (let m in messages) {
                 var summary = $('<p>', {
-                    text: m,
+                    text: messages[m],
                     class: 'alertWarning',
                 });
                 $(newAlert).append(summary)
-            });
+            };
             $('#alert_placeholder').append(newAlert);
             $(newAlert).show();
         };
