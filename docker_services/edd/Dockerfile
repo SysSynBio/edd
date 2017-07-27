@@ -5,14 +5,9 @@ ARG EDD_VERSION=2.1.0
 ARG GIT_BRANCH=master
 ARG GIT_URL=https://github.com/JBEI/edd.git
 ENV EDD_VERSION=${EDD_VERSION}
-RUN git clone --depth 1 -b ${GIT_BRANCH} ${GIT_URL} /usr/local/edd
-
-# Copy in javascript build instructions
-COPY .bowerrc bower.json Gruntfile.js ./
-RUN bower --allow-root install \
-    && ln -s /usr/local/edd/typescript . \
-    && ln -s /usr/local/edd/main . \
-    && grunt
+RUN git clone --depth 1 -b ${GIT_BRANCH} ${GIT_URL} edd \
+    && cp edd/docker_services/edd/tsconfig.json edd/docker_services/edd/webpack.config.js . \
+    && npm run build
 
 # ---
 
@@ -36,6 +31,7 @@ RUN apt-get clean && apt-get update \
         libpq-dev \
         libsasl2-dev \
         libssl-dev \
+        libyaml-dev \
         netcat \
         postgresql-client \
         python-all \
@@ -56,6 +52,7 @@ COPY requirements.txt /tmp/
 RUN pip install -r /tmp/requirements.txt
 
 # Add Tini
+# Keep for now to maintain backward-compatibility; better to launch with docker run --init
 ENV TINI_VERSION v0.13.2
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
