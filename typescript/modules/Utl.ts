@@ -654,7 +654,7 @@ export module Utl {
                 'url': options.url,
                 'params': {'csrfmiddlewaretoken': this.csrftoken},
                 'maxFilesize': 2,
-                'acceptedFiles': ".doc,.docx,.pdf,.txt,.xls,.xlsx",
+                'acceptedFiles': ".doc,.docx,.pdf,.txt,.xls,.xlsx, .xml",
                 'processErrorFn': options.processErrorFn,
                 'processWarningFn': options.processWarningFn,
                 'processResponseFn': options.processResponseFn,

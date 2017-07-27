@@ -7,8 +7,7 @@ import { EDDGraphingTools } from "../modules/EDDGraphingTools"
 import { EDD_auto } from "../modules/EDDAutocomplete"
 declare var ATData: any; // Setup by the server.
 
-// Doing this bullshit because TypeScript/InternetExplorer do not recognize static methods on Number
-declare var JSNumber: any;
+
 // Type name for the grid of values pasted in
 interface RawInput extends Array<string[]> { }
 // type for the stats generated from parsing input text
@@ -858,7 +857,7 @@ module EDDTableImport {
 
             if (mode === 'biolector' || mode === 'hplc' || mode === 'skyline') {
                 var data: any[], count: number, points: number;
-                data = result.file_data;
+                data = response.file_data;
                 count = data.length;
                 points = data.map((set): number => set.data.length).reduce((acc, n) => acc + n, 0);
                 $('<p>').text(
@@ -1952,25 +1951,15 @@ module EDDTableImport {
                     // Validate the provided set of time/value points
                     rawSet.data.forEach((xy: any[]): void => {
                         var time: number, value: number;
-                        if (!JSNumber.isFinite(xy[0])) {
-                            // Sometimes people - or Excel docs - drop commas into large numbers.
-                            time = parseFloat((xy[0] || '0').replace(/,/g, ''));
-                        } else {
-                            time = <number>xy[0];
-                        }
-                        // If we can't get a usable timestamp, discard this point.
-                        if (JSNumber.isNaN(time)) {
-                            return;
-                        }
-                        if (!xy[1] && <Number>xy[1] !== 0) {
+                        time = +xy[0];
+
+                        if (!xy[1] && +xy[1] !== 0) {
                             // If we're ignoring gaps, skip any undefined/null values.
                             //if (ignoreDataGaps) { return; }    // Note: Forced always-off for now
                             // A null is our standard placeholder value
                             value = null;
-                        } else if (!JSNumber.isFinite(xy[1])) {
-                            value = parseFloat((xy[1] || '').replace(/,/g, ''));
                         } else {
-                            value = <number>xy[1];
+                            value = +xy[1];
                         }
                         if (!times[time]) {
                             times[time] = value;
