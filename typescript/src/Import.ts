@@ -7,7 +7,6 @@ import { EDDGraphingTools } from "../modules/EDDGraphingTools"
 import { EDD_auto } from "../modules/EDDAutocomplete"
 declare var ATData: any; // Setup by the server.
 
-
 // Type name for the grid of values pasted in
 interface RawInput extends Array<string[]> { }
 // type for the stats generated from parsing input text
@@ -693,6 +692,7 @@ module EDDTableImport {
             if (mode === 'std') {
                  $('#prSampleFile').hide();
                 $('#gcmsSampleFile').show();
+                $('#step2textarea').addClass('fd-zone')
             } else {
                 $('#gcmsSampleFile').hide();
             }
