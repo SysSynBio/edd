@@ -1422,8 +1422,7 @@ def utilities_parse_import_file(request):
     file = request.FILES.get('file')
     edd_file_type = request.POST['X_EDD_FILE_TYPE']
     edd_import_mode = request.POST['X_EDD_IMPORT_MODE']
-    print('EDDImPORT MODE', edd_import_mode)
-    print('EDDFILEYTYPE', edd_file_type)
+
     parse_fn = find_parser(edd_import_mode, edd_file_type)
     if parse_fn:
         try:

@@ -629,11 +629,27 @@ export module Utl {
         
         csrftoken: any;
         dropzone:any;
-        
+        stopProcessing: boolean;    // If set, abandon any further action on the file.
+        skipProcessRaw: boolean;    // If set, skip the call to process the dropped file locally.
+        skipUpload: boolean;        // If set, skip the upload to the server (and subsequent call to processResponseFn)
+        allWorkFinished: boolean;   // If set, the file has finished all processing by the FileDropZone class.
+        fileInitFn: any;
+        processRawFn: any
         constructor(options:any) {
 
             this.csrftoken = EDD.findCSRFToken();
-            
+            this.fileInitFn = options.fileInitFn;
+            this.stopProcessing = options.stopProcessing;// If set, abandon any further action
+            // on the file.
+            this.skipProcessRaw= options.skipProcessRaw; // If set, skip the call to process the
+            // dropped file locally.
+            this.skipUpload = options.skipUpload; // If set, skip the upload to the server
+            // (and subsequent call to processResponseFn)
+            this.allWorkFinished = options.allWorkFinished;  // If set, the file has finished
+            // all processing by the FileDropZone class.
+            this.fileInitFn = options.fileInitFn;
+            this.processRawFn = options.processRawFn;
+
             this.dropzone = new Dropzone("div#" + options.elementId, {
                 'url': options.url,
                 'params': {'csrfmiddlewaretoken': this.csrftoken},
@@ -644,7 +660,10 @@ export module Utl {
                 'processResponseFn': options.processResponseFn,
                 'processICEerror': options.processICEerror,
                 'fileInitFn':  options.fileInitFn,
-                'processRawFn': options.processRawFn
+                'processRawFn': options.processRawFn,
+                'stopProcessing': options.stopProcessing,
+                'skipProcessRaw': options.skipProcessRaw,
+                'skipUpload': options.skipUpload
             });
         }
 
@@ -659,7 +678,7 @@ export module Utl {
 
             this.dropzone.on('sending', function(file, xhr, formData) {
                 if (this.options.fileInitFn) {
-                    this.headers = this.options.fileInitFn(file, formData);
+                    this.headers = this.options.fileInitFn(this, file, formData);
                     formData.append('X_EDD_FILE_TYPE', formData["X_EDD_FILE_TYPE"]);
                     formData.append('X_EDD_IMPORT_MODE', formData["X_EDD_IMPORT_MODE"]);
                 }
@@ -684,7 +703,7 @@ export module Utl {
                             $(this).parent().remove();
                             dropzone.options.url = dropzone.options.url +
                                                     '?IGNORE_ICE_RELATED_ERRORS=true';
-                             dropzone.addFile(file);
+                            dropzone.addFile(file);
                         });
                     } else {
                        this.options.processErrorFn(file, xhr);
@@ -692,13 +711,48 @@ export module Utl {
                     return
                 }
                 if (response.warnings) {
-                    this.options.processWarningFn(file, response)
+                    this.options.processWarningFn(file, response);
+                    return
+                }
+                if (typeof(this.options.processResponseFn) === 'function') {
+                    this.options.processResponseFn(this, file, response);
+                    return
                 }
                 if (file.status === 'success' && !response.warnings) {
                     this.options.processResponseFn(file, response)
                 }
             });
         };
+
+        // If processRawFn is defined, we read the entire file into a variable,
+        // then pass that to processRawFn along with the FileDropZoneFileContainer object.
+        // FileDropZoneFileContainer's contents might be modofied - specifically, the flags - so we check them afterwards
+        // to decide how to proceed.
+        callProcessRaw(fileContainer: any) {
+            var t = this;
+            if (typeof this.processRawFn === "function" && !fileContainer.skipProcessRaw) {
+                fileContainer.file.read({
+                    //start: 5,
+                    //end: -10,
+                    //func: 'cp1251',
+                    onDone: function(str) {
+                        t.processRawFn(fileContainer, str);
+                        if (!fileContainer.stopProcessing && !fileContainer.skipUpload) {
+                            t.uploadFile.call(t, fileContainer);
+                        } else {
+                            fileContainer.allWorkFinished = true;
+                        }
+                    },
+                    onError: function(e) {
+                        alert('Failed to read the file! Error: ' + e.fdError)
+                    },
+                    func: 'text'
+                });
+            // No need to check stopProcessing - there's no way it could have been modified since the last step.
+            } else if (!fileContainer.skipUpload) {
+                FileDrop.uploadFile();
+            }
+        }
     }
 
 

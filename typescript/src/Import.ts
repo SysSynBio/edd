@@ -777,7 +777,7 @@ module EDDTableImport {
         // send it to the server, or process it locally.
         // We inform the FileDropZone of our decision by setting flags in the fileContainer object,
         // which will be inspected when this function returns.
-        fileDropped(file, formData): void {
+        fileDropped(fileContainer, file, formData): void {
             this.haveInputData = true;
             processingFileCallback();
             var mode = this.selectMajorKindStep.interpretationMode;
@@ -785,46 +785,46 @@ module EDDTableImport {
             var ft = file.name.split('.');
             formData['X_EDD_FILE_TYPE'] = ft[1];
             // We'll process csv files locally.
-            // if ((ft === 'csv' || ft[1] === 'txt') &&
-            //         (mode === 'std' || mode === 'tr' || mode === 'pr')) {
-            //     fileContainer.skipProcessRaw = false;
-            //     fileContainer.skipUpload = true;
-            // }
+            if ((ft === 'csv' || ft[1] === 'txt') &&
+                    (mode === 'std' || mode === 'tr' || mode === 'pr')) {
+                fileContainer.skipProcessRaw = false;
+                fileContainer.skipUpload = true;
+            }
             // Except for skyline files, which should be summed server-side
-            // else if ((ft === 'csv' || ft === 'txt') && (mode === 'skyline')) {
-            //     fileContainer.skipProcessRaw = true;
-            //     fileContainer.skipUpload = false;
-            // }
+            else if ((ft === 'csv' || ft === 'txt') && (mode === 'skyline')) {
+                fileContainer.skipProcessRaw = true;
+                fileContainer.skipUpload = false;
+            }
             // With Excel documents, we need some server-side tools.
             // We'll signal the dropzone to upload this, and receive processed results.
-            // else if ((ft === 'xlsx') && (mode === 'std' ||
-            //         mode === 'tr' ||
-            //         mode === 'pr' ||
-            //         mode === 'mdv' ||
-            //         mode === 'skyline')) {
-            //     fileContainer.skipProcessRaw = true;
-            //     fileContainer.skipUpload = false;
-            // }
-            // // HPLC reports need to be sent for server-side processing
-            // else if ((ft === 'csv' || ft === 'txt') &&
-            //         (mode === 'hplc')) {
-            //     fileContainer.skipProcessRaw = true;
-            //     fileContainer.skipUpload = false;
-            // }
-            // // Biolector XML also needs to be sent for server-side processing
-            // else if (ft === 'xml' && mode === 'biolector') {
-            //     fileContainer.skipProcessRaw = true;
-            //     fileContainer.skipUpload = false;
-            // }
-            // // By default, skip any further processing
-            // else {
-            //     fileContainer.skipProcessRaw = true;
-            //     fileContainer.skipUpload = true;
-            // }
-            //
-            // if (!fileContainer.skipProcessRaw || !fileContainer.skipUpload) {
-            //     this.showFileDropped(fileContainer);
-            // }
+            else if ((ft === 'xlsx') && (mode === 'std' ||
+                    mode === 'tr' ||
+                    mode === 'pr' ||
+                    mode === 'mdv' ||
+                    mode === 'skyline')) {
+                fileContainer.skipProcessRaw = true;
+                fileContainer.skipUpload = false;
+            }
+            // HPLC reports need to be sent for server-side processing
+            else if ((ft === 'csv' || ft === 'txt') &&
+                    (mode === 'hplc')) {
+                fileContainer.skipProcessRaw = true;
+                fileContainer.skipUpload = false;
+            }
+            // Biolector XML also needs to be sent for server-side processing
+            else if (ft === 'xml' && mode === 'biolector') {
+                fileContainer.skipProcessRaw = true;
+                fileContainer.skipUpload = false;
+            }
+            // By default, skip any further processing
+            else {
+                fileContainer.skipProcessRaw = true;
+                fileContainer.skipUpload = true;
+            }
+            
+            if (!fileContainer.skipProcessRaw || !fileContainer.skipUpload) {
+                this.showFileDropped(fileContainer);
+            }
         }
 
 
@@ -850,7 +850,7 @@ module EDDTableImport {
         // This is called upon receiving a response from a file upload operation, and unlike
         // fileRead() above, is passed a processed result from the server as a second argument,
         // rather than the raw contents of the file.
-        fileReturnedFromServer(fileContainer, result): void {
+        fileReturnedFromServer(fileContainer, result, response): void {
             var mode = this.selectMajorKindStep.interpretationMode;
             // Whether we clear the file info area entirely, or just update its status,
             // we know we no longer need the 'sending' status.
@@ -872,9 +872,9 @@ module EDDTableImport {
                 return;
             }
 
-            if (fileContainer.fileType == "xlsx") {
+            if (response.file_type == "xlsx") {
                 this.clearDropZone();
-                var ws = result.file_data["worksheets"][0];
+                var ws = response.file_data["worksheets"][0];
                 var table = ws[0];
                 var csv = [];
                 if (table.headers) {
