@@ -213,7 +213,6 @@ module StudyOverview {
             }
         });
 
-        this.fileUploadProgressBar = new Utl.ProgressBar('fileUploadProgressBar');
         var fileDropZoneHelper = new FileDropZone.FileDropZoneHelpers({
            pageRedirect: 'experiment-description',
            haveInputData: false,
@@ -225,9 +224,7 @@ module StudyOverview {
             processResponseFn: fileDropZoneHelper.fileReturnedFromServer.bind(fileDropZoneHelper),
             processErrorFn: fileDropZoneHelper.fileErrorReturnedFromServer.bind(fileDropZoneHelper),
             processWarningFn: fileDropZoneHelper.fileWarningReturnedFromServer.bind(fileDropZoneHelper),
-            progressBar: this.fileUploadProgressBar,
             processICEerror: fileDropZoneHelper.processICEerror.bind(fileDropZoneHelper),
-            
         });
 
         Utl.Tabs.prepareTabs();

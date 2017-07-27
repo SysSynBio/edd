@@ -613,71 +613,24 @@ export module Utl {
     }
 
 
-
-    // Used by FileDropZone to pass around additional info for each dropped File object without
-    // messing with the filedrop-min.js internals.
-    export interface FileDropZoneFileContainer {
-        file: any;                  // The file object as created by filedrop-min.js
-        fileType: string;           // A guess at the file's type, expressed as a string, as returned by Utl.JS.guessFileType .
-        extraHeaders:{[id:string]: string}; // Any extra headers to send with the POST to the server.
-
-        progressBar: ProgressBar;   // The ProgressBar object used to track this file.  Can be altered after init by fileInitFn.
-
-        stopProcessing: boolean;    // If set, abandon any further action on the file.
-        skipProcessRaw: boolean;    // If set, skip the call to process the dropped file locally.
-        skipUpload: boolean;        // If set, skip the upload to the server (and subsequent call to processResponseFn)
-        allWorkFinished: boolean;   // If set, the file has finished all processing by the FileDropZone class.
-
-        // This is assigned by FileDropZone when the object is generated, and can be used to correlate the
-        // object with other information elsewhere.  (It is not used internally by FileDropZone.)
-        uniqueIndex: number;
-    }
-
-
-
-    // A class wrapping filedrop-min.js (http://filedropjs.org) and providing some additional structure.
-    // It's initialized with a single 'options' object:
+    // A class wrapping dropzone (http://www.dropzonejs.com/) and providing some additional
+    // structure.
+    // A new dropzone is initialized with a single 'options' object:
     // {
     //  elementId: ID of the element to be set up as a drop zone
-    //  fileInitFn: Called when a file has been dropped, but before any processing has started
-    //  processRawFn: Called when the file content has been read into a local variable, but before any communication with
-    //                the server.
-    //  url: The URL to upload the file.
-    //  progressBar: A ProgressBar object for tracking the upload progress.
-    //  processResponseFn: Called when the server sends back its results.
-    //  processErrorFn: Called as an alternative to processResponseFn if the server reports an error.
+    //  url: url where to send request
+    //  processResponseFn: process success
+    //  processErrorFn: process error result
+    //  processWarningFn: process warning result
+    //  processICEerror: process ice connectivity problem
     // }
-    // All callbacks are given a FileDropZoneFileContainer object as their first argument.
 
-    // TODO:
-    // * Rewrite this with an option to only accept the first file in a dropped set.
-    // * Create a fileContainerGroup object, and a fileContainergGroupIndexCounter, and assign sets of files the same group UID.
-    // * Add a 'cleanup' callback that's called after all files in a group have been uploaded.
     export class FileDropZone {
-
-        zone: any;
+        
         csrftoken: any;
-        elementId: any;
-        url: string;
-        progressBar: ProgressBar;
-
-        fileInitFn: any;
-        processRawFn: any;
-        processResponseFn: any;
-        processErrorFn: any;
-        processWarningFn: any;
         dropzone:any;
-
-
-        static fileContainerIndexCounter: number = 0;
-
-        // If processRawFn is provided, it will be called with the raw file data from the drop zone.
-        // If url is provided and processRawFn returns false (or was not provided) the file will be sent to the given url.
-        // If processResponseFn is provided, it will be called with the returned result of the url call.
-        // If an error occurs, processErrorFn will be called with the result.
+        
         constructor(options:any) {
-
-            this.progressBar = options.progressBar || null;
 
             this.csrftoken = EDD.findCSRFToken();
             
@@ -685,17 +638,14 @@ export module Utl {
                 'url': options.url,
                 'params': {'csrfmiddlewaretoken': this.csrftoken},
                 'maxFilesize': 2,
-                'dicDefaultMessage': 'Drag a file here to upload',
                 'acceptedFiles': ".doc,.docx,.pdf,.txt,.xls,.xlsx",
                 'processErrorFn': options.processErrorFn,
                 'processWarningFn': options.processWarningFn,
                 'processResponseFn': options.processResponseFn,
                 'processICEerror': options.processICEerror,
+                'fileInitFn':  options.fileInitFn,
+                'processRawFn': options.processRawFn
             });
-
-            $('.cancel').on('click', function() {
-                  this.dropzone.removeAllFiles(true);
-             });
         }
 
 
@@ -705,109 +655,51 @@ export module Utl {
             h.uploadFile();
         }
 
-
         uploadFile():void {
 
+            this.dropzone.on('sending', function(file, xhr, formData) {
+                if (this.options.fileInitFn) {
+                    this.headers = this.options.fileInitFn(file, formData);
+                    formData.append('X_EDD_FILE_TYPE', formData["X_EDD_FILE_TYPE"]);
+                    formData.append('X_EDD_IMPORT_MODE', formData["X_EDD_IMPORT_MODE"]);
+                }
+            });
+       
             this.dropzone.on('complete', function(file) {
                 var xhr = file.xhr;
                 var dropzone = this;
                 var response = JSON.parse(xhr.response);
                  if (file.status === 'error') {
+                    //unique class for ice related errors
                     if (response['errors'][0].category === 'ICE-related error') {
+                        //first remove all files
                         this.removeAllFiles();
-                            if (file.status === Dropzone.ERROR) {
-                                file.status = undefined;
-                                file.accepted = undefined;
-                                // file.xhr.response = undefined;
-                                // file.xhr.reponseText = undefined;
-                            }
-                            this.options.processICEerror(this, file, response.errors);
-                             $('#alert_placeholder').find('.omitStrains').on('click', (ev:any):void => {
-                                 dropzone.options.url = dropzone.options.url + '?IGNORE_ICE_RELATED_ERRORS=true';
-                                 dropzone.addFile(file);
-                             });
+                        file.status = undefined;
+                        file.accepted = undefined;
+                        //create alert notification
+                        this.options.processICEerror(this, file, response.errors);
+                        //click handler for omit strains
+                        $('#alert_placeholder').find('.omitStrains').on('click', ():void => {
+                            //remove alert
+                            $(this).parent().remove();
+                            dropzone.options.url = dropzone.options.url +
+                                                    '?IGNORE_ICE_RELATED_ERRORS=true';
+                             dropzone.addFile(file);
+                        });
                     } else {
                        this.options.processErrorFn(file, xhr);
                     }
-
+                    return
                 }
                 if (response.warnings) {
                     this.options.processWarningFn(file, response)
                 }
-                else if (file.status === 'success' && !response.warnings) {
+                if (file.status === 'success' && !response.warnings) {
                     this.options.processResponseFn(file, response)
                 }
             });
         };
-
-
-
-        processFile(fileContainer: FileDropZoneFileContainer) {
-
-            var t = this;
-            var f = fileContainer.file;
-            // If no url has been defined, we have to stop here.
-            if (typeof this.url !== 'string') { fileContainer.allWorkFinished = true; return; }
-
-            // From this point on we assume we're uploading the file,
-            // so we set up the progressBar and callback events before triggering the call to upload.
-            f.event('done', function(xhr) {
-                var result = jQuery.parseJSON(xhr.responseText);
-
-                if (result.python_error) {
-                    // If we were given a function to process the error, use it.
-                    if (typeof t.processErrorFn === "function") {
-                        t.processErrorFn(fileContainer, xhr);
-                    } else {
-                        alert(result.python_error);
-                    }
-                } else if (result.warnings) {
-                    t.processWarningFn(fileContainer, result);
-                } else if (typeof t.processResponseFn === "function") {
-                    t.processResponseFn(fileContainer, result);
-                }
-                fileContainer.allWorkFinished = true;
-            });
-
-            f.event('error', function(e, xhr) {
-                if (typeof t.processErrorFn === "function") {
-                    t.processErrorFn(fileContainer, xhr);
-                }
-                fileContainer.allWorkFinished = true;
-            });
-
-
-
-            f.event('xhrSetup', function(xhr) {
-                // This ensures that the CSRF middleware in Django doesn't reject our HTTP request.
-                xhr.setRequestHeader("X-CSRFToken", t.csrftoken);
-                // We want to pass along our own guess at the file type, since it's based on a more specific set of criteria.
-                xhr.setRequestHeader('X-EDD-File-Type', fileContainer.fileType);
-
-                $.each(fileContainer.extraHeaders, (name: string, value: string): void => {
-                    xhr.setRequestHeader('X-EDD-' + name, value)
-                });
-
-            });
-
-            f.event('sendXHR', function() {
-                if (fileContainer.progressBar) {
-                    fileContainer.progressBar.setProgress(0);
-                }
-            });
-
-            // Update progress when browser reports it:
-            f.event('progress', function(current, total) {
-                if (fileContainer.progressBar) {
-                    var width = current / total * 100;
-                    fileContainer.progressBar.setProgress(width);
-                }
-            });
-
-            // f.sendTo(this.url);
-        }
     }
-
 
 
     // SVG-related utilities.

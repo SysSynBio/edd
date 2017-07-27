@@ -614,15 +614,13 @@ module EDDTableImport {
             $('#transpose').on('change', this.clickedOnTranspose.bind(this));
             $('#resetstep2').on('click', this.reset.bind(this));
 
-            this.fileUploadProgressBar = new Utl.ProgressBar('fileUploadProgressBar');
 
             Utl.FileDropZone.create({
-                elementId: "step2textarea",
+                elementId: "importDropZone",
                 fileInitFn: this.fileDropped.bind(this),
                 processRawFn: this.fileRead.bind(this),
                 url: "/utilities/parsefile/",
                 processResponseFn: this.fileReturnedFromServer.bind(this),
-                progressBar: this.fileUploadProgressBar
             });
 
             this.processingFileCallback = processingFileCallback;
@@ -777,55 +775,56 @@ module EDDTableImport {
 
         // Here, we take a look at the type of the dropped file and decide whether to
         // send it to the server, or process it locally.
-        // We inform the FileDropZone of our decision by setting flags in the fileContiner object,
+        // We inform the FileDropZone of our decision by setting flags in the fileContainer object,
         // which will be inspected when this function returns.
-        fileDropped(fileContainer): void {
+        fileDropped(file, formData): void {
             this.haveInputData = true;
             processingFileCallback();
             var mode = this.selectMajorKindStep.interpretationMode;
-            fileContainer.extraHeaders['Import-Mode'] = mode;
-            var ft = fileContainer.fileType;
+            formData['X_EDD_IMPORT_MODE'] = mode;
+            var ft = file.name.split('.');
+            formData['X_EDD_FILE_TYPE'] = ft[1];
             // We'll process csv files locally.
-            if ((ft === 'csv' || ft === 'txt') &&
-                    (mode === 'std' || mode === 'tr' || mode === 'pr')) {
-                fileContainer.skipProcessRaw = false;
-                fileContainer.skipUpload = true;
-            }
+            // if ((ft === 'csv' || ft[1] === 'txt') &&
+            //         (mode === 'std' || mode === 'tr' || mode === 'pr')) {
+            //     fileContainer.skipProcessRaw = false;
+            //     fileContainer.skipUpload = true;
+            // }
             // Except for skyline files, which should be summed server-side
-            else if ((ft === 'csv' || ft === 'txt') && (mode === 'skyline')) {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
+            // else if ((ft === 'csv' || ft === 'txt') && (mode === 'skyline')) {
+            //     fileContainer.skipProcessRaw = true;
+            //     fileContainer.skipUpload = false;
+            // }
             // With Excel documents, we need some server-side tools.
             // We'll signal the dropzone to upload this, and receive processed results.
-            else if ((ft === 'xlsx') && (mode === 'std' ||
-                    mode === 'tr' ||
-                    mode === 'pr' ||
-                    mode === 'mdv' ||
-                    mode === 'skyline')) {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // HPLC reports need to be sent for server-side processing
-            else if ((ft === 'csv' || ft === 'txt') &&
-                    (mode === 'hplc')) {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // Biolector XML also needs to be sent for server-side processing
-            else if (ft === 'xml' && mode === 'biolector') {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // By default, skip any further processing
-            else {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = true;
-            }
-
-            if (!fileContainer.skipProcessRaw || !fileContainer.skipUpload) {
-                this.showFileDropped(fileContainer);
-            }
+            // else if ((ft === 'xlsx') && (mode === 'std' ||
+            //         mode === 'tr' ||
+            //         mode === 'pr' ||
+            //         mode === 'mdv' ||
+            //         mode === 'skyline')) {
+            //     fileContainer.skipProcessRaw = true;
+            //     fileContainer.skipUpload = false;
+            // }
+            // // HPLC reports need to be sent for server-side processing
+            // else if ((ft === 'csv' || ft === 'txt') &&
+            //         (mode === 'hplc')) {
+            //     fileContainer.skipProcessRaw = true;
+            //     fileContainer.skipUpload = false;
+            // }
+            // // Biolector XML also needs to be sent for server-side processing
+            // else if (ft === 'xml' && mode === 'biolector') {
+            //     fileContainer.skipProcessRaw = true;
+            //     fileContainer.skipUpload = false;
+            // }
+            // // By default, skip any further processing
+            // else {
+            //     fileContainer.skipProcessRaw = true;
+            //     fileContainer.skipUpload = true;
+            // }
+            //
+            // if (!fileContainer.skipProcessRaw || !fileContainer.skipUpload) {
+            //     this.showFileDropped(fileContainer);
+            // }
         }
 
 

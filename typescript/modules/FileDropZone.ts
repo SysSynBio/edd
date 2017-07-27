@@ -187,15 +187,12 @@ export module FileDropZone {
         };
 
         processICEerror=(dropzone, type, responses):void => {
-            // $('#alert_placeholder').find('.omitStrains').on('click', (ev:JQueryMouseEventObject):boolean => {
-            //     // Dropzone.processQueue();
-            //     var myDropzone = Dropzone.forElement("#templateDropZone");
-            //     myDropzone.processQueue();
-            //     ev.preventDefault();
-            //     ev.stopPropagation();
-            //     $('#iceError').hide();
-            //     return false;
-            // });
+            $('.noDuplicates, .noOmitStrains').on('click', (ev:JQueryMouseEventObject):boolean => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                window.location.reload();
+                return false;
+            });
             for (var response of responses) {
                 // create dismissible error alert
                 this.alertIceWarning(response);
@@ -218,23 +215,12 @@ export module FileDropZone {
         organizeMessages=(responses)=>{
             var obj = {};
             for (var response of responses) {
-                if (response.category === "ICE-related error") {
-                    // create dismissible error alert
-                    this.alertIceWarning(response);
-                } else if (response.summary === "Duplicate assay names in the input" || response.summary === "Duplicate " +
-                    "line names in the input") {
-                    if ($('#duplicateError').length === 1) {
-                        this.alertDuplicateError(response);
-                    }
-                }
-                else {
-                    var message = response.summary + ": " + response.details;
+                var message = response.summary + ": " + response.details;
 
-                    if (obj.hasOwnProperty(response.category)) {
-                        obj[response.category].push(message);
-                    } else {
-                        obj[response.category] = [message]
-                    }
+                if (obj.hasOwnProperty(response.category)) {
+                    obj[response.category].push(message);
+                } else {
+                    obj[response.category] = [message]
                 }
             };
             return obj;
@@ -254,12 +240,6 @@ export module FileDropZone {
             response.category = "Warning! " + response.category;
             this.createAlertMessage(iceError, response);
         };
-
-        alertDuplicateError=(response):void => {
-            var duplicateElem = $('#duplicateError');
-            this.createAlertMessage(duplicateElem, response)
-        };
-
 
         alertError=(response):void => {
             var newErrorAlert = $('.alert-danger').eq(0).clone();

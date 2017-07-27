@@ -41,7 +41,6 @@ module StudyLines {
     // switching back and forth between positions that might trigger resize events.
     export var actionPanelIsInBottomBar;
     export var actionPanelIsCopied = false;
-    export var fileUploadProgressBar: Utl.ProgressBar;
 
 
     // Called when the page loads.
@@ -68,8 +67,7 @@ module StudyLines {
 
         linesActionPanelRefreshTimer = null;
         positionActionsBarTimer = null;
-
-        this.fileUploadProgressBar = new Utl.ProgressBar('fileUploadProgressBar');
+        
         var fileDropZoneHelper = new FileDropZone.FileDropZoneHelpers({
            pageRedirect: '',
            haveInputData: false,
@@ -81,12 +79,12 @@ module StudyLines {
             processResponseFn: fileDropZoneHelper.fileReturnedFromServer.bind(fileDropZoneHelper),
             processErrorFn: fileDropZoneHelper.fileErrorReturnedFromServer.bind(fileDropZoneHelper),
             processWarningFn: fileDropZoneHelper.fileWarningReturnedFromServer.bind(fileDropZoneHelper),
-            progressBar: this.fileUploadProgressBar
+            progressBar: this.fileUploadProgressBar,
+            processICEerror: fileDropZoneHelper.processICEerror.bind(fileDropZoneHelper),
         });
 
+        //create drag events for dropzone
         $('#content').on('dragover', function(e:any) {
-            e.stopPropagation();
-            e.preventDefault();
             $(".linesDropZone").removeClass('off');
         });
         $('#content').on('dragend, dragleave, mouseleave', function(e:any) {

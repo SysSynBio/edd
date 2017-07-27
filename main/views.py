@@ -1419,15 +1419,17 @@ def utilities_parse_import_file(request):
 
     # The Utl.JS.guessFileType() function in Utl.ts applies logic like this to guess the type, and
     # that guess is sent along in a custom header:
-    edd_file_type = request.META.get(FILE_TYPE_HEADER)
-    edd_import_mode = request.META.get('HTTP_X_EDD_IMPORT_MODE')
-
+    file = request.FILES.get('file')
+    edd_file_type = request.POST['X_EDD_FILE_TYPE']
+    edd_import_mode = request.POST['X_EDD_IMPORT_MODE']
+    print('EDDImPORT MODE', edd_import_mode)
+    print('EDDFILEYTYPE', edd_file_type)
     parse_fn = find_parser(edd_import_mode, edd_file_type)
     if parse_fn:
         try:
             with tempfile.TemporaryFile() as temp:
                 # write the request upload to a "real" stream buffer
-                temp.write(request.read())
+                temp.write(file.read())
                 temp.seek(0)
                 result = parse_fn(temp)
             return JsonResponse({
