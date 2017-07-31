@@ -1,9 +1,6 @@
 // This file contains various utility classes under the Utl module.
-// import * as Dropzone from "dropzone"
-
-
 declare function require(name: string): any;
-
+//load dropzone module
 var Dropzone = require('dropzone');
 
 export module Utl {
@@ -619,18 +616,17 @@ export module Utl {
     // {
     //  elementId: ID of the element to be set up as a drop zone
     //  url: url where to send request
-    //  processResponseFn: process success
-    //  processErrorFn: process error result
-    //  processWarningFn: process warning result
-    //  processICEerror: process ice connectivity problem
+    //  processResponseFn: process success return from server
+    //  processErrorFn: process error result return from server for experiment description
+    //  processWarningFn: process warning result return from server for experiment description
+    //  processICEerror: process ice connectivity problem for experiment description
+    //  fileInitFn: preprocess for import
     // }
 
     export class FileDropZone {
         
         csrftoken: any;
         dropzone:any;
-        stopProcessing: boolean;    // If set, abandon any further action on the file.
-        skipProcessRaw: boolean;    // If set, skip the call to process the dropped file locally.
         skipUpload: boolean;        // If set, skip the upload to the server (and subsequent call to processResponseFn)
         allWorkFinished: boolean;   // If set, the file has finished all processing by the FileDropZone class.
         fileInitFn: any;
@@ -639,10 +635,6 @@ export module Utl {
 
             this.csrftoken = EDD.findCSRFToken();
             this.fileInitFn = options.fileInitFn;
-            this.stopProcessing = options.stopProcessing;// If set, abandon any further action
-            // on the file.
-            this.skipProcessRaw= options.skipProcessRaw; // If set, skip the call to process the
-            // dropped file locally.
             this.skipUpload = options.skipUpload; // If set, skip the upload to the server
             // (and subsequent call to processResponseFn)
             this.allWorkFinished = options.allWorkFinished;  // If set, the file has finished
@@ -658,10 +650,7 @@ export module Utl {
                 'processWarningFn': options.processWarningFn,
                 'processResponseFn': options.processResponseFn,
                 'processICEerror': options.processICEerror,
-                'fileInitFn':  options.fileInitFn,
-                'stopProcessing': options.stopProcessing,
-                'skipProcessRaw': options.skipProcessRaw,
-                'skipUpload': options.skipUpload
+                'fileInitFn':  options.fileInitFn
             });
         }
 
@@ -674,8 +663,9 @@ export module Utl {
         uploadFile():void {
 
             this.dropzone.on('sending', function(file, xhr, formData) {
+                //for import
                 if (this.options.fileInitFn) {
-                    this.headers = this.options.fileInitFn(this, file, formData);
+                    this.headers = this.options.fileInitFn(file, formData);
                     this.fileType = formData["X_EDD_FILE_TYPE"];
                     formData.append('X_EDD_FILE_TYPE', this.fileType);
                     formData.append('X_EDD_IMPORT_MODE', formData["X_EDD_IMPORT_MODE"]);
@@ -689,7 +679,6 @@ export module Utl {
                     // If we were given a function to process the error, use it.
                         alert(response.python_error);
                 }
-                // this.options.processRawFn(this);
                 else if (file.status === 'error') {
                     // unique class for ice related errors
                     if (response['errors'][0].category === 'ICE-related error') {
@@ -750,7 +739,6 @@ export module Utl {
             var bottomY:number = Math.floor(yCoord + lineHeight/2);
             var midX:number = Math.floor(xCoord + halfWidth);
             var el = SVG.createLine( midX, topY, midX, bottomY, color, lineWidth);
-            //$(el).css('stroke-linecap', 'round');
 
             if (svgElement)
                 svgElement.appendChild(el);

@@ -1,5 +1,3 @@
-/// <reference path="typescript-declarations.d.ts" />
-
 import { EDDATDGraphing } from "../modules/AssayTableDataGraphing"
 import { Utl } from "../modules/Utl"
 import { EDDAuto } from "../modules/EDDAutocomplete"
@@ -651,7 +649,6 @@ module EDDTableImport {
                 $('#gcmsSampleFile').hide();
                 //show example biolector file
                 $('#biolectorFile').show();
-                $('#prSampleFile').hide();
                 // It is also expected to be dropped from a file.
                 // So either we're already in file mode and there are already parsed sets available,
                 // Or we are in text entry mode waiting for a file drop.
@@ -666,7 +663,6 @@ module EDDTableImport {
                 // HPLC data is expected as a text file.
                 $('#step2textarea').addClass('text');
                 $('#hplcExample').show();
-                $('#prSampleFile').hide();
                 $('#gcmsSampleFile').hide();
                 this.nextStepCallback();
                 return;
@@ -774,11 +770,8 @@ module EDDTableImport {
         }
 
 
-        // Here, we take a look at the type of the dropped file and decide whether to
-        // send it to the server, or process it locally.
-        // We inform the FileDropZone of our decision by setting flags in the fileContainer object,
-        // which will be inspected when this function returns.
-        fileDropped(fileContainer, file, formData): void {
+        // Here, we take a look at the type of the dropped file and add extra headers
+        fileDropped(file, formData): void {
             this.haveInputData = true;
             processingFileCallback();
             var mode = this.selectMajorKindStep.interpretationMode;
@@ -786,42 +779,6 @@ module EDDTableImport {
             var ft = file.name.split('.');
             ft = ft[1];
             formData['X_EDD_FILE_TYPE'] = ft;
-            // We'll process csv files locally.
-            if ((ft === 'csv' || ft === 'txt') &&
-                    (mode === 'std' || mode === 'tr')) {
-                fileContainer.skipProcessRaw = false;
-                fileContainer.skipUpload = true;
-            }
-            // Except for skyline files, which should be summed server-side
-            else if ((ft === 'csv' || ft === 'txt') && (mode === 'skyline')) {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // With Excel documents, we need some server-side tools.
-            // We'll signal the dropzone to upload this, and receive processed results.
-            else if ((ft === 'xlsx') && (mode === 'std' ||
-                    mode === 'tr' ||
-                    mode === 'mdv' ||
-                    mode === 'skyline')) {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // HPLC reports need to be sent for server-side processing
-            else if ((ft === 'csv' || ft === 'txt') &&
-                    (mode === 'hplc')) {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // Biolector XML also needs to be sent for server-side processing
-            else if (ft === 'xml' && mode === 'biolector') {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // By default, skip any further processing
-            else {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = true;
-            }
         }
 
         // This is called upon receiving a response from a file upload operation, and unlike
@@ -829,9 +786,6 @@ module EDDTableImport {
         // rather than the raw contents of the file.
         fileReturnedFromServer(fileContainer, result, response): void {
             var mode = this.selectMajorKindStep.interpretationMode;
-            // Whether we clear the file info area entirely, or just update its status,
-            // we know we no longer need the 'sending' status.
-            $('#fileDropInfoSending').addClass('off');
 
             if (mode === 'biolector' || mode === 'hplc' || mode === 'skyline') {
                 var data: any[], count: number, points: number;
@@ -840,7 +794,7 @@ module EDDTableImport {
                 points = data.map((set): number => set.data.length).reduce((acc, n) => acc + n, 0);
                 $('<p>').text(
                     'Found ' + count + ' measurements with ' + points + ' total data points.'
-                ).appendTo($("#fileDropInfoLog"));
+                ).appendTo($(".dz-preview"));
                 this.processedSetsFromFile = data;
                 this.processedSetsAvailable = true;
                 this.processingFile = false;
