@@ -302,7 +302,7 @@ class StudyDetailBaseView(StudyObjectMixin, generic.DetailView):
         context = self.get_context_data(object=self.object, action=action, request=request)
         can_write = self.object.user_can_write(request.user)
         action_lookup = self.get_actions(can_write=can_write)
-        action_fn = action_lookup.get(action)
+        action_fn = action_lookup[action]
         view_or_valid = action_fn(request, context, *args, **kwargs)
         if type(view_or_valid) == bool:
             # boolean means a response to same page, with flag noting whether form was valid
@@ -800,7 +800,7 @@ class StudyDetailView(StudyDetailBaseView):
         measures = Measurement.objects.filter(
             Q(assay_id__in=assay_ids) | Q(id__in=measure_ids),
         ).select_related(
-            'assay__line', 'assay__protocol__name', 'measurement_type',
+            'assay__line', 'assay__protocol', 'measurement_type',
         ).order_by(
             'assay__line_id', 'assay_id',
         ).prefetch_related(
@@ -1371,7 +1371,7 @@ def study_describe_experiment(request, pk=None, slug=None):
     # detect the input format
     file = request.FILES.get('file')
 
-    logger.info('Parsing request body as JSON input')
+    logger.info('Parsing file')
 
     # attempt the import
     importer = CombinatorialCreationImporter(study, user)
@@ -1428,7 +1428,7 @@ def utilities_parse_import_file(request):
         try:
             with tempfile.TemporaryFile() as temp:
                 # write the request upload to a "real" stream buffer
-                temp.write(file.read())
+                temp.write(file)
                 temp.seek(0)
                 result = parse_fn(temp)
             return JsonResponse({

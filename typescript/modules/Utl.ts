@@ -60,7 +60,7 @@ export module Utl {
             if (jQuery.cookie) {
                 return jQuery.cookie('csrftoken');
             }
-            return <string>jQuery('input[name=csrfmiddlewaretoken]').val() || '';
+            return jQuery('input[name=csrfmiddlewaretoken]').val() || '';
         }
 
 
@@ -157,13 +157,17 @@ export module Utl {
                 var activeTabEls = activeTabs.get();
 
                 if (targetTabContentID) {
-                    activeTabs.each((i, tab) => {
-                        var contentId = $(tab).attr('for');
-                        if (contentId) {
-                            $(document.getElementById(contentId)).addClass('off');
+                    // Hide the content section for whatever tabs were active, then show the one selected
+                    for ( var i = 0; i < activeTabEls.length; i++ ) {
+                        var a = activeTabEls[i];
+                        var tabContentID = $(a).attr('for');
+                        if (tabContentID) {
+                            $('#'+tabContentID).addClass('off');
                         }
-                    });
-                    $(document.getElementById(targetTabContentID)).removeClass('off');
+                    }
+                    $('#'+targetTabContentID).removeClass('off');
+                }
+            });
         }
     }
 
@@ -185,11 +189,14 @@ export module Utl {
 
                 if (targetButtonContentID) {
                     // Hide the content section for whatever buttons were active, then show the one selected
-                    activeButtons.each((i, button) => {
-                        var contentId = $(button).attr('for');
-                        if (contentId) {
-                            $(document.getElementById(contentId)).addClass('off');
+                    for ( var i = 0; i < activeButtonEls.length; i++ ) {
+                        var a = activeButtonEls[i];
+                        var ButtonContentID = $(a).attr('for');
+                        if (ButtonContentID) {
+                            $('#'+ButtonContentID).addClass('off');
                         }
+                    }
+                    $('#'+targetButtonContentID).removeClass('off');
                 }
             });
         }
@@ -197,8 +204,10 @@ export module Utl {
 
 
     export class QtipHelper {
+        public create(linkElement, contentFunction, params:any):void {
 
             params.position.target = $(linkElement);
+            params.position.viewport = $(window);   // This makes it position itself to fit inside the browser window.
 
             this._contentFunction = contentFunction;
 
@@ -209,10 +218,14 @@ export module Utl {
             this.qtip = $(linkElement).qtip(params);
         }
 
-            // It's incredibly stupid that we have to do this to work around qtip2's 280px
-            // max-width default. We have to do it here rather than immediately after calling
-            // qtip() because qtip waits to create the actual element.
-            $(this._getQTipElement()).css('max-width', 'none').css('width', 'auto');
+        private _generateContent():any {
+            // It's incredibly stupid that we have to do this to work around qtip2's 280px max-width default.
+            // We have to do it here rather than immediately after calling qtip() because qtip waits to create
+            // the actual element.
+            var q = this._getQTipElement();
+            $(q).css('max-width', 'none');
+            $(q).css('width', 'auto');
+
             return this._contentFunction();
         }
 
@@ -264,20 +277,30 @@ export module Utl {
             );
         }
 
+        static toString(clr:any) : string {
             // If it's something else (like a string) already, just return that value.
             if (typeof clr == 'string')
                 return clr;
 
+            return 'rgba(' + Math.floor(clr.r) + ', ' + Math.floor(clr.g) + ', ' + Math.floor(clr.b) + ', ' + clr.a/255 + ')';
         }
 
+        toString() : string {
+            return 'rgba(' + Math.floor(this.r) + ', ' + Math.floor(this.g) + ', ' + Math.floor(this.b) + ', ' + this.a/255 + ')';
         }
 
+        static red = Color.rgb(255,0,0);
+        static green = Color.rgb(0,255,0);
+        static blue = Color.rgb(0,0,255);
+        static black = Color.rgb(0,0,0);
+        static white = Color.rgb(255,255,255);
 
-    };
+    }
 
 
     export class Table {
 
+        constructor(tableID:string, width?:number, height?:number) {
             this.table = document.createElement('table');
             this.table.id = tableID;
 
@@ -288,12 +311,16 @@ export module Utl {
                 $(this.table).css('height', height);
         }
 
+        addRow():HTMLTableRowElement {
+            var row = this.table.insertRow(-1);
             this._currentRow++;
-            return this.table.insertRow(-1);
+            return <HTMLTableRowElement>row;
         }
 
-        addColumn(): HTMLElement {
-            return this.table.rows.item(this._currentRow - 1).insertCell(-1);
+        addColumn():HTMLElement {
+            var row:HTMLTableRowElement = <HTMLTableRowElement>this.table.rows[this._currentRow-1];
+            var column:HTMLElement = row.insertCell(-1);
+            return column;
         }
 
         // When you're done setting up the table, add it to another element.
@@ -312,6 +339,7 @@ export module Utl {
         // This assumes that str has only one root element.
         // It also breaks for elements that need to be nested under other specific element types,
         // e.g. if you attempt to create a <td> you will be handed back a <div>.
+        static createElementFromString(str:string, namespace:string = null):HTMLElement {
 
             var div;
             if (namespace)
@@ -325,6 +353,7 @@ export module Utl {
         }
 
 
+        static assert(condition:boolean, message:string):void {
             if (!condition) {
                 message = message || "Assertion failed";
                 if (typeof Error !== 'undefined') throw Error(message);
@@ -333,12 +362,17 @@ export module Utl {
         }
 
 
+        static convertHashToList(hash:any):any {
+            return Object.keys(hash).map( function(a) {return hash[a];} );
         }
 
 
         // Returns a string of length numChars, padding the right side
         // with spaces if str is shorter than numChars.
         // Will truncate if the string is longer than numChars.
+        static padStringLeft(str:string, numChars:number):string {
+            var startLen:number = str.length;
+            for (var i=startLen; i < numChars; i++)
                 str += ' ';
 
             return str.slice(0, numChars);
@@ -347,7 +381,9 @@ export module Utl {
 
         // Returns a string of length numChars, padding the left side
         // with spaces if str is shorter than numChars.
+        static padStringRight(str:string, numChars:number):string {
             var padStr = "";
+            for (var i=0; i < numChars; i++)
                 padStr += " ";
 
             return (padStr + str).slice(-numChars);
@@ -355,6 +391,9 @@ export module Utl {
 
 
         // Make a string by repeating the specified string N times.
+        static repeatString(str:string, numChars:number):string {
+            var ret:string = "";
+            for (var i:number=0; i < numChars; i++)
                 ret += str;
 
             return ret;
@@ -362,6 +401,7 @@ export module Utl {
 
 
         // Convert a size provided in bytes to a nicely formatted string
+        static sizeToString(size:number, allowBytes?:boolean):string {
 
             var tb = size / (1024 * 1024 * 1024 * 1024);
             if ((tb > 1) || (tb < -1)) {
@@ -386,6 +426,7 @@ export module Utl {
         // -1 : Print as a full float
         //  0 : Print as an int, ALWAYS rounded down.
         // +n : Print with n decimal places, UNLESS the value is an integer
+        static nicelyPrintFloat(v:number, places:number):string {
             // We do not want to display ANY decimal point if the value is an integer.
             if (v % 1 === 0) {  // Basic integer test
                 return (v % 1).toString();
@@ -399,14 +440,17 @@ export module Utl {
         }
 
 
+        // Given a file name (n) and a file type string (t), try and guess what kind of file we've got.
         static guessFileType(n: string, t: string): string {
             // Going in order from most confident to least confident guesses:
             if (t.indexOf('officedocument.spreadsheet') >= 0) { return 'xlsx'; }
             if (t === 'text/csv') { return 'csv'; }
             if (t === 'text/xml') { return 'xml'; }
+            if ((n.indexOf('.xlsx', n.length - 5) !== -1) || (n.indexOf('.xls', n.length - 4) !== -1)) { return 'xlsx'; }
             if (n.indexOf('.xml', n.length - 4) !== -1) { return 'xml'; }
             if (t === 'text/plain') { return 'txt'; }
             if (n.indexOf('.txt', n.length - 4) !== -1) { return 'txt'; }
+            // If all else fails, assume it's a csv file.  (So, any extension that's not tried above, or no extension.)
             return 'csv';
         }
 
@@ -415,19 +459,64 @@ export module Utl {
         // based on zero being midnight of Jan 1, 1970 (standard old-school POSIX time),
         // return a string formatted in the manner of "Dec 21 2012, 11:45am",
         // with exceptions for 'Today' and 'Yesterday', e.g. "Yesterday, 3:12pm".
+        static timestampToTodayString(timestamp:number):string {
+
+            // Code adapted from Perl's HTTP-Date
+            //var DoW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            var MoY = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
             if (!timestamp || timestamp < 1) {
                 return '<span style="color:#888;">N/A</span>';
             }
 
+            var t = new Date(Math.round(timestamp*1000));
+            var n = new Date();
+            var now = n.getTime();
+
+            var sec = t.getSeconds();
+            var min:any = t.getMinutes();   // Type "any" so we can add a leading zero
+            var hour = t.getHours();
+            var mday = t.getDate();     // Returns the day of the month (from 1-31)
+            var mon = t.getMonth();     // Returns the month (from 0-11)
+            var year = t.getFullYear(); // Returns the year (four digits)
+            var wday = t.getDay();      // Returns the day of the week (from 0-6)
+
+            var nsec = n.getSeconds();
+            var nmin = n.getMinutes();
+            var nhour = n.getHours();
+            var nmday = n.getDate();
+            var nmon = n.getMonth();
+            var nyear = n.getFullYear();
+            var nwday = n.getDay();
+
+            var day_str;
+
+            if ((year == nyear) && (mon == nmon) && (mday == nmday)) {
                 day_str = 'Today';
+            } else if (     (now - (nsec + (60*(nmin+(60*(nhour+24)))))) ==     // Now's day component minus a day
+                      (timestamp - (sec  + (60*(min +(60* hour     ))))))    {  // Timestamp's day component
                 day_str = 'Yesterday';
             } else {
+                var year_str = '';
+                if (year != nyear) {
+                    year_str = ' ' + year;
+                }
+                day_str = MoY[mon] + ' ' + mday + year_str;
             }
 
+            var half_day = 'am';
+            if (hour > 11) {half_day = 'pm';}
+            if (hour > 12) {hour -= 12;}
+            else if (hour == 0) {hour = 12;}
+            if (min < 9) {min = '0'+min;}
+
+            return day_str + ', ' + hour + ':' + min + half_day;
         }
 
 
+        static utcToTodayString(utc:string):string {
+            var m:any[];
+            var timestamp:number;
             m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.?(\d{1,6})?Z$/.exec(utc);
             if (m) {
                 m.shift(); // get rid of overall match, we don't care
@@ -442,6 +531,8 @@ export module Utl {
 
 
         // Remap a value from [inMin, inMax] to [outMin, outMax]
+        static remapValue(value:number, inMin:number, inMax:number, outMin:number, outMax:number):number {
+            var delta:number = inMax - inMin;
 
             // If they've given us a tiny input range, then we can't really parameterize
             // into the range, so let's just return halfway between the outputs.
@@ -480,77 +571,110 @@ export module Utl {
     }
 
 
-
-    // A progress bar with a range from 0 to 100 percent.
-    export class ProgressBar {
-
-        element: HTMLElement;
-
-
-        constructor(id: string, parentElement?: HTMLElement) {
-            var b: HTMLElement;
-            if (parentElement) {
-                b = $('<progress>').appendTo(parentElement)[0];
-                b.id = id;
-            } else {
-                b = document.getElementById(id);
-            }
-            b.innerHTML = '0% complete';
-            b.setAttribute('min', '0');
-            b.setAttribute('max', '100');
-            b.setAttribute('value', '0');
-            b.className = 'off';
-            this.element = b;
-        }
-
-
-        // Sets the progress bar from 0 to 100 percent, or no value to disable.
-        // Also shows the spinny wait icon if the progress bar is set to a value other than 100.
-        setProgress(percentage?: number) {
-            var b = this.element;
-            if (typeof (percentage) === 'undefined') {
-                b.innerHTML = '0% complete';
-                b.setAttribute('value', '0');
-                b.className = 'off';
-            } else {
-                b.innerHTML = percentage + '% complete';
-                b.setAttribute('value', percentage.toString());
-                b.className = '';
-            }
-        }
-    }
-
-
+ // A class wrapping dropzone (http://www.dropzonejs.com/) and providing some additional
+    // structure.
+    // A new dropzone is initialized with a single 'options' object:
     // {
     //  elementId: ID of the element to be set up as a drop zone
+    //  url: url where to send request
+    //  processResponseFn: process success return from server
+    //  processErrorFn: process error result return from server for experiment description
+    //  processWarningFn: process warning result return from server for experiment description
+    //  processICEerror: process ice connectivity problem for experiment description
+    //  fileInitFn: preprocess for import
     // }
 
     export class FileDropZone {
 
         csrftoken: any;
+        dropzone:any;
+        skipUpload: boolean;        // If set, skip the upload to the server (and subsequent call to processResponseFn)
+        allWorkFinished: boolean;   // If set, the file has finished all processing by the FileDropZone class.
         fileInitFn: any;
 
+        constructor(options:any) {
 
             this.csrftoken = EDD.findCSRFToken();
             this.fileInitFn = options.fileInitFn;
+            this.skipUpload = options.skipUpload; // If set, skip the upload to the server
+            // (and subsequent call to processResponseFn)
+            this.allWorkFinished = options.allWorkFinished;  // If set, the file has finished
+            // all processing by the FileDropZone class.
+            this.fileInitFn = options.fileInitFn;
 
+            this.dropzone = new Dropzone("div#" + options.elementId, {
+                'url': options.url,
+                'params': {'csrfmiddlewaretoken': this.csrftoken},
+                'maxFilesize': 2,
+                'acceptedFiles': ".doc,.docx,.pdf,.txt,.xls,.xlsx, .xml, .csv",
+                'processErrorFn': options.processErrorFn,
+                'processWarningFn': options.processWarningFn,
+                'processResponseFn': options.processResponseFn,
+                'processICEerror': options.processICEerror,
+                'fileInitFn':  options.fileInitFn
+            });
+        }
 
         // Helper function to create and set up a FileDropZone.
         static create(options:any): void {
             var h = new FileDropZone(options);
+            h.uploadFile();
         }
 
+        uploadFile():void {
 
+            this.dropzone.on('sending', function(file, xhr, formData) {
+                //for import
+                if (this.options.fileInitFn) {
+                    this.headers = this.options.fileInitFn(file, formData);
+                    this.fileType = formData["X_EDD_FILE_TYPE"];
+                    formData.append('X_EDD_FILE_TYPE', this.fileType);
+                    formData.append('X_EDD_IMPORT_MODE', formData["X_EDD_IMPORT_MODE"]);
+                }
             });
+            this.dropzone.on('complete', function(file) {
+                var xhr = file.xhr;
+                var dropzone = this;
+                var response = JSON.parse(xhr.response);
+                    if (response.python_error) {
                     // If we were given a function to process the error, use it.
+                        alert(response.python_error);
                 }
+                else if (file.status === 'error') {
+                    // unique class for ice related errors
+                    if (response['errors'][0].category === 'ICE-related error') {
+                        //first remove all files in upload
+                        this.removeAllFiles();
+                        file.status = undefined;
+                        file.accepted = undefined;
+                        //create alert notification
+                        this.options.processICEerror(this, file, response.errors);
+                        //click handler for omit strains
+                        $('#alert_placeholder').find('.omitStrains').on('click', ():void => {
+                            //remove alert
+                            $(this).parent().remove();
+                            dropzone.options.url = dropzone.options.url +
+                                                    '?IGNORE_ICE_RELATED_ERRORS=true';
+                            dropzone.addFile(file);
+                        });
                     } else {
+                       this.options.processErrorFn(file, xhr);
                     }
+                    return
                 }
+                if (response.warnings) {
+                    this.options.processWarningFn(file, response);
+                    return
                 }
+                if (typeof(this.options.processResponseFn) === 'function') {
+                    this.options.processResponseFn(this, file, response);
+                    return
                 }
+                if (file.status === 'success' && !response.warnings) {
+                    this.options.processResponseFn(file, response)
                 }
             });
+        };
     }
 
 

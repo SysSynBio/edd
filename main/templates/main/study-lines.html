@@ -7,17 +7,15 @@
     {{ block.super }}
     <script type="text/javascript" src="{% static 'dist/StudyLines.js' %}"></script>
     <script type="text/javascript">
-         {% if new_line.errors %}
-             var options = {
-                autoOpen: false,
-                minWidth: 500,
-                title: 'Add New Line'
-                };
-             $(document).ready(function() {
-                 $('.errorlist').remove();
-                 $("#editLineModal").removeClass('off').dialog(options).dialog( "open" );
-             });
-         {% endif %}
+         var options = {
+            autoOpen: false,
+            minWidth: 500,
+            title: 'Add New Line'
+            };
+         $(document).ready(function() {
+             $('.errorlist').remove();
+             $("#editLineModal").removeClass('off').dialog(options).dialog( "open" );
+         });
     </script>
 {% endblock js_css %}
 
@@ -101,7 +99,7 @@
              alt="Drag and drop files below">
         <span>{% trans 'Drag and drop an experiment description file below to add more lines' %} (
         </span>
-        <a href="{% static 'experiment_description/sample_experiment_description.xlsx' %}">
+        <a href="{% static 'main/example/experiment_description/sample_experiment_description.xlsx' %}">
             Example File <span class="dropLink dropImg"></span>
         </a>)
         <div style="float:none" class="helpBadgeDiv helpBadgeLines"

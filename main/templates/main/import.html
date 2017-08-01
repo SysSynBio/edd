@@ -4,7 +4,6 @@
 {% block js_css %}
   {{ block.super }}
   <link rel="stylesheet" type="text/css" href="{% static 'main/import.css' %}" />
-  <script type="text/javascript" src="{% static 'dist/Import.js' %}"></script>
   <script type="text/javascript">
 
   //remove main flex layout. work around til garret fixes main flex layout.
@@ -14,7 +13,7 @@
     var ATData = {}; // this needs to be declared before loading Import.js!
 
   </script>
-
+  <script type="text/javascript" src="{% static 'dist/Import.js' %}"></script>
 {% endblock js_css %}
 
 {% block head_title %}
@@ -101,13 +100,13 @@
           </label>
           <span><a class="discloseLink" href="#">Example</a></span>
           <div class="discloseBody" id="skylinelayoutexample">
-            <p>Use this format for data coming out of Skyline analysis of mass spec data. This import
-                expects data to come in four columns, with a sample name in the first
+            <p>Use this format for data coming out of Skyline analysis of mass spec data. This
+                import expects data to come in four columns, with a sample name in the first
                 column, a protein name in the second (represented by its accession ID found on
                 <a href="http://www.uniprot.org/uniprot/">UniProt</a>
                 ), a peptide in the third column, and a numeric value for peak area in the fourth.
-                Here is an example of a <a href="{% static 'skyline_example.csv' %}">Skyline Data File </a>
-                that has been successfully imported.
+                Here is an example of a <a href="{% static 'skyline_example.csv' %}">Skyline Data
+                File </a>that has been successfully imported.
             </p>
             <img class="exampleImage"
                 src="{% static 'main/images/data_examples/skyline_example_a.png' %}" />
@@ -297,7 +296,7 @@
     <div id="completeStep1Label" class="disabledStepLabel">Complete Step 1 first!</div>
        <div id="importDropZone">
            <textarea class="dataTextArea fd-zone off" rows="16" id="step2textarea"
-        name="step2textarea"></textarea>
+            name="step2textarea"></textarea>
        </div>
 </div>
 
