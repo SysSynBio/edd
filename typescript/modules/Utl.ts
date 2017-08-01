@@ -60,17 +60,19 @@ export module Utl {
             if (jQuery.cookie) {
                 return jQuery.cookie('csrftoken');
             }
-            return jQuery('input[name=csrfmiddlewaretoken]').val() || '';
+            return <string> jQuery('input[name=csrfmiddlewaretoken]').val() || '';
         }
 
 
         // Helper function to do a little more prep on objects when calling jQuery's Alax handler.
         // If options contains "data", it is assumed to be a constructed formData object.
-        // If options contains a "rawdata" object, it is assumed to be a standard key-value collection
-        // If options contains "type", the form type will be set to it - valid values are 'GET' or 'POST'.
-        //   If "type" is not specified, it will be 'POST'.
-        // If options contains a "progressBar" object, that object is assumed to be an HTML element of type "progress",
-        //   and the bar will be updated to reflect the upload and/or download completion.
+        // If options contains a "rawdata" object, it is assumed to be a key-value collection
+        // If options contains "type", the form type will be set to it
+        //   - valid values are 'GET' or 'POST'.
+        //   - If "type" is not specified, it will be 'POST'.
+        // If options contains a "progressBar" object, that object is assumed to be an HTMLElement
+        //   of type "progress", and the bar will be updated to reflect the upload and/or
+        //   download completion.
         static callAjax(options) {
             var debug = options.debug || false;
             var processData = false;
@@ -91,11 +93,11 @@ export module Utl {
                 xhr: function() {
                     var xhr = new XMLHttpRequest();
                     if (options.progressBar && (options.upEnd - options.upStart > 0)) {
-                        // Specifying evt:any to deal with TypeScript compile error
-                        // ">> ../site/ALWindow.ts(197,15): error TS2339: Property 'lengthComputable' does not exist on type 'Event'."
-                        xhr.upload.addEventListener("progress", function(evt:any) {
+                        xhr.upload.addEventListener("progress", function(evt) {
                             if (evt.lengthComputable) {
-                                var p = ((evt.loaded / evt.total) * (options.upEnd - options.upStart)) + options.upStart;
+                                var p = ((evt.loaded / evt.total) *
+                                    (options.upEnd - options.upStart)
+                                ) + options.upStart;
                                 options.progressBar.setProgress(p);
                                 if (debug) { console.log('Upload Progress ' + p + '...'); }
                             } else if (debug) {
@@ -106,7 +108,9 @@ export module Utl {
                     if (options.progressBar && (options.downEnd - options.downStart > 0)) {
                         xhr.addEventListener("progress", function(evt) {
                             if (evt.lengthComputable) {
-                                var p = ((evt.loaded / evt.total) * (options.downEnd - options.downStart)) + options.downStart;
+                                var p = ((evt.loaded / evt.total) *
+                                    (options.downEnd - options.downStart)
+                                ) + options.downStart;
                                 options.progressBar.setProgress(p);
                                 if (debug) { console.log('Download Progress ' + p + '...'); }
                             } else if (debug) {
@@ -145,7 +149,8 @@ export module Utl {
     export class Tabs {
         // Set up click-to-browse tabs
         static prepareTabs() {
-            // declare the click handler at the document level, then filter to any link inside a .tab
+            // declare the click handler at the document level, then filter to any link inside
+            // a .tabBar
             $(document).on('click', '.tabBar span:not(.active)', (e) => {
                 var targetTab = $(e.target).closest('span');
                 var activeTabs = targetTab.closest('div.tabBar').children('span.active');
@@ -154,18 +159,16 @@ export module Utl {
                 targetTab.addClass('active');
 
                 var targetTabContentID = targetTab.attr('for');
-                var activeTabEls = activeTabs.get();
-
                 if (targetTabContentID) {
-                    // Hide the content section for whatever tabs were active, then show the one selected
-                    for ( var i = 0; i < activeTabEls.length; i++ ) {
-                        var a = activeTabEls[i];
-                        var tabContentID = $(a).attr('for');
-                        if (tabContentID) {
-                            $('#'+tabContentID).addClass('off');
+                    // Hide the content section for whatever tabs were active, then show the
+                    // one selected
+                    activeTabs.each((i, tab) => {
+                        var contentId = $(tab).attr('for');
+                        if (contentId) {
+                            $(document.getElementById(contentId)).addClass('off');
                         }
-                    }
-                    $('#'+targetTabContentID).removeClass('off');
+                    });
+                    $(document.getElementById(targetTabContentID)).removeClass('off');
                 }
             });
         }
@@ -176,7 +179,8 @@ export module Utl {
     export class ButtonBar {
         // Set up click-to-browse tabs
         static prepareButtonBars() {
-            // declare the click handler at the document level, then filter to any link inside a .tab
+            // declare the click handler at the document level, then filter to any link inside
+            // a .buttonBar
             $(document).on('click', '.buttonBar span:not(.active)', (e) => {
                 var targetButton = $(e.target).closest('span');
                 var activeButtons = targetButton.closest('div.buttonBar').children('span.active');
@@ -185,18 +189,17 @@ export module Utl {
                 targetButton.addClass('active');
 
                 var targetButtonContentID = targetButton.attr('for');
-                var activeButtonEls = activeButtons.get();
 
                 if (targetButtonContentID) {
-                    // Hide the content section for whatever buttons were active, then show the one selected
-                    for ( var i = 0; i < activeButtonEls.length; i++ ) {
-                        var a = activeButtonEls[i];
-                        var ButtonContentID = $(a).attr('for');
-                        if (ButtonContentID) {
-                            $('#'+ButtonContentID).addClass('off');
+                    // Hide the content section for whatever buttons were active, then show the
+                    // one selected
+                    activeButtons.each((i, button) => {
+                        var contentId = $(button).attr('for');
+                        if (contentId) {
+                            $(document.getElementById(contentId)).addClass('off');
                         }
-                    }
-                    $('#'+targetButtonContentID).removeClass('off');
+                    });
+                    $(document.getElementById(targetButtonContentID)).removeClass('off');
                 }
             });
         }
@@ -204,10 +207,11 @@ export module Utl {
 
 
     export class QtipHelper {
-        public create(linkElement, contentFunction, params:any):void {
+        public create(linkElement, contentFunction, params: any): void {
 
             params.position.target = $(linkElement);
-            params.position.viewport = $(window);   // This makes it position itself to fit inside the browser window.
+            // This makes it position itself to fit inside the browser window.
+            params.position.viewport = $(window);
 
             this._contentFunction = contentFunction;
 
@@ -218,14 +222,11 @@ export module Utl {
             this.qtip = $(linkElement).qtip(params);
         }
 
-        private _generateContent():any {
-            // It's incredibly stupid that we have to do this to work around qtip2's 280px max-width default.
-            // We have to do it here rather than immediately after calling qtip() because qtip waits to create
-            // the actual element.
-            var q = this._getQTipElement();
-            $(q).css('max-width', 'none');
-            $(q).css('width', 'auto');
-
+        private _generateContent(): any {
+            // It's incredibly stupid that we have to do this to work around qtip2's 280px
+            // max-width default. We have to do it here rather than immediately after calling
+            // qtip() because qtip waits to create the actual element.
+            $(this._getQTipElement()).css('max-width', 'none').css('width', 'auto');
             return this._contentFunction();
         }
 
@@ -277,30 +278,34 @@ export module Utl {
             );
         }
 
-        static toString(clr:any) : string {
+        static toString(clr: any) : string {
             // If it's something else (like a string) already, just return that value.
             if (typeof clr == 'string')
                 return clr;
 
-            return 'rgba(' + Math.floor(clr.r) + ', ' + Math.floor(clr.g) + ', ' + Math.floor(clr.b) + ', ' + clr.a/255 + ')';
+            return 'rgba(' +
+                Math.floor(clr.r) + ', ' +
+                Math.floor(clr.g) + ', ' +
+                Math.floor(clr.b) + ', ' +
+                (clr.a / 255) + ')';
         }
 
-        toString() : string {
-            return 'rgba(' + Math.floor(this.r) + ', ' + Math.floor(this.g) + ', ' + Math.floor(this.b) + ', ' + this.a/255 + ')';
+        toString(): string {
+            return Color.toString(this);
         }
 
-        static red = Color.rgb(255,0,0);
-        static green = Color.rgb(0,255,0);
-        static blue = Color.rgb(0,0,255);
-        static black = Color.rgb(0,0,0);
-        static white = Color.rgb(255,255,255);
+        static red = Color.rgb(255, 0, 0);
+        static green = Color.rgb(0, 255, 0);
+        static blue = Color.rgb(0, 0, 255);
+        static black = Color.rgb(0, 0, 0);
+        static white = Color.rgb(255, 255, 255);
 
     }
 
 
     export class Table {
 
-        constructor(tableID:string, width?:number, height?:number) {
+        constructor(tableID: string, width?: number, height?: number) {
             this.table = document.createElement('table');
             this.table.id = tableID;
 
@@ -311,16 +316,13 @@ export module Utl {
                 $(this.table).css('height', height);
         }
 
-        addRow():HTMLTableRowElement {
-            var row = this.table.insertRow(-1);
+        addRow(): HTMLTableRowElement {
             this._currentRow++;
-            return <HTMLTableRowElement>row;
+            return this.table.insertRow(-1);
         }
 
-        addColumn():HTMLElement {
-            var row:HTMLTableRowElement = <HTMLTableRowElement>this.table.rows[this._currentRow-1];
-            var column:HTMLElement = row.insertCell(-1);
-            return column;
+        addColumn(): HTMLElement {
+            return this.table.rows.item(this._currentRow - 1).insertCell(-1);
         }
 
         // When you're done setting up the table, add it to another element.
@@ -339,7 +341,7 @@ export module Utl {
         // This assumes that str has only one root element.
         // It also breaks for elements that need to be nested under other specific element types,
         // e.g. if you attempt to create a <td> you will be handed back a <div>.
-        static createElementFromString(str:string, namespace:string = null):HTMLElement {
+        static createElementFromString(str: string, namespace: string = null): HTMLElement {
 
             var div;
             if (namespace)
@@ -353,7 +355,7 @@ export module Utl {
         }
 
 
-        static assert(condition:boolean, message:string):void {
+        static assert(condition: boolean, message: string): void {
             if (!condition) {
                 message = message || "Assertion failed";
                 if (typeof Error !== 'undefined') throw Error(message);
@@ -362,17 +364,17 @@ export module Utl {
         }
 
 
-        static convertHashToList(hash:any):any {
-            return Object.keys(hash).map( function(a) {return hash[a];} );
+        static convertHashToList(hash: any): any {
+            return Object.keys(hash).map((a) => hash[a]);
         }
 
 
         // Returns a string of length numChars, padding the right side
         // with spaces if str is shorter than numChars.
         // Will truncate if the string is longer than numChars.
-        static padStringLeft(str:string, numChars:number):string {
-            var startLen:number = str.length;
-            for (var i=startLen; i < numChars; i++)
+        static padStringLeft(str: string, numChars: number): string {
+            var startLen: number = str.length;
+            for (var i = startLen; i < numChars; i++)
                 str += ' ';
 
             return str.slice(0, numChars);
@@ -381,9 +383,9 @@ export module Utl {
 
         // Returns a string of length numChars, padding the left side
         // with spaces if str is shorter than numChars.
-        static padStringRight(str:string, numChars:number):string {
+        static padStringRight(str: string, numChars: number): string {
             var padStr = "";
-            for (var i=0; i < numChars; i++)
+            for (var i = 0; i < numChars; i++)
                 padStr += " ";
 
             return (padStr + str).slice(-numChars);
@@ -391,9 +393,9 @@ export module Utl {
 
 
         // Make a string by repeating the specified string N times.
-        static repeatString(str:string, numChars:number):string {
-            var ret:string = "";
-            for (var i:number=0; i < numChars; i++)
+        static repeatString(str: string, numChars: number): string {
+            var ret: string = "";
+            for (var i: number = 0; i < numChars; i++)
                 ret += str;
 
             return ret;
@@ -401,7 +403,7 @@ export module Utl {
 
 
         // Convert a size provided in bytes to a nicely formatted string
-        static sizeToString(size:number, allowBytes?:boolean):string {
+        static sizeToString(size: number, allowBytes?: boolean): string {
 
             var tb = size / (1024 * 1024 * 1024 * 1024);
             if ((tb > 1) || (tb < -1)) {
@@ -426,7 +428,7 @@ export module Utl {
         // -1 : Print as a full float
         //  0 : Print as an int, ALWAYS rounded down.
         // +n : Print with n decimal places, UNLESS the value is an integer
-        static nicelyPrintFloat(v:number, places:number):string {
+        static nicelyPrintFloat(v: number, places: number): string {
             // We do not want to display ANY decimal point if the value is an integer.
             if (v % 1 === 0) {  // Basic integer test
                 return (v % 1).toString();
@@ -440,17 +442,20 @@ export module Utl {
         }
 
 
-        // Given a file name (n) and a file type string (t), try and guess what kind of file we've got.
+        // Given a file name (n) and a file type string (t), try and guess what kind of file
+        // we've got.
         static guessFileType(n: string, t: string): string {
             // Going in order from most confident to least confident guesses:
             if (t.indexOf('officedocument.spreadsheet') >= 0) { return 'xlsx'; }
             if (t === 'text/csv') { return 'csv'; }
             if (t === 'text/xml') { return 'xml'; }
-            if ((n.indexOf('.xlsx', n.length - 5) !== -1) || (n.indexOf('.xls', n.length - 4) !== -1)) { return 'xlsx'; }
+            if ((n.indexOf('.xlsx', n.length - 5) !== -1) ||
+                (n.indexOf('.xls', n.length - 4) !== -1)) { return 'xlsx'; }
             if (n.indexOf('.xml', n.length - 4) !== -1) { return 'xml'; }
             if (t === 'text/plain') { return 'txt'; }
             if (n.indexOf('.txt', n.length - 4) !== -1) { return 'txt'; }
-            // If all else fails, assume it's a csv file.  (So, any extension that's not tried above, or no extension.)
+            // If all else fails, assume it's a csv file.
+            // (So, any extension that's not tried above, or no extension.)
             return 'csv';
         }
 
@@ -459,64 +464,44 @@ export module Utl {
         // based on zero being midnight of Jan 1, 1970 (standard old-school POSIX time),
         // return a string formatted in the manner of "Dec 21 2012, 11:45am",
         // with exceptions for 'Today' and 'Yesterday', e.g. "Yesterday, 3:12pm".
-        static timestampToTodayString(timestamp:number):string {
-
-            // Code adapted from Perl's HTTP-Date
-            //var DoW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-            var MoY = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        static timestampToTodayString(timestamp: number): string {
 
             if (!timestamp || timestamp < 1) {
                 return '<span style="color:#888;">N/A</span>';
             }
 
-            var t = new Date(Math.round(timestamp*1000));
-            var n = new Date();
-            var now = n.getTime();
+            var time: Date = new Date(Math.round(timestamp * 1000));
+            var now: Date = new Date();
+            var yesterday: Date = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            var day_str: string;
+            var time_str: string;
 
-            var sec = t.getSeconds();
-            var min:any = t.getMinutes();   // Type "any" so we can add a leading zero
-            var hour = t.getHours();
-            var mday = t.getDate();     // Returns the day of the month (from 1-31)
-            var mon = t.getMonth();     // Returns the month (from 0-11)
-            var year = t.getFullYear(); // Returns the year (four digits)
-            var wday = t.getDay();      // Returns the day of the week (from 0-6)
-
-            var nsec = n.getSeconds();
-            var nmin = n.getMinutes();
-            var nhour = n.getHours();
-            var nmday = n.getDate();
-            var nmon = n.getMonth();
-            var nyear = n.getFullYear();
-            var nwday = n.getDay();
-
-            var day_str;
-
-            if ((year == nyear) && (mon == nmon) && (mday == nmday)) {
+            if ((time.getFullYear() == now.getFullYear()) &&
+                (time.getMonth() == now.getMonth()) &&
+                (time.getDate() == now.getDate())) {
                 day_str = 'Today';
-            } else if (     (now - (nsec + (60*(nmin+(60*(nhour+24)))))) ==     // Now's day component minus a day
-                      (timestamp - (sec  + (60*(min +(60* hour     ))))))    {  // Timestamp's day component
+            } else if ((time.getFullYear() == yesterday.getFullYear()) &&
+                (time.getMonth() == yesterday.getMonth()) &&
+                (time.getDate() == yesterday.getDate())) {
                 day_str = 'Yesterday';
+            } else if (time.getFullYear() == now.getFullYear()) {
+                day_str = new Intl.DateTimeFormat('en-US',
+                    {month: 'short', day: 'numeric'}).format(time);
             } else {
-                var year_str = '';
-                if (year != nyear) {
-                    year_str = ' ' + year;
-                }
-                day_str = MoY[mon] + ' ' + mday + year_str;
+                day_str = new Intl.DateTimeFormat('en-US',
+                    {month: 'short', day: 'numeric', year: 'numeric'}).format(time);
             }
+            time_str = new Intl.DateTimeFormat('en-US',
+                {hour: 'numeric', minute: 'numeric'}).format(time);
 
-            var half_day = 'am';
-            if (hour > 11) {half_day = 'pm';}
-            if (hour > 12) {hour -= 12;}
-            else if (hour == 0) {hour = 12;}
-            if (min < 9) {min = '0'+min;}
-
-            return day_str + ', ' + hour + ':' + min + half_day;
+            return day_str + ', ' + time_str;
         }
 
 
-        static utcToTodayString(utc:string):string {
-            var m:any[];
-            var timestamp:number;
+        static utcToTodayString(utc: string): string {
+            var m: any[];
+            var timestamp: number;
             m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.?(\d{1,6})?Z$/.exec(utc);
             if (m) {
                 m.shift(); // get rid of overall match, we don't care
@@ -531,8 +516,9 @@ export module Utl {
 
 
         // Remap a value from [inMin, inMax] to [outMin, outMax]
-        static remapValue(value:number, inMin:number, inMax:number, outMin:number, outMax:number):number {
-            var delta:number = inMax - inMin;
+        static remapValue(value: number, inMin: number, inMax: number,
+                outMin: number, outMax: number): number {
+            var delta: number = inMax - inMin;
 
             // If they've given us a tiny input range, then we can't really parameterize
             // into the range, so let's just return halfway between the outputs.
@@ -571,7 +557,8 @@ export module Utl {
     }
 
 
- // A class wrapping dropzone (http://www.dropzonejs.com/) and providing some additional
+
+    // A class wrapping dropzone (http://www.dropzonejs.com/) and providing some additional
     // structure.
     // A new dropzone is initialized with a single 'options' object:
     // {
@@ -588,18 +575,12 @@ export module Utl {
 
         csrftoken: any;
         dropzone:any;
-        skipUpload: boolean;        // If set, skip the upload to the server (and subsequent call to processResponseFn)
-        allWorkFinished: boolean;   // If set, the file has finished all processing by the FileDropZone class.
         fileInitFn: any;
 
         constructor(options:any) {
 
             this.csrftoken = EDD.findCSRFToken();
             this.fileInitFn = options.fileInitFn;
-            this.skipUpload = options.skipUpload; // If set, skip the upload to the server
-            // (and subsequent call to processResponseFn)
-            this.allWorkFinished = options.allWorkFinished;  // If set, the file has finished
-            // all processing by the FileDropZone class.
             this.fileInitFn = options.fileInitFn;
 
             this.dropzone = new Dropzone("div#" + options.elementId, {
@@ -681,6 +662,9 @@ export module Utl {
     // SVG-related utilities.
     export class SVG {
 
+        static createSVG(width: any, height: any, boxWidth: number, boxHeight: number): SVGElement {
+            var svgElement: SVGElement;
+            svgElement = <SVGElement>document.createElementNS(SVG._namespace, "svg");
             svgElement.setAttribute('version', '1.2');
             svgElement.setAttribute('width', width.toString());
             svgElement.setAttribute('height', height.toString());
@@ -691,7 +675,15 @@ export module Utl {
 
 
         // Creates a vertical line centered on (xCoord,yCoord).
+        static createVerticalLinePath(xCoord: number, yCoord: number, lineWidth: number,
+                lineHeight: number, color: Color, svgElement: any): SVGElement {
+            var halfWidth: number = lineWidth / 2;
 
+            var topY: number = Math.floor(yCoord - lineHeight / 2);
+            var bottomY: number = Math.floor(yCoord + lineHeight / 2);
+            var midX: number = Math.floor(xCoord + halfWidth);
+            var el = SVG.createLine(midX, topY, midX, bottomY, color, lineWidth);
+            //$(el).css('stroke-linecap', 'round');
 
             if (svgElement)
                 svgElement.appendChild(el);
@@ -700,6 +692,8 @@ export module Utl {
         }
 
 
+        static createLine(x1: number, y1: number, x2: number, y2: number,
+                color?: Color, width?: number): SVGElement {
             var el = <SVGElement>document.createElementNS(SVG._namespace, 'line');
 
             el.setAttribute('x1', x1.toString());
@@ -717,6 +711,8 @@ export module Utl {
         }
 
 
+        static createRect(x: number, y: number, width: number, height: number, fillColor: Color,
+                strokeWidth?: number, strokeColor?: Color, opacity?: number): SVGElement {
 
             // Default values.
             strokeWidth = (typeof(strokeWidth) !== 'undefined' ? strokeWidth : 0);
@@ -761,6 +757,9 @@ export module Utl {
         }
 
 
+        static createText(x: number, y: number, text: string,
+                fontName?: string, fontSize?: number, centeredOnX?: boolean,
+                color?: Color): SVGElement {
             var el = <SVGElement>document.createElementNS(SVG._namespace, 'text');
 
             el.setAttribute('x', x.toString());
