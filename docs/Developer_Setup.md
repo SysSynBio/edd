@@ -27,6 +27,7 @@ This section contains directions for setting up a development environment for ED
     * To install:
       `ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
       and follow prompts.
+        - NOTE: This is automatically run as part of the `start-edd.sh` script.
     * `brew doctor` should say `Your system is ready to brew.` or describe any problems.
     * From the edd root directory, `brew bundle` should install additional software dependencies.
     * It is a good idea to occaisionally run `brew update` to refresh Homebrew's list of available
@@ -128,21 +129,27 @@ following steps to configure EDD and launch it for the first time.
 
 ### For Developers:
 
-* There is configuration already in place to help you work on EDD. Uncomment support for the Django
-  debug toolbar in the sample `local.py` file
-* The EDD makes use of Node.js packages for managing front-end code. All dev dependencies are
-  contained in the Dockerfile in the `node` directory, available under the tag `jbei/edd-node` on
-  Docker Hub. This image has the programs `node`, `npm`, `grunt`, and `bower` installed, and is
-  used to prepare front-end assets. EDD uses [TypeScript][4] for its client-side interface, and
-  installs JavaScript libraries with [Bower][9].
-    * Running `start-edd.sh` will automatically compile TypeScript and install libraries
-    * Launch a container with the `jbei/edd-node` image, and mounting volumes from the `init`
-      container, to manually run node commands; e.g.:
+There is configuration already in place to help you work on EDD. Uncomment support for the
+[Django debug toolbar][10] in the sample `local.py` file to run EDD with a helpful debug
+application. This will add an expandable toolbar to every page, showing information like request
+headers, SQL queries run, template context, signals fired, etc.
 
-          docker run --rm -it --volumes-from "$(docker-compose ps -q init | head -1)" \
+The EDD makes use of Node.js packages for managing front-end code. All dev dependencies are
+contained in the Dockerfile in the `node` directory, available under the tag `jbei/edd-node` on
+Docker Hub. This image has `node` and `npm` installed, with all the packages necessary to build
+EDD. It is used as part of the build of the `jbei/edd-core` image, to prepare front-end assets.
+EDD uses [TypeScript][4] for its client-side interface, and compiles JavaScript with third-party
+libraries using [Webpack][9].
+
+Running a full Docker build, for only some changes to the TypeScript code, will be inefficient. As
+a shortcut, you can instead launch a new container using the `jbei/edd-node` image, and use the
+`--volumes-from` flag to load in volumes from a `jbei/edd-core` EDD container. The container
+launched with `jbei/edd-node` can then compile TypeScript code, and copy the finished bundle code
+to the `jbei/edd-core` container.
+
+          docker run --rm -it --volumes-from "$(docker-compose ps -q edd | head -1)" \
             jbei/edd-node:latest /bin/bash
 
-      then, you may run commands such as `grunt test`.
 
 #### Helpful Python Packages <a name="Helpful_Python"/>
 
@@ -231,4 +238,5 @@ of them use Docker Compose and other related Docker tools that aren't fully docu
 [6]:    docs/Configuration.md
 [7]:    https://github.com/JBEI/ice
 [8]:    https://docs.docker.com/compose/overview/
-[9]:    https://bower.io/
+[9]:    https://webpack.js.org/
+[10]:   https://django-debug-toolbar.readthedocs.io/en/stable/
