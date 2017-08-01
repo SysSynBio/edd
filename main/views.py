@@ -302,7 +302,7 @@ class StudyDetailBaseView(StudyObjectMixin, generic.DetailView):
         context = self.get_context_data(object=self.object, action=action, request=request)
         can_write = self.object.user_can_write(request.user)
         action_lookup = self.get_actions(can_write=can_write)
-        action_fn = action_lookup[action]
+        action_fn = action_lookup.get(action)
         view_or_valid = action_fn(request, context, *args, **kwargs)
         if type(view_or_valid) == bool:
             # boolean means a response to same page, with flag noting whether form was valid
@@ -800,7 +800,7 @@ class StudyDetailView(StudyDetailBaseView):
         measures = Measurement.objects.filter(
             Q(assay_id__in=assay_ids) | Q(id__in=measure_ids),
         ).select_related(
-            'assay__line', 'assay__protocol', 'measurement_type',
+            'assay__line', 'assay__protocol__name', 'measurement_type',
         ).order_by(
             'assay__line_id', 'assay_id',
         ).prefetch_related(
@@ -840,7 +840,7 @@ class StudyDetailView(StudyDetailBaseView):
         measures = Measurement.objects.filter(
             id__in=measure_ids.split(',')
         ).select_related(
-            'assay__line', 'assay__protocol', 'measurement_type',
+            'assay__line', 'assay__protocol__name', 'measurement_type',
         ).order_by(
             'assay__line_id', 'assay_id',
         ).prefetch_related(
@@ -1369,32 +1369,18 @@ def study_describe_experiment(request, pk=None, slug=None):
     ignore_ice_related_errors = request.GET.get(IGNORE_ICE_RELATED_ERRORS_PARAM, False)
 
     # detect the input format
-    has_file_type = FILE_TYPE_HEADER in request.META
-    file_type = request.META.get(FILE_TYPE_HEADER, '')
-    file_name = None
-    is_excel_file = 'XLSX' == file_type.upper()
-    if has_file_type:
-        if is_excel_file:
-            file_name = request.META['HTTP_X_FILE_NAME']
-            logger.info('Parsing experiment description file "%s"' % file_name)
+    file = request.FILES.get('file')
 
-        else:
-            summary = ImportErrorSummary(BAD_FILE_CATEGORY, UNSUPPORTED_FILE_TYPE)
-            summary.add_occurrence(file_type)
-            errors = {BAD_FILE_CATEGORY: {UNSUPPORTED_FILE_TYPE: summary}}
-            return JsonResponse(
-                    _build_response_content(errors, {}),
-                    status=BAD_REQUEST)
-    else:
-        logger.info('Parsing request body as JSON input')
+    logger.info('Parsing request body as JSON input')
 
     # attempt the import
     importer = CombinatorialCreationImporter(study, user)
     try:
         with transaction.atomic(savepoint=False):
             status_code, reply_content = (
-                importer.do_import(request, allow_duplicate_names,
-                                   dry_run, ignore_ice_related_errors, excel_filename=file_name))
+                importer.do_import(file, allow_duplicate_names,
+                                   dry_run, ignore_ice_related_errors,
+                                   excel_filename=file.name))
         logger.debug('Reply content: %s' % json.dumps(reply_content))
         return JsonResponse(reply_content, status=status_code)
 
@@ -1433,15 +1419,16 @@ def utilities_parse_import_file(request):
 
     # The Utl.JS.guessFileType() function in Utl.ts applies logic like this to guess the type, and
     # that guess is sent along in a custom header:
-    edd_file_type = request.META.get(FILE_TYPE_HEADER)
-    edd_import_mode = request.META.get('HTTP_X_EDD_IMPORT_MODE')
+    file = request.FILES.get('file')
+    edd_file_type = request.POST['X_EDD_FILE_TYPE']
+    edd_import_mode = request.POST['X_EDD_IMPORT_MODE']
 
     parse_fn = find_parser(edd_import_mode, edd_file_type)
     if parse_fn:
         try:
             with tempfile.TemporaryFile() as temp:
                 # write the request upload to a "real" stream buffer
-                temp.write(request.read())
+                temp.write(file.read())
                 temp.seek(0)
                 result = parse_fn(temp)
             return JsonResponse({

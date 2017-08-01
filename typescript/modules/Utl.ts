@@ -2,9 +2,10 @@
 // This file contains various utility classes under the Utl module.
 
 import * as jQuery from "jquery"
-
-// TODO: need to load filedrop externally for now
-declare var FileDrop: any;
+// This file contains various utility classes under the Utl module.
+declare function require(name: string): any;
+//load dropzone module
+var Dropzone = require('dropzone');
 
 export module Utl {
 
@@ -59,19 +60,17 @@ export module Utl {
             if (jQuery.cookie) {
                 return jQuery.cookie('csrftoken');
             }
-            return <string> jQuery('input[name=csrfmiddlewaretoken]').val() || '';
+            return <string>jQuery('input[name=csrfmiddlewaretoken]').val() || '';
         }
 
 
         // Helper function to do a little more prep on objects when calling jQuery's Alax handler.
         // If options contains "data", it is assumed to be a constructed formData object.
-        // If options contains a "rawdata" object, it is assumed to be a key-value collection
-        // If options contains "type", the form type will be set to it
-        //   - valid values are 'GET' or 'POST'.
-        //   - If "type" is not specified, it will be 'POST'.
-        // If options contains a "progressBar" object, that object is assumed to be an HTMLElement
-        //   of type "progress", and the bar will be updated to reflect the upload and/or
-        //   download completion.
+        // If options contains a "rawdata" object, it is assumed to be a standard key-value collection
+        // If options contains "type", the form type will be set to it - valid values are 'GET' or 'POST'.
+        //   If "type" is not specified, it will be 'POST'.
+        // If options contains a "progressBar" object, that object is assumed to be an HTML element of type "progress",
+        //   and the bar will be updated to reflect the upload and/or download completion.
         static callAjax(options) {
             var debug = options.debug || false;
             var processData = false;
@@ -92,11 +91,11 @@ export module Utl {
                 xhr: function() {
                     var xhr = new XMLHttpRequest();
                     if (options.progressBar && (options.upEnd - options.upStart > 0)) {
-                        xhr.upload.addEventListener("progress", function(evt) {
+                        // Specifying evt:any to deal with TypeScript compile error
+                        // ">> ../site/ALWindow.ts(197,15): error TS2339: Property 'lengthComputable' does not exist on type 'Event'."
+                        xhr.upload.addEventListener("progress", function(evt:any) {
                             if (evt.lengthComputable) {
-                                var p = ((evt.loaded / evt.total) *
-                                    (options.upEnd - options.upStart)
-                                ) + options.upStart;
+                                var p = ((evt.loaded / evt.total) * (options.upEnd - options.upStart)) + options.upStart;
                                 options.progressBar.setProgress(p);
                                 if (debug) { console.log('Upload Progress ' + p + '...'); }
                             } else if (debug) {
@@ -107,9 +106,7 @@ export module Utl {
                     if (options.progressBar && (options.downEnd - options.downStart > 0)) {
                         xhr.addEventListener("progress", function(evt) {
                             if (evt.lengthComputable) {
-                                var p = ((evt.loaded / evt.total) *
-                                    (options.downEnd - options.downStart)
-                                ) + options.downStart;
+                                var p = ((evt.loaded / evt.total) * (options.downEnd - options.downStart)) + options.downStart;
                                 options.progressBar.setProgress(p);
                                 if (debug) { console.log('Download Progress ' + p + '...'); }
                             } else if (debug) {
@@ -148,8 +145,7 @@ export module Utl {
     export class Tabs {
         // Set up click-to-browse tabs
         static prepareTabs() {
-            // declare the click handler at the document level, then filter to any link inside
-            // a .tabBar
+            // declare the click handler at the document level, then filter to any link inside a .tab
             $(document).on('click', '.tabBar span:not(.active)', (e) => {
                 var targetTab = $(e.target).closest('span');
                 var activeTabs = targetTab.closest('div.tabBar').children('span.active');
@@ -158,9 +154,9 @@ export module Utl {
                 targetTab.addClass('active');
 
                 var targetTabContentID = targetTab.attr('for');
+                var activeTabEls = activeTabs.get();
+
                 if (targetTabContentID) {
-                    // Hide the content section for whatever tabs were active, then show the
-                    // one selected
                     activeTabs.each((i, tab) => {
                         var contentId = $(tab).attr('for');
                         if (contentId) {
@@ -168,8 +164,6 @@ export module Utl {
                         }
                     });
                     $(document.getElementById(targetTabContentID)).removeClass('off');
-                }
-            });
         }
     }
 
@@ -178,8 +172,7 @@ export module Utl {
     export class ButtonBar {
         // Set up click-to-browse tabs
         static prepareButtonBars() {
-            // declare the click handler at the document level, then filter to any link inside
-            // a .buttonBar
+            // declare the click handler at the document level, then filter to any link inside a .tab
             $(document).on('click', '.buttonBar span:not(.active)', (e) => {
                 var targetButton = $(e.target).closest('span');
                 var activeButtons = targetButton.closest('div.buttonBar').children('span.active');
@@ -188,17 +181,15 @@ export module Utl {
                 targetButton.addClass('active');
 
                 var targetButtonContentID = targetButton.attr('for');
+                var activeButtonEls = activeButtons.get();
 
                 if (targetButtonContentID) {
-                    // Hide the content section for whatever buttons were active, then show the
-                    // one selected
+                    // Hide the content section for whatever buttons were active, then show the one selected
                     activeButtons.each((i, button) => {
                         var contentId = $(button).attr('for');
                         if (contentId) {
                             $(document.getElementById(contentId)).addClass('off');
                         }
-                    });
-                    $(document.getElementById(targetButtonContentID)).removeClass('off');
                 }
             });
         }
@@ -206,11 +197,8 @@ export module Utl {
 
 
     export class QtipHelper {
-        public create(linkElement, contentFunction, params: any): void {
 
             params.position.target = $(linkElement);
-            // This makes it position itself to fit inside the browser window.
-            params.position.viewport = $(window);
 
             this._contentFunction = contentFunction;
 
@@ -221,7 +209,6 @@ export module Utl {
             this.qtip = $(linkElement).qtip(params);
         }
 
-        private _generateContent(): any {
             // It's incredibly stupid that we have to do this to work around qtip2's 280px
             // max-width default. We have to do it here rather than immediately after calling
             // qtip() because qtip waits to create the actual element.
@@ -277,34 +264,20 @@ export module Utl {
             );
         }
 
-        static toString(clr: any) : string {
             // If it's something else (like a string) already, just return that value.
             if (typeof clr == 'string')
                 return clr;
 
-            return 'rgba(' +
-                Math.floor(clr.r) + ', ' +
-                Math.floor(clr.g) + ', ' +
-                Math.floor(clr.b) + ', ' +
-                (clr.a / 255) + ')';
         }
 
-        toString(): string {
-            return Color.toString(this);
         }
 
-        static red = Color.rgb(255, 0, 0);
-        static green = Color.rgb(0, 255, 0);
-        static blue = Color.rgb(0, 0, 255);
-        static black = Color.rgb(0, 0, 0);
-        static white = Color.rgb(255, 255, 255);
 
     };
 
 
     export class Table {
 
-        constructor(tableID: string, width?: number, height?: number) {
             this.table = document.createElement('table');
             this.table.id = tableID;
 
@@ -315,7 +288,6 @@ export module Utl {
                 $(this.table).css('height', height);
         }
 
-        addRow(): HTMLTableRowElement {
             this._currentRow++;
             return this.table.insertRow(-1);
         }
@@ -340,7 +312,6 @@ export module Utl {
         // This assumes that str has only one root element.
         // It also breaks for elements that need to be nested under other specific element types,
         // e.g. if you attempt to create a <td> you will be handed back a <div>.
-        static createElementFromString(str: string, namespace: string = null): HTMLElement {
 
             var div;
             if (namespace)
@@ -354,7 +325,6 @@ export module Utl {
         }
 
 
-        static assert(condition: boolean, message: string): void {
             if (!condition) {
                 message = message || "Assertion failed";
                 if (typeof Error !== 'undefined') throw Error(message);
@@ -363,17 +333,12 @@ export module Utl {
         }
 
 
-        static convertHashToList(hash: any): any {
-            return Object.keys(hash).map((a) => hash[a]);
         }
 
 
         // Returns a string of length numChars, padding the right side
         // with spaces if str is shorter than numChars.
         // Will truncate if the string is longer than numChars.
-        static padStringLeft(str: string, numChars: number): string {
-            var startLen: number = str.length;
-            for (var i = startLen; i < numChars; i++)
                 str += ' ';
 
             return str.slice(0, numChars);
@@ -382,9 +347,7 @@ export module Utl {
 
         // Returns a string of length numChars, padding the left side
         // with spaces if str is shorter than numChars.
-        static padStringRight(str: string, numChars: number): string {
             var padStr = "";
-            for (var i = 0; i < numChars; i++)
                 padStr += " ";
 
             return (padStr + str).slice(-numChars);
@@ -392,9 +355,6 @@ export module Utl {
 
 
         // Make a string by repeating the specified string N times.
-        static repeatString(str: string, numChars: number): string {
-            var ret: string = "";
-            for (var i: number = 0; i < numChars; i++)
                 ret += str;
 
             return ret;
@@ -402,7 +362,6 @@ export module Utl {
 
 
         // Convert a size provided in bytes to a nicely formatted string
-        static sizeToString(size: number, allowBytes?: boolean): string {
 
             var tb = size / (1024 * 1024 * 1024 * 1024);
             if ((tb > 1) || (tb < -1)) {
@@ -427,7 +386,6 @@ export module Utl {
         // -1 : Print as a full float
         //  0 : Print as an int, ALWAYS rounded down.
         // +n : Print with n decimal places, UNLESS the value is an integer
-        static nicelyPrintFloat(v: number, places: number): string {
             // We do not want to display ANY decimal point if the value is an integer.
             if (v % 1 === 0) {  // Basic integer test
                 return (v % 1).toString();
@@ -441,20 +399,14 @@ export module Utl {
         }
 
 
-        // Given a file name (n) and a file type string (t), try and guess what kind of file
-        // we've got.
         static guessFileType(n: string, t: string): string {
             // Going in order from most confident to least confident guesses:
             if (t.indexOf('officedocument.spreadsheet') >= 0) { return 'xlsx'; }
             if (t === 'text/csv') { return 'csv'; }
             if (t === 'text/xml') { return 'xml'; }
-            if ((n.indexOf('.xlsx', n.length - 5) !== -1) ||
-                (n.indexOf('.xls', n.length - 4) !== -1)) { return 'xlsx'; }
             if (n.indexOf('.xml', n.length - 4) !== -1) { return 'xml'; }
             if (t === 'text/plain') { return 'txt'; }
             if (n.indexOf('.txt', n.length - 4) !== -1) { return 'txt'; }
-            // If all else fails, assume it's a csv file.
-            // (So, any extension that's not tried above, or no extension.)
             return 'csv';
         }
 
@@ -463,44 +415,19 @@ export module Utl {
         // based on zero being midnight of Jan 1, 1970 (standard old-school POSIX time),
         // return a string formatted in the manner of "Dec 21 2012, 11:45am",
         // with exceptions for 'Today' and 'Yesterday', e.g. "Yesterday, 3:12pm".
-        static timestampToTodayString(timestamp: number): string {
 
             if (!timestamp || timestamp < 1) {
                 return '<span style="color:#888;">N/A</span>';
             }
 
-            var time: Date = new Date(Math.round(timestamp * 1000));
-            var now: Date = new Date();
-            var yesterday: Date = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            var day_str: string;
-            var time_str: string;
-
-            if ((time.getFullYear() == now.getFullYear()) &&
-                (time.getMonth() == now.getMonth()) &&
-                (time.getDate() == now.getDate())) {
                 day_str = 'Today';
-            } else if ((time.getFullYear() == yesterday.getFullYear()) &&
-                (time.getMonth() == yesterday.getMonth()) &&
-                (time.getDate() == yesterday.getDate())) {
                 day_str = 'Yesterday';
-            } else if (time.getFullYear() == now.getFullYear()) {
-                day_str = new Intl.DateTimeFormat('en-US',
-                    {month: 'short', day: 'numeric'}).format(time);
             } else {
-                day_str = new Intl.DateTimeFormat('en-US',
-                    {month: 'short', day: 'numeric', year: 'numeric'}).format(time);
             }
-            time_str = new Intl.DateTimeFormat('en-US',
-                {hour: 'numeric', minute: 'numeric'}).format(time);
 
-            return day_str + ', ' + time_str;
         }
 
 
-        static utcToTodayString(utc: string): string {
-            var m: any[];
-            var timestamp: number;
             m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.?(\d{1,6})?Z$/.exec(utc);
             if (m) {
                 m.shift(); // get rid of overall match, we don't care
@@ -515,9 +442,6 @@ export module Utl {
 
 
         // Remap a value from [inMin, inMax] to [outMin, outMax]
-        static remapValue(value: number, inMin: number, inMax: number,
-                outMin: number, outMax: number): number {
-            var delta: number = inMax - inMin;
 
             // If they've given us a tiny input range, then we can't really parameterize
             // into the range, so let's just return halfway between the outputs.
@@ -558,9 +482,6 @@ export module Utl {
 
 
     // A progress bar with a range from 0 to 100 percent.
-    // When given only an id, the class seeks an element in the document and uses that as the
-    // progress bar. When given a parent element, the class makes a new <progress> element
-    // underneath it with the given id.
     export class ProgressBar {
 
         element: HTMLElement;
@@ -600,265 +521,42 @@ export module Utl {
     }
 
 
-
-    // Used by FileDropZone to pass around additional info for each dropped File object without
-    // messing with the filedrop-min.js internals.
-    export interface FileDropZoneFileContainer {
-        // The file object as created by filedrop-min.js
-        file: any;
-        // A guess at the file's type, expressed as a string, as returned by Utl.JS.guessFileType.
-        fileType: string;
-        // Any extra headers to send with the POST to the server.
-        extraHeaders:{[id:string]: string};
-
-        // The ProgressBar object used to track this file.
-        // Can be altered after init by fileInitFn.
-        progressBar: ProgressBar;
-
-        // If set, abandon any further action on the file.
-        stopProcessing: boolean;
-        // If set, skip the call to process the dropped file locally.
-        skipProcessRaw: boolean;
-        // If set, skip the upload to the server (and subsequent call to processResponseFn)
-        skipUpload: boolean;
-        // If set, the file has finished all processing by the FileDropZone class.
-        allWorkFinished: boolean;
-
-        // This is assigned by FileDropZone when the object is generated, and can be used to
-        // correlate the object with other information elsewhere.
-        // (It is not used internally by FileDropZone.)
-        uniqueIndex: number;
-    }
-
-
-
-    // A class wrapping filedrop-min.js (http://filedropjs.org) and providing some additional
-    // structure. It is initialized with a single 'options' object:
     // {
     //  elementId: ID of the element to be set up as a drop zone
-    //  fileInitFn: Called when a file has been dropped, but before any processing has started
-    //  processRawFn: Called when the file content has been read into a local variable, but
-    //                before any communication with the server.
-    //  url: The URL to upload the file.
-    //  progressBar: A ProgressBar object for tracking the upload progress.
-    //  processResponseFn: Called when the server sends back its results.
-    //  processErrorFn: Called as an alternative to processResponseFn if the server reports
-    //                  an error.
     // }
-    // All callbacks are given a FileDropZoneFileContainer object as their first argument.
 
-    // TODO:
-    // * Rewrite this with an option to only accept the first file in a dropped set.
-    // * Create a fileContainerGroup object, and a fileContainergGroupIndexCounter, and assign
-    //   sets of files the same group UID.
-    // * Add a 'cleanup' callback that's called after all files in a group have been uploaded.
     export class FileDropZone {
 
-        zone: any;
         csrftoken: any;
-        elementId: any;
-        url: string;
-        progressBar: ProgressBar;
-
         fileInitFn: any;
-        processRawFn: any;
-        processResponseFn: any;
-        processErrorFn: any;
-        processWarningFn: any;
 
-        static fileContainerIndexCounter: number = 0;
 
-        // If processRawFn is provided, it will be called with the raw file data from the
-        //   drop zone.
-        // If url is provided and processRawFn returns false (or was not provided) the file
-        //   will be sent to the given url.
-        // If processResponseFn is provided, it will be called with the returned result of the
-        //   url call.
-        // If an error occurs, processErrorFn will be called with the result.
-        constructor(options:any) {
-
-            this.progressBar = options.progressBar || null;
-
-            // If there's a cleaner way to force-disable event logging in filedrop-min.js,
-            // do please put it here!
-            (<any>window).fd.logging = false;
-
-            // filedrop-min.js , http://filedropjs.org
-            var z = new FileDrop(options.elementId, {});
-            this.zone = z;
             this.csrftoken = EDD.findCSRFToken();
-            if (!(typeof options.multiple === "undefined")) {
-                z.multiple(options.multiple);
-            } else {
-                z.multiple(false);
-            }
             this.fileInitFn = options.fileInitFn;
-            this.processRawFn = options.processRawFn;
-            this.processResponseFn = options.processResponseFn;
-            this.processErrorFn = options.processErrorFn;
-            this.processWarningFn = options.processWarningFn;
-            this.url = options.url;
-        }
 
 
         // Helper function to create and set up a FileDropZone.
         static create(options:any): void {
             var h = new FileDropZone(options);
-            h.setup();
         }
 
 
-        setup():void {
-            var t = this;
-            this.zone.event('send', function(files) {
-                files.each(function(file) {
-
-                    var fileContainer:FileDropZoneFileContainer  = {
-                        file: file,
-                        fileType: Utl.JS.guessFileType(file.name, file.type),
-                        extraHeaders: {},
-                        progressBar: t.progressBar,
-                        uniqueIndex: FileDropZone.fileContainerIndexCounter++,
-                        stopProcessing: false,
-                        skipProcessRaw: null,
-                        skipUpload: null,
-                        allWorkFinished: false
-                    }
-
-                    // callInitFile may set fileContainer's internal stopProcessing flag, or
-                    // any of the others. So it's possible for callInitFile to act as a
-                    // gatekeeper, rejecting the dropped file and halting any additional
-                    // processing, or it can decide whether to read and process this file
-                    // locally, or upload it to the server, or even both.
-                    // Another trick: callInitFile may swap in a custom ProgressBar object just
-                    // for this file, so multiple files can have their own separate progress bars,
-                    // while they are all uploaded in parallel.
-                    t.callInitFile.call(t, fileContainer);
-                    if (fileContainer.stopProcessing) {
-                        fileContainer.allWorkFinished = true;
-                        return;
-                    }
-
-                    t.callProcessRaw.call(t, fileContainer);
-                });
             });
-        }
-
-
-        // If there is a fileInitFn set, call it with the given FileDropZoneFileContainer.
-        callInitFile(fileContainer: FileDropZoneFileContainer) {
-            if (typeof this.fileInitFn === "function") {
-                this.fileInitFn(fileContainer);
-            }
-        }
-
-
-        // If processRawFn is defined, we read the entire file into a variable,
-        // then pass that to processRawFn along with the FileDropZoneFileContainer object.
-        // FileDropZoneFileContainer's contents might be modofied - specifically, the flags - so
-        // we check them afterwards to decide how to proceed.
-        callProcessRaw(fileContainer: FileDropZoneFileContainer) {
-            var t = this;
-            if (typeof this.processRawFn === "function" && !fileContainer.skipProcessRaw) {
-                fileContainer.file.read({
-                    //start: 5,
-                    //end: -10,
-                    //func: 'cp1251',
-                    onDone: function(str) {
-                        t.processRawFn(fileContainer, str);
-                        if (!fileContainer.stopProcessing && !fileContainer.skipUpload) {
-                            t.uploadFile.call(t, fileContainer);
-                        } else {
-                            fileContainer.allWorkFinished = true;
-                        }
-                    },
-                    onError: function(e) {
-                        alert('Failed to read the file! Error: ' + e.fdError)
-                    },
-                    func: 'text'
-                });
-            // No need to check stopProcessing - there's no way it could have been modified
-            // since the last step.
-            } else if (!fileContainer.skipUpload) {
-                this.uploadFile(fileContainer);
-            }
-        }
-
-
-
-        uploadFile(fileContainer: FileDropZoneFileContainer) {
-
-            var t = this;
-            var f = fileContainer.file;
-            // If no url has been defined, we have to stop here.
-            if (typeof this.url !== 'string') { fileContainer.allWorkFinished = true; return; }
-
-            // From this point on we assume we're uploading the file, so we set up the
-            // progressBar and callback events before triggering the call to upload.
-            f.event('done', function(xhr) {
-                var result = jQuery.parseJSON(xhr.responseText);
-
-                if (result.python_error) {
                     // If we were given a function to process the error, use it.
-                    if (typeof t.processErrorFn === "function") {
-                        t.processErrorFn(fileContainer, xhr);
+                }
                     } else {
-                        alert(result.python_error);
                     }
-                } else if (result.warnings) {
-                    t.processWarningFn(fileContainer, result);
-                } else if (typeof t.processResponseFn === "function") {
-                    t.processResponseFn(fileContainer, result);
                 }
-                fileContainer.allWorkFinished = true;
-            });
-
-            f.event('error', function(e, xhr) {
-                if (typeof t.processErrorFn === "function") {
-                    t.processErrorFn(fileContainer, xhr);
                 }
-                fileContainer.allWorkFinished = true;
-            });
-
-            f.event('xhrSetup', function(xhr) {
-                // This ensures that the CSRF middleware in Django doesn't reject our request.
-                xhr.setRequestHeader("X-CSRFToken", t.csrftoken);
-                // We want to pass along our own guess at the file type, since it's based on a
-                // more specific set of criteria.
-                xhr.setRequestHeader('X-EDD-File-Type', fileContainer.fileType);
-
-                $.each(fileContainer.extraHeaders, (name: string, value: string): void => {
-                    xhr.setRequestHeader('X-EDD-' + name, value)
-                });
-
-            });
-
-            f.event('sendXHR', function() {
-                if (fileContainer.progressBar) {
-                    fileContainer.progressBar.setProgress(0);
+                }
                 }
             });
-
-            // Update progress when browser reports it:
-            f.event('progress', function(current, total) {
-                if (fileContainer.progressBar) {
-                    var width = current / total * 100;
-                    fileContainer.progressBar.setProgress(width);
-                }
-            });
-
-            f.sendTo(this.url);
-        }
     }
-
 
 
     // SVG-related utilities.
     export class SVG {
 
-        static createSVG(width: any, height: any, boxWidth: number, boxHeight: number): SVGElement {
-            var svgElement: SVGElement;
-            svgElement = <SVGElement>document.createElementNS(SVG._namespace, "svg");
             svgElement.setAttribute('version', '1.2');
             svgElement.setAttribute('width', width.toString());
             svgElement.setAttribute('height', height.toString());
@@ -869,15 +567,7 @@ export module Utl {
 
 
         // Creates a vertical line centered on (xCoord,yCoord).
-        static createVerticalLinePath(xCoord: number, yCoord: number, lineWidth: number,
-                lineHeight: number, color: Color, svgElement: any): SVGElement {
-            var halfWidth: number = lineWidth / 2;
 
-            var topY: number = Math.floor(yCoord - lineHeight / 2);
-            var bottomY: number = Math.floor(yCoord + lineHeight / 2);
-            var midX: number = Math.floor(xCoord + halfWidth);
-            var el = SVG.createLine(midX, topY, midX, bottomY, color, lineWidth);
-            //$(el).css('stroke-linecap', 'round');
 
             if (svgElement)
                 svgElement.appendChild(el);
@@ -886,8 +576,6 @@ export module Utl {
         }
 
 
-        static createLine(x1: number, y1: number, x2: number, y2: number,
-                color?: Color, width?: number): SVGElement {
             var el = <SVGElement>document.createElementNS(SVG._namespace, 'line');
 
             el.setAttribute('x1', x1.toString());
@@ -905,8 +593,6 @@ export module Utl {
         }
 
 
-        static createRect(x: number, y: number, width: number, height: number, fillColor: Color,
-                strokeWidth?: number, strokeColor?: Color, opacity?: number): SVGElement {
 
             // Default values.
             strokeWidth = (typeof(strokeWidth) !== 'undefined' ? strokeWidth : 0);
@@ -951,9 +637,6 @@ export module Utl {
         }
 
 
-        static createText(x: number, y: number, text: string,
-                fontName?: string, fontSize?: number, centeredOnX?: boolean,
-                color?: Color): SVGElement {
             var el = <SVGElement>document.createElementNS(SVG._namespace, 'text');
 
             el.setAttribute('x', x.toString());
