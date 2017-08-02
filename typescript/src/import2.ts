@@ -2,9 +2,14 @@ import { Utl } from "../modules/Utl"
 
 Vue.use(VueFormWizard);
 
-
+//dropzone component
 var dropzone = {
     template:'#importDropZone2',
+    data: function () {
+    return {
+      csvOutput: ''
+    }
+  },
     methods: {
         prepareDropzone: function() {
             Utl.FileDropZone.create({
@@ -24,12 +29,10 @@ var dropzone = {
         fileReturnedFromServer: function(fileContainer, result, response){
             
             if (response.file_type === 'csv') {
-                // Since we're handling this format entirely client-side, we can get rid of the
-                // drop zone immediately.
                 console.log(response.file_data);
                 return
             }
-
+            //this works! :)
             if (response.file_type == "xlsx") {
                 var ws = response.file_data["worksheets"][0];
                 var table = ws[0];
@@ -38,16 +41,21 @@ var dropzone = {
                     csv.push(table.headers.join());
                 }
                 csv = csv.concat(table.values.map((row: string[]) => row.join()));
-                console.log(csv);
+                this.csvOutput = csv;
+                this.showDetailModal();
                 return;
             }
         },
+        showDetailModal: function() {
+            this.$emit('clicked-show-detail', this.csvOutput);
+        }
     },
     mounted() {
       this.prepareDropzone()
     }
 };
 
+//parent class
 window.addEventListener('load', function () {
     var parent = new Vue({
         delimiters: ['${', '}'],
@@ -69,8 +77,12 @@ window.addEventListener('load', function () {
               { name: 'JBEI Targeted Metabolomics'},
               { name: 'PNNL Targeted Metabolomics'},
             ],
+            productSelected: {},
         },
         methods: {
+            clickedShowDetailModal: function (value) {
+              this.productSelected = value;
+            },
             onComplete: function () {
                 alert('Your data is being imported');
             },
