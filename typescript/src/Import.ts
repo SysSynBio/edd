@@ -3,7 +3,7 @@ import { Utl } from "../modules/Utl"
 import { EDDAuto } from "../modules/EDDAutocomplete"
 import { EDDGraphingTools } from "../modules/EDDGraphingTools"
 declare var ATData: any; // Setup by the server.
-
+declare var EDD_auto: any;
 // Doing this bullshit because TypeScript/InternetExplorer do not recognize static methods on Number
 var JSNumber: any;
 JSNumber = Number;
@@ -564,7 +564,6 @@ module EDDTableImport {
         activeDraggedFile: any;
         processedSetsFromFile: any[];
         processedSetsAvailable: boolean;
-        fileUploadProgressBar: Utl.ProgressBar;
 
         // Additional options for interpreting text box data, exposed in the UI for the user to tweak.
         // Sometimes set automatically by certain import modes, like the "mdv" mode.

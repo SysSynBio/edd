@@ -14,8 +14,6 @@ module StudyOverview {
     var attachmentsByID: any;
     var prevDescriptionEditElement: any;
 
-    var fileUploadProgressBar: Utl.ProgressBar;
-    //
     // We can have a valid metabolic map but no valid biomass calculation.
     // If they try to show carbon balance in that case, we'll bring up the UI to
     // calculate biomass for the specified metabolic map.
@@ -220,8 +218,6 @@ module StudyOverview {
 
         Utl.FileDropZone.create({
             elementId: "templateDropZone",
-            fileInitFn: fileDropZoneHelper.fileDropped.bind(fileDropZoneHelper),
-            processRawFn: fileDropZoneHelper.fileRead.bind(fileDropZoneHelper),
             url: '/study/' + EDDData.currentStudyID + '/describe/',
             processResponseFn: fileDropZoneHelper.fileReturnedFromServer.bind(fileDropZoneHelper),
             processErrorFn: fileDropZoneHelper.fileErrorReturnedFromServer.bind(fileDropZoneHelper),

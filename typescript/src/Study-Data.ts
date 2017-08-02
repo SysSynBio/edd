@@ -1,5 +1,5 @@
-import { DataGrid, DataGridSpecBase, DataGridDataCell, DataGridColumnSpec
-        DataGridTableSpec, DataGridHeaderWidget, DataGridColumnGroupSpec
+import { DataGrid, DataGridSpecBase, DataGridDataCell, DataGridColumnSpec,
+        DataGridTableSpec, DataGridHeaderWidget, DataGridColumnGroupSpec,
         DataGridHeaderSpec, DataGridOptionWidget, DataGridLoadingCell, DGSelectAllWidget
         } from "../modules/DataGrid"
 import { Utl } from "../modules/Utl"
