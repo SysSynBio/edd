@@ -29,21 +29,15 @@ var dropzone = {
         fileReturnedFromServer: function(fileContainer, result, response){
             
             if (response.file_type === 'csv') {
-                console.log(response.file_data);
+                this.csvOutput = response.file_data;
+                this.showDetailModal();
                 return
             }
             //this works! :)
             if (response.file_type == "xlsx") {
                 var ws = response.file_data["worksheets"][0];
-                var table = ws[0];
-                var csv = [];
-                if (table.headers) {
-                    csv.push(table.headers.join());
-                }
-                csv = csv.concat(table.values.map((row: string[]) => row.join()));
-                this.csvOutput = csv;
+                this.csvOutput = ws;
                 this.showDetailModal();
-                return;
             }
         },
         showDetailModal: function() {
@@ -77,11 +71,14 @@ window.addEventListener('load', function () {
               { name: 'JBEI Targeted Metabolomics'},
               { name: 'PNNL Targeted Metabolomics'},
             ],
-            productSelected: {},
+            headers: [],
+            importedData: [],
         },
         methods: {
             clickedShowDetailModal: function (value) {
-              this.productSelected = value;
+              value = value[0];
+              this.headers = (value['headers']);
+              this.importedData = value['values'];
             },
             onComplete: function () {
                 alert('Your data is being imported');

@@ -5,7 +5,7 @@ import { EDDGraphingTools } from "../modules/EDDGraphingTools"
 declare var ATData: any; // Setup by the server.
 
 // Doing this bullshit because TypeScript/InternetExplorer do not recognize static methods on Number
-declare var EDD_auto: any;
+var EDD_auto: any;
 var JSNumber: any;
 JSNumber = Number;
 JSNumber.isFinite = JSNumber.isFinite || function (value: any) {
@@ -2158,8 +2158,8 @@ module EDDTableImport {
         }
 
         remakeGraphArea():void {
-            let eddGraphing = new EDDGraphingTools(),
-                mode = this.selectMajorKindStep.interpretationMode,
+            // let eddGraphing = new EDDGraphingTools(),
+           let     mode = this.selectMajorKindStep.interpretationMode,
                 sets = this.graphSets,
                 graph = $('#graphDiv'),
                 dataSets = []
@@ -2170,19 +2170,19 @@ module EDDTableImport {
 
             $('#processingStep2ResultsLabel').removeClass('off');
 
-            atdGraphing.clearAllSets();
+            // atdGraphing.clearAllSets();
 
             // If we're not in either of these modes, drawing a graph is nonsensical.
-            if ((mode === "std" || mode === 'biolector' || mode === 'hplc') && (sets.length > 0)) {
-                graph.removeClass('off');
-                sets.forEach(function(set) {
-                    var singleAssayObj = eddGraphing.transformNewLineItem(EDDData, set);
-                    dataSets.push(singleAssayObj);
-                });
-                atdGraphing.addNewSet(dataSets);
-            } else {
-                graph.addClass('off');
-            }
+            // if ((mode === "std" || mode === 'biolector' || mode === 'hplc') && (sets.length > 0)) {
+            //     graph.removeClass('off');
+            //     sets.forEach(function(set) {
+            //         var singleAssayObj = eddGraphing.transformNewLineItem(EDDData, set);
+            //         dataSets.push(singleAssayObj);
+            //     });
+            //     atdGraphing.addNewSet(dataSets);
+            // } else {
+            //     graph.addClass('off');
+            // }
 
             $('#processingStep2ResultsLabel').addClass('off');
         }
