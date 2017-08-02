@@ -10,8 +10,9 @@ import { Utl } from "../modules/Utl"
 import { FileDropZone } from "../modules/FileDropZone"
 import { StudyMetabolicMapChooser, MetabolicMapChooserResult, FullStudyBiomassUI,
         FullStudyBiomassUIResultsCallback } from "../modules/BiomassCalculationUI"
-import { CarbonBalance } from "../modules/StudyCarbonBalance" 
+import { CarbonBalance } from "../modules/StudyCarbonBalance"
 import { StudyBase } from "../modules/Study"
+
 module StudyLines {
     'use strict';
 
@@ -40,7 +41,6 @@ module StudyLines {
     // switching back and forth between positions that might trigger resize events.
     export var actionPanelIsInBottomBar;
     export var actionPanelIsCopied = false;
-    export var fileUploadProgressBar: Utl.ProgressBar;
 
 
     // Called when the page loads.
@@ -68,7 +68,6 @@ module StudyLines {
         linesActionPanelRefreshTimer = null;
         positionActionsBarTimer = null;
 
-        this.fileUploadProgressBar = new Utl.ProgressBar('fileUploadProgressBar');
         var fileDropZoneHelper = new FileDropZone.FileDropZoneHelpers({
            pageRedirect: '',
            haveInputData: false,
@@ -76,8 +75,6 @@ module StudyLines {
 
         Utl.FileDropZone.create({
             elementId: "addToLinesDropZone",
-            fileInitFn: fileDropZoneHelper.fileDropped.bind(fileDropZoneHelper),
-            processRawFn: fileDropZoneHelper.fileRead.bind(fileDropZoneHelper),
             url: '/study/' + EDDData.currentStudyID + '/describe/',
             processResponseFn: fileDropZoneHelper.fileReturnedFromServer.bind(fileDropZoneHelper),
             processErrorFn: fileDropZoneHelper.fileErrorReturnedFromServer.bind(fileDropZoneHelper),
@@ -96,7 +93,7 @@ module StudyLines {
 
         //set up editable study name
         new StudyBase.EditableStudyName($('#editable-study-name').get()[0]);
-        
+
         $('#content').tooltip({
             content: function () {
                 return $(this).prop('title');
@@ -657,6 +654,7 @@ class DGSelectAllLinesWidget extends DGSelectAllWidget {
         //update selected text
         var checkedBoxLen = $('#studyLinesTable').find('tbody input[type=checkbox]:checked').length;
         $('.linesSelectedCell').empty().text(checkedBoxLen + ' selected');
+        StudyLines.queueLinesActionPanelShow();
      }
 }
 
@@ -723,7 +721,7 @@ class DataGridSpecLines extends DataGridSpecBase {
         // Now that they're sorted by name, create a hash for quickly resolving IDs to indexes in
         // the sorted array
         this.groupIDsToGroupIndexes = {};
-        $.each(this.groupIDsInOrder, (index, group) => this.groupIDsToGroupIndexes[group] = index);
+        $.each(this.groupIDsInOrder, (index, group) => { this.groupIDsToGroupIndexes[group] = index });
     }
 
     // Specification for the table as a whole
@@ -1183,7 +1181,7 @@ class DGDisabledLinesWidget extends DataGridOptionWidget {
 
     initialFormatRowElementsForID(dataRowObjects:any, rowID:string):any {
         if (!EDDData.Lines[rowID].active) {
-            $.each(dataRowObjects, (x, row) => $(row.getElement()).addClass('disabledRecord'));
+            $.each(dataRowObjects, (x, row) => { $(row.getElement()).addClass('disabledRecord') });
         }
     }
 }

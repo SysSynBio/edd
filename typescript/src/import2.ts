@@ -1,76 +1,60 @@
-// File last modified on: Tue Jun 27 2017 17:09:52  
-/// <reference path="typescript-declarations.d.ts" />
-//global registration
-// import VueFormWizard from 'vue-form-wizard'
-// import 'vue-form-wizard/dist/vue-form-wizard.min.css'
+import { Utl } from "../modules/Utl"
+
 Vue.use(VueFormWizard);
-// import Dropzone from 'vue2-dropzone'
 
-// export default {
-//     name: 'MainApp',
-//     components: {
-//       Dropzone
-//     },
-//     methods: {
-//       'showSuccess': function (file) {
-//         console.log('A file was successfully uploaded')
-//       }
-//     }
-// }
 
-// var category = {
-//     data: function () {
-//     return {
-//       categoryList: [
-//           {name: 'Proteomics'},
-//           { name: 'Metabolomics'},
-//           { name: 'Transcriptomics'},
-//           { name: 'OD600'},
-//           { name: 'Other'}
-//       ],
-//       selectedCategory: '',
-//     }
-//     },
-//     template: '<div class="categories">' +
-//                 '<div><button v-for="item in categoryList" v-on:click.prevent="selectProtocol">' +
-//                 '{{ item.name }}</button></div>' +
-//                 '<div><h2>{{ selectedCategory }}</h2></div>' +
-//              '</div>',
-//     methods: {
-//
-//     },
-// };
-//
-// var protocol = {
-//     data: function () {
-//     return {
-//       proteomics: [
-//           { name: 'JBEI Targeted Proteomics'},
-//           { name: 'PNNL Targeted Proteomics'},
-//           { name: 'JBEI Shotgun Proteomics'},
-//       ],
-//       metabolomics : [
-//           { name: 'JBEI Targeted Metabolomics'},
-//           { name: 'PNNL Targeted Metabolomics'},
-//       ],
-//         selectedProtocol: category.data()
-//     }
-//     },
-//     template:
-//     methods: {
-//         selectProtocol: function(event) {
-//             $('#protocols').find('button').css('color', 'grey');
-//             event.target.style.color = 'blue';
-//             this.selected = $(event.target).text();
-//             $('#fileFormat').show();
-//         },
-//     },
-// };
+var dropzone = {
+    template:'#importDropZone2',
+    methods: {
+        prepareDropzone: function() {
+            Utl.FileDropZone.create({
+                elementId: "importDropZone2",
+                fileInitFn: this.fileDropped.bind(this),
+                url: "/utilities/parsefile/",
+                processResponseFn: this.fileReturnedFromServer.bind(this),
+            });
+        },
+        fileDropped: function (file, formData) {
+            var mode = 'std';
+            formData['X_EDD_IMPORT_MODE'] = mode;
+            var ft = file.name.split('.');
+            ft = ft[1];
+            formData['X_EDD_FILE_TYPE'] = ft;
+        },
+        fileReturnedFromServer: function(fileContainer, result, response){
+            
+            if (response.file_type === 'csv') {
+                // Since we're handling this format entirely client-side, we can get rid of the
+                // drop zone immediately.
+                console.log(response.file_data);
+                return
+            }
+
+            if (response.file_type == "xlsx") {
+                var ws = response.file_data["worksheets"][0];
+                var table = ws[0];
+                var csv = [];
+                if (table.headers) {
+                    csv.push(table.headers.join());
+                }
+                csv = csv.concat(table.values.map((row: string[]) => row.join()));
+                console.log(csv);
+                return;
+            }
+        },
+    },
+    mounted() {
+      this.prepareDropzone()
+    }
+};
 
 window.addEventListener('load', function () {
     var parent = new Vue({
         delimiters: ['${', '}'],
         el: '#app',
+        components: {
+             'my-dropzone': dropzone
+        },
         data: {
             loadingWizard: false,
             highlight: false,

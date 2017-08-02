@@ -1,14 +1,20 @@
-/// <reference path="typescript-declarations.d.ts" />
-
 import { EDDATDGraphing } from "../modules/AssayTableDataGraphing"
 import { Utl } from "../modules/Utl"
 import { EDDAuto } from "../modules/EDDAutocomplete"
 import { EDDGraphingTools } from "../modules/EDDGraphingTools"
-import { EDD_auto } from "../modules/EDDAutocomplete"
 declare var ATData: any; // Setup by the server.
 
 // Doing this bullshit because TypeScript/InternetExplorer do not recognize static methods on Number
-declare var JSNumber: any;
+declare var EDD_auto: any;
+var JSNumber: any;
+JSNumber = Number;
+JSNumber.isFinite = JSNumber.isFinite || function (value: any) {
+    return typeof value === 'number' && isFinite(value);
+};
+JSNumber.isNaN = JSNumber.isNaN || function (value: any) {
+    return value !== value;
+};
+
 // Type name for the grid of values pasted in
 interface RawInput extends Array<string[]> { }
 // type for the stats generated from parsing input text
@@ -559,7 +565,6 @@ module EDDTableImport {
         activeDraggedFile: any;
         processedSetsFromFile: any[];
         processedSetsAvailable: boolean;
-        fileUploadProgressBar: Utl.ProgressBar;
 
         // Additional options for interpreting text box data, exposed in the UI for the user to tweak.
         // Sometimes set automatically by certain import modes, like the "mdv" mode.
@@ -614,15 +619,12 @@ module EDDTableImport {
             $('#transpose').on('change', this.clickedOnTranspose.bind(this));
             $('#resetstep2').on('click', this.reset.bind(this));
 
-            this.fileUploadProgressBar = new Utl.ProgressBar('fileUploadProgressBar');
 
             Utl.FileDropZone.create({
-                elementId: "step2textarea",
+                elementId: "importDropZone",
                 fileInitFn: this.fileDropped.bind(this),
-                processRawFn: this.fileRead.bind(this),
                 url: "/utilities/parsefile/",
                 processResponseFn: this.fileReturnedFromServer.bind(this),
-                progressBar: this.fileUploadProgressBar
             });
 
             this.processingFileCallback = processingFileCallback;
@@ -646,7 +648,6 @@ module EDDTableImport {
                 $('#gcmsSampleFile').hide();
                 //show example biolector file
                 $('#biolectorFile').show();
-                $('#prSampleFile').hide();
                 // It is also expected to be dropped from a file.
                 // So either we're already in file mode and there are already parsed sets available,
                 // Or we are in text entry mode waiting for a file drop.
@@ -661,7 +662,6 @@ module EDDTableImport {
                 // HPLC data is expected as a text file.
                 $('#step2textarea').addClass('text');
                 $('#hplcExample').show();
-                $('#prSampleFile').hide();
                 $('#gcmsSampleFile').hide();
                 this.nextStepCallback();
                 return;
@@ -686,12 +686,6 @@ module EDDTableImport {
                 // Proceed through to the dropzone check.
             }
 
-            //appends example file proteomics
-            if (mode === 'pr') {
-                $('#prSampleFile').show();
-            } else {
-                $('#prSampleFile').hide();
-            }
             //for std use GC-MS file
             if (mode === 'std') {
                  $('#prSampleFile').hide();
@@ -699,7 +693,7 @@ module EDDTableImport {
             } else {
                 $('#gcmsSampleFile').hide();
             }
-            if (mode === 'std' || mode === 'tr' || mode === 'pr' || mode === 'mdv') {
+            if (mode === 'std' || mode === 'tr' || mode === 'mdv') {
                 // If an excel file was dropped in, its content was pulled out and dropped into the text box.
                 // The only reason we would want to still show the file info area is if we are currently in the middle
                 // of processing a file and haven't yet received its worksheets from the server.
@@ -739,7 +733,7 @@ module EDDTableImport {
 
         getProcessorForMode(mode: string): RawModeProcessor {
             var processor: RawModeProcessor;
-            if (['std', 'tr', 'pr'].indexOf(mode) != -1) {
+            if (['std', 'tr'].indexOf(mode) != -1) {
                 processor = new StandardProcessor();
             } else if ('mdv' === mode) {
                 processor = new MdvProcessor();
@@ -775,96 +769,31 @@ module EDDTableImport {
         }
 
 
-        // Here, we take a look at the type of the dropped file and decide whether to
-        // send it to the server, or process it locally.
-        // We inform the FileDropZone of our decision by setting flags in the fileContiner object,
-        // which will be inspected when this function returns.
-        fileDropped(fileContainer): void {
+        // Here, we take a look at the type of the dropped file and add extra headers
+        fileDropped(file, formData): void {
             this.haveInputData = true;
             processingFileCallback();
             var mode = this.selectMajorKindStep.interpretationMode;
-            fileContainer.extraHeaders['Import-Mode'] = mode;
-            var ft = fileContainer.fileType;
-            // We'll process csv files locally.
-            if ((ft === 'csv' || ft === 'txt') &&
-                    (mode === 'std' || mode === 'tr' || mode === 'pr')) {
-                fileContainer.skipProcessRaw = false;
-                fileContainer.skipUpload = true;
-            }
-            // Except for skyline files, which should be summed server-side
-            else if ((ft === 'csv' || ft === 'txt') && (mode === 'skyline')) {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // With Excel documents, we need some server-side tools.
-            // We'll signal the dropzone to upload this, and receive processed results.
-            else if ((ft === 'xlsx') && (mode === 'std' ||
-                    mode === 'tr' ||
-                    mode === 'pr' ||
-                    mode === 'mdv' ||
-                    mode === 'skyline')) {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // HPLC reports need to be sent for server-side processing
-            else if ((ft === 'csv' || ft === 'txt') &&
-                    (mode === 'hplc')) {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // Biolector XML also needs to be sent for server-side processing
-            else if (ft === 'xml' && mode === 'biolector') {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = false;
-            }
-            // By default, skip any further processing
-            else {
-                fileContainer.skipProcessRaw = true;
-                fileContainer.skipUpload = true;
-            }
-
-            if (!fileContainer.skipProcessRaw || !fileContainer.skipUpload) {
-                this.showFileDropped(fileContainer);
-            }
+            formData['X_EDD_IMPORT_MODE'] = mode;
+            var ft = file.name.split('.');
+            ft = ft[1];
+            formData['X_EDD_FILE_TYPE'] = ft;
         }
-
-
-        // This function is passed the usual fileContainer object, but also a reference to the
-        // full content of the dropped file.  So, for example, in the case of parsing a csv file,
-        // we just drop that content into the text box and we're done.
-        fileRead(fileContainer, result): void {
-            this.haveInputData = true;
-            processingFileCallback();
-            if (fileContainer.fileType === 'csv') {
-                // Since we're handling this format entirely client-side, we can get rid of the
-                // drop zone immediately.
-                fileContainer.skipUpload = true;
-                this.clearDropZone();
-                this.rawText(result);
-                this.inferSeparatorType();
-                this.reprocessRawData();
-                return;
-            }
-        }
-
 
         // This is called upon receiving a response from a file upload operation, and unlike
         // fileRead() above, is passed a processed result from the server as a second argument,
         // rather than the raw contents of the file.
-        fileReturnedFromServer(fileContainer, result): void {
+        fileReturnedFromServer(fileContainer, result, response): void {
             var mode = this.selectMajorKindStep.interpretationMode;
-            // Whether we clear the file info area entirely, or just update its status,
-            // we know we no longer need the 'sending' status.
-            $('#fileDropInfoSending').addClass('off');
 
             if (mode === 'biolector' || mode === 'hplc' || mode === 'skyline') {
                 var data: any[], count: number, points: number;
-                data = result.file_data;
+                data = response.file_data;
                 count = data.length;
                 points = data.map((set): number => set.data.length).reduce((acc, n) => acc + n, 0);
                 $('<p>').text(
                     'Found ' + count + ' measurements with ' + points + ' total data points.'
-                ).appendTo($("#fileDropInfoLog"));
+                ).appendTo($(".dz-preview"));
                 this.processedSetsFromFile = data;
                 this.processedSetsAvailable = true;
                 this.processingFile = false;
@@ -873,9 +802,19 @@ module EDDTableImport {
                 return;
             }
 
-            if (fileContainer.fileType == "xlsx") {
+            if (response.file_type === 'csv') {
+                // Since we're handling this format entirely client-side, we can get rid of the
+                // drop zone immediately.
                 this.clearDropZone();
-                var ws = result.file_data["worksheets"][0];
+                this.rawText(response.file_data);
+                this.inferSeparatorType();
+                this.reprocessRawData();
+                return;
+            }
+
+            if (response.file_type == "xlsx") {
+                this.clearDropZone();
+                var ws = response.file_data["worksheets"][0];
                 var table = ws[0];
                 var csv = [];
                 if (table.headers) {
@@ -921,38 +860,6 @@ module EDDTableImport {
         }
 
 
-        // Reset and show the info box that appears when a file is dropped,
-        // and reveal the text entry area.
-        showFileDropped(fileContainer): void {
-            var processingMessage:string = '';
-            // Set the icon image properly
-            $('#fileDropInfoIcon').removeClass('xml');
-            $('#fileDropInfoIcon').removeClass('text');
-            $('#fileDropInfoIcon').removeClass('excel');
-            if (fileContainer.fileType === 'xml') {
-                $('#fileDropInfoIcon').addClass('xml');
-            } else if (fileContainer.fileType === 'xlsx') {
-                $('#fileDropInfoIcon').addClass('excel');
-            } else if (fileContainer.fileType === 'plaintext') {
-                $('#fileDropInfoIcon').addClass('text');
-            }
-            $('#step2textarea').addClass('off');
-            $('#fileDropInfoArea').removeClass('off');
-            $('#fileDropInfoSending').removeClass('off');
-            $('#fileDropInfoName').text(fileContainer.file.name)
-
-            if (!fileContainer.skipUpload) {
-                processingMessage = 'Sending ' + Utl.JS.sizeToString(fileContainer.file.size) + ' To Server...';
-                $('#fileDropInfoLog').empty();
-            } else if (!fileContainer.skipProcessRaw) {
-                processingMessage = 'Processing ' + Utl.JS.sizeToString(fileContainer.file.size) + '...';
-                $('#fileDropInfoLog').empty();
-            }
-            $('#fileUploadMessage').text(processingMessage);
-            this.activeDraggedFile = fileContainer;
-        }
-
-
         reset(): void {
             this.haveInputData=false;
             this.clearDropZone();
@@ -962,13 +869,6 @@ module EDDTableImport {
 
 
         inferTransposeSetting(rows: RawInput):void  {
-            // as a user convenience, support the only known use-case for proteomics -- taking
-            // "short and fat" output from the skyline import tool as input. TODO: reconsider
-            // this when integrating the Skyline tool into the import page (EDD-240).
-            if (this.selectMajorKindStep.interpretationMode === 'pr') {
-                this.transpose(true);
-                return;
-            }
 
             // The most straightforward method is to take the top row, and the first column,
             // and analyze both to see which one most likely contains a run of timestamps.
@@ -1229,7 +1129,7 @@ module EDDTableImport {
         warningMessages:ImportMessage[];
         errorMessages:ImportMessage[];
 
-        static MODES_WITH_DATA_TABLE: string[] = ['std', 'tr', 'pr', 'mdv']; // Step 1 modes in which the data table gets displayed
+        static MODES_WITH_DATA_TABLE: string[] = ['std', 'tr','mdv']; // Step 1 modes in which the data table gets displayed
         static MODES_WITH_GRAPH: string[] = ['std', 'biolector', 'hplc'];
 
         static DISABLED_PULLDOWN_LABEL: string = '--';
@@ -1386,13 +1286,6 @@ module EDDTableImport {
             if (label.match(/assay/i) || label.match(/line/i)) {
                 return TypeEnum.Line_Names;
             }
-            if (mode == 'pr') {
-                if (label.match(/protein/i)) {
-                    return TypeEnum.Protein_Name;
-                }
-                // No point in continuing, only line and protein are relevant
-                return 0;
-            }
             // Things we'll be counting to hazard a guess at the row contents
             blank = strings = 0;
             // A condensed version of the row, with no nulls or blank values
@@ -1465,18 +1358,6 @@ module EDDTableImport {
                     ['Entire Row Is...', [
                             ['Gene Names', TypeEnum.Gene_Names],
                             ['RPKM Values', TypeEnum.RPKM_Values]
-                        ]
-                    ]
-                ];
-            } else if (mode === 'pr') {
-                pulldownOptions = [
-                    [ IdentifyStructuresStep.DISABLED_PULLDOWN_LABEL, IdentifyStructuresStep.DEFAULT_PULLDOWN_VALUE],
-                    ['Entire Row Is...', [
-                            ['Line Names', TypeEnum.Line_Names],
-                        ]
-                    ],
-                    ['First Column Is...', [
-                            ['Protein Name', TypeEnum.Protein_Name]
                         ]
                     ]
                 ];
@@ -2283,14 +2164,14 @@ module EDDTableImport {
                 graph = $('#graphDiv'),
                 dataSets = []
                 atdGraphing = new EDDATDGraphing();
-            
+
             this.graphRefreshTimerID = 0;
             if (!atdGraphing || !this.graphEnabled) { return; }
 
             $('#processingStep2ResultsLabel').removeClass('off');
 
             atdGraphing.clearAllSets();
-            
+
             // If we're not in either of these modes, drawing a graph is nonsensical.
             if ((mode === "std" || mode === 'biolector' || mode === 'hplc') && (sets.length > 0)) {
                 graph.removeClass('off');
