@@ -25,13 +25,15 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from messages_extends import constants as msg_constants
 from rest_framework.exceptions import MethodNotAllowed
 
-from main.importer.experiment_desc.constants import (INTERNAL_SERVER_ERROR, UNPREDICTED_ERROR,
-                                                     BAD_REQUEST, UNSUPPORTED_FILE_TYPE,
-                                                     BAD_FILE_CATEGORY,
-                                                     ALLOW_DUPLICATE_NAMES_PARAM,
-                                                     IGNORE_ICE_RELATED_ERRORS_PARAM,
-                                                     DRY_RUN_PARAM, INTERNAL_EDD_ERROR_CATEGORY)
-from main.importer.experiment_desc.importer import _build_response_content, ImportErrorSummary
+from main.importer.experiment_desc.constants import (
+    ALLOW_DUPLICATE_NAMES_PARAM,
+    DRY_RUN_PARAM,
+    IGNORE_ICE_RELATED_ERRORS_PARAM,
+    INTERNAL_EDD_ERROR_CATEGORY,
+    INTERNAL_SERVER_ERROR,
+    UNPREDICTED_ERROR,
+)
+from main.importer.experiment_desc.importer import _build_response_content
 from . import autocomplete, models as edd_models, redis
 from .export.forms import ExportOptionForm, ExportSelectionForm, WorklistForm
 from .export.sbml import SbmlExport
