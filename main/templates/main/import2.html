@@ -68,10 +68,32 @@
               <tab-content title="Upload File"
                            icon="ti-settings">
                       <h3>Upload file</h3>
-
-                  <div id="importDropZone2" class="fd-zone">
+                  <div><span>${ selectedProtocol }</span>
+                       <span>Examples</span>
+                       <span>Download Example</span>
                   </div>
-                 <my-dropzone></my-dropzone>
+                  <div id="importDropZone2">
+                      <textarea class="dataTextArea fd-zone" rows="16" id="step2textarea2"
+                        name="step2textarea">
+
+                      </textarea>
+                  </div>
+                 <my-dropzone @clicked-show-detail="clickedShowDetailModal" :current-mode="mode">
+                 </my-dropzone>
+                  <div>
+                      <table class="dataTableDiv">
+                          <thead>
+                              <th v-for="item in headers">
+                                ${ item }
+                              </th>
+                          </thead>
+                          <tbody>
+                            <tr v-for="row in importedData">
+                                <th v-for="string in row"> ${string} </th>
+                            </tr>
+                          </tbody>
+                          </table>
+                  </div>
               </tab-content>
               <tab-content title="Resolve"
                            icon="ti-check">
