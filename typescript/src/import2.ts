@@ -1,4 +1,6 @@
 import { Utl } from "../modules/Utl"
+// declare function require(name: string): any;
+// var Vue = require('vue');
 
 Vue.use(VueFormWizard);
 
@@ -14,6 +16,11 @@ var dropzone = {
   },
     methods: {
         prepareDropzone: function() {
+            //doing this b/c i can't figure out why 2 text areas exist
+            if ($('.fd-zone').length > 1) {
+                let elem = $('.fd-zone')[1];
+                $(elem).remove()
+            }
             Utl.FileDropZone.create({
                 elementId: "importDropZone2",
                 fileInitFn: this.fileDropped.bind(this),
@@ -114,8 +121,8 @@ window.addEventListener('load', function () {
         },
         methods: {
             clickedShowDetailModal: function (value) {
-              if (typeof value === 'object') {
-                  value = value['input'];
+              if (value.input) {
+                  value = value.input;
                   this.headers = value.shift();
                   this.importedData = value;
               } else {

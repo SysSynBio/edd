@@ -4,7 +4,7 @@
 {% block js_css %}
   {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static 'main/import2.css' %}" />
-    <script type="text/javascript" src="{% static 'main/js/lib/vue/dist/vue.js' %}"></script>
+    <script src="https://unpkg.com/vue"></script>
     <link rel="stylesheet" href="https://unpkg.com/vue-form-wizard/dist/vue-form-wizard.min.css">
     <script src="https://unpkg.com/vue-form-wizard/dist/vue-form-wizard.js"></script>
     <script type="text/javascript" src="{% static 'dist/Import2.js' %}"></script>
@@ -68,32 +68,30 @@
               <tab-content title="Upload File"
                            icon="ti-settings">
                       <h3>Upload file</h3>
-                  <div><span>${ selectedProtocol }</span>
-                       <span>Examples</span>
-                       <span>Download Example</span>
-                  </div>
-                  <div id="importDropZone2">
-                      <textarea class="dataTextArea fd-zone" rows="16" id="step2textarea2"
-                        name="step2textarea">
-
-                      </textarea>
-                  </div>
-                 <my-dropzone @clicked-show-detail="clickedShowDetailModal" :current-mode="mode">
-                 </my-dropzone>
-                  <div>
-                      <table class="dataTableDiv">
-                          <thead>
-                              <th v-for="item in headers">
-                                ${ item }
-                              </th>
-                          </thead>
-                          <tbody>
-                            <tr v-for="row in importedData">
-                                <th v-for="string in row"> ${string} </th>
-                            </tr>
-                          </tbody>
-                          </table>
-                  </div>
+                      <div> <span>${ selectedProtocol }</span>
+                            <span>Examples</span>
+                            <span>Download Example</span>
+                      </div>
+                      <div id="importDropZone2">
+                          <textarea style="width:100%" class="fd-zone" rows="16" id="step2textarea2"
+                            name="step2textarea2"></textarea>
+                      </div>
+                     <my-dropzone @clicked-show-detail="clickedShowDetailModal" :current-mode="mode">
+                     </my-dropzone>
+                      <div>
+                          <table class="dataTableDiv">
+                              <thead>
+                                  <th v-for="item in headers">
+                                    ${ item }
+                                  </th>
+                              </thead>
+                              <tbody>
+                                <tr v-for="row in importedData">
+                                    <th v-for="string in row"> ${string} </th>
+                                </tr>
+                              </tbody>
+                              </table>
+                      </div>
               </tab-content>
               <tab-content title="Resolve"
                            icon="ti-check">
