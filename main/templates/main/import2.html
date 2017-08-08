@@ -4,9 +4,7 @@
 {% block js_css %}
   {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static 'main/import2.css' %}" />
-    <script src="https://unpkg.com/vue"></script>
     <link rel="stylesheet" href="https://unpkg.com/vue-form-wizard/dist/vue-form-wizard.min.css">
-    <script src="https://unpkg.com/vue-form-wizard/dist/vue-form-wizard.js"></script>
     <script type="text/javascript" src="{% static 'dist/Import2.js' %}"></script>
 {% endblock js_css %}
 
@@ -40,25 +38,32 @@
                            :before-change="validateAsync"
                            icon="ti-user">
                       <h3>What Category of Data do you have?</h3>
-                          {% for protocol in protocols %}
-                          <button class="categories btn btn-default" v-on:click.prevent="selectCategory"
-                                  value="{{ protocol.id }}"> {{ protocol.name }} </button>
-                          {% endfor %}
+{#                          {% for protocol in protocols %}#}
+{#                          <button class="categories btn btn-default" v-on:click.prevent="selectCategory"#}
+{#                                  value="{{ protocol.id }}"> {{ protocol.name }} </button>#}
+{#                          {% endfor %}#}
+                   <button class="btn btn-default"  v-for="item in categories" v-on:click.prevent="selectCategory">
+                        ${ item }
+                   </button>
 
                 <div id="protocols" hidden>
                     <h3>What Protocol did you use?</h3>
-                    <p v-if="selectedCategory === ' Targeted Proteomics '">
-                        <button class="btn btn-default"  v-for="item in proteomics"
-                                v-on:click.prevent="selectProtocol">
-                           ${ item.name }
-                        </button>
-                    </p>
-                    <p v-else-if="selectedCategory === ' HPLC '">
-                        <button class="btn btn-default" v-for="item in metabolomics"
-                                v-on:click.prevent="selectProtocol">
-                            ${ item.name }
-                        </button>
-                    </p>
+
+                      <button class="btn btn-default" v-for="item in protocols"  v-on:click.prevent="selectProtocol">
+                          ${ item }
+                      </button>
+{#                    <p v-if="selectedCategory === ' Targeted Proteomics '">#}
+{#                        <button class="btn btn-default"  v-for="item in categories"#}
+{#                                v-on:click.prevent="selectProtocol">#}
+{#                           ${ item.name }#}
+{#                        </button>#}
+{#                    </p>#}
+{#                    <p v-else-if="selectedCategory === ' HPLC '">#}
+{#                        <button class="btn btn-default" v-for="item in metabolomics"#}
+{#                                v-on:click.prevent="selectProtocol">#}
+{#                            ${ item.name }#}
+{#                        </button>#}
+{#                    </p>#}
                 </div>
                     <div id="fileFormat" hidden>
                       <h3>File format</h3>
@@ -78,24 +83,24 @@
                       </div>
                      <my-dropzone @clicked-show-detail="clickedShowDetailModal" :current-mode="mode">
                      </my-dropzone>
-                      <div>
-                          <table class="dataTableDiv">
-                              <thead>
-                                  <th v-for="item in headers">
-                                    ${ item }
-                                  </th>
-                              </thead>
-                              <tbody>
-                                <tr v-for="row in importedData">
-                                    <th v-for="string in row"> ${string} </th>
-                                </tr>
-                              </tbody>
-                              </table>
-                      </div>
               </tab-content>
               <tab-content title="Resolve"
                            icon="ti-check">
-                     <h3>Data to Import</h3>
+                      <p>Help EDD resolve inputs from your file</p>
+                      <div>
+                        <table class="table table-striped">
+                            <thead>
+                                <th v-for="item in headers">
+                                    ${ item }
+                                </th>
+                            </thead>
+                            <tbody>
+                                <tr v-for="row in importedData">
+                                    <th v-for="string in row"> ${string} </th>
+                                </tr>
+                            </tbody>
+                        </table>
+                      </div>
               </tab-content>
                 <tab-content title="Inspect"
                            icon="ti-check">

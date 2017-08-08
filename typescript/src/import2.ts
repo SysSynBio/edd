@@ -1,6 +1,9 @@
 import { Utl } from "../modules/Utl"
-// declare function require(name: string): any;
-// var Vue = require('vue');
+import VueFormWizard from 'vue-form-wizard'
+// import 'vue-form-wizard/dist/vue-form-wizard.min.css'
+
+var Vue = require('vue/dist/vue');
+
 
 Vue.use(VueFormWizard);
 
@@ -74,11 +77,12 @@ var dropzone = {
             if (response.file_type === 'csv') {
                 this.rawText(response.file_data);
                 this.csvOutput = this.handleCSV();
+                this.csvOutput.input = this.csvOutput.input.map(function(d) {return d[0].split(',')});
                 this.showDetailModal();
                 return
             }
             //this works! :)
-            if (response.file_type == "xlsx") {
+            if (response.file_type === "xlsx") {
                 var ws = response.file_data["worksheets"][0];
                 this.csvOutput = ws;
                 this.showDetailModal();
@@ -107,11 +111,21 @@ window.addEventListener('load', function () {
             selectedProtocol: '',
             selectedCategory: '',
             mode: '',
-            proteomics: [
-              { name: 'JBEI Targeted Proteomics'},
-              { name: 'PNNL Targeted Proteomics'},
-              { name: 'JBEI Shotgun Proteomics'},
+            step1: [
+                    {'Proteomics': [
+                        {'JBEI Targeted Promeomics': ['Skyline'],},
+                        {'PNNL Global Proteomics': ['Skyline'],}]},
+                    {'Metabolomics': [
+                        {'JBEI Targeted Metabolomics': ['Skyline']},
+                        {'PNNL Global Metabolomics': ['Skyline']}]},
+                    {'Transcriptomics': [
+                        {'JBEI Transcriptomics': ['Cufflinks file', 'Generic Import File']}
+                        ]},
+                    {'Other': [
+                        {'BioLector': ['BioLector XML file']}]}
             ],
+            categories: '',
+            protocols: '',
             metabolomics : [
               { name: 'JBEI Targeted Metabolomics'},
               { name: 'PNNL Targeted Metabolomics'},
@@ -120,6 +134,10 @@ window.addEventListener('load', function () {
             importedData: [],
         },
         methods: {
+            prepareIt: function() {
+                this.categories = this.step1.map(function(d) {return Object.keys(d)[0]});
+                console.log(this.categories)
+            },
             clickedShowDetailModal: function (value) {
               if (value.input) {
                   value = value.input;
@@ -154,14 +172,17 @@ window.addEventListener('load', function () {
             selectCategory: function(event) {
                 $('.categories').find('button').css('color', 'grey');
                 event.target.style.color = 'blue';
-                this.selectedCategory = $(event.target).text();
-                if ($(event.target).text() === 'Biolector') {
+                //get selected text and remove whitespace
+                this.selectedCategory = $(event.target).text().replace(/\s/g, '');
+                if ($(event.target).text() === 'Other') {
                     this.mode = 'biolector';
                     $('#importDropZone2').addClass('xml');
                 } else {
                     this.mode = 'std'
                 }
                 $('#protocols').show();
+                var t = this.step1.filter(function(d) {return (Object).keys(d)[0] === $(event.target).text().replace(/\s/g, '');});
+                this.protocols = ((<any>Object).values(t[0])[0]).map(function(d){return Object.keys(d)[0]});
             },
             selectProtocol: function(event) {
                 $('#protocols').find('button').css('color', 'grey');
@@ -170,6 +191,8 @@ window.addEventListener('load', function () {
                 $('#fileFormat').show();
             },
         },
-
+        mounted() {
+            this.prepareIt()
+        }
     })
 });

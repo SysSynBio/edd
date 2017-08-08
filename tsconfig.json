@@ -6,8 +6,8 @@
     "pretty": true,
     "moduleResolution": "node",
     "sourceMap": true,
-    "noImplicitAny": false,
     "allowSyntheticDefaultImports": true,
+    "noImplicitAny": false,
     "rootDir": "./typescript/"
   },
   "exclude": [
