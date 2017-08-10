@@ -2,6 +2,45 @@
     background-color: #fff;
 }
 
+H3 {
+    padding-bottom: 20px;
+}
+
+/* Overriding bootstrap classes here  */
+.btn :focus {
+  background-color: white;
+  border-color:   #23527c
+}
+
+.btn-step1 {
+    color: #23527c;
+    margin-right: 10px;
+}
+
+.btn-step1:focus {
+  background-color: #fff;
+}
+
+.btn-step1:active {
+    background-color: #fff;
+    border: 1px solid #23527c;
+}
+
+.headers {
+    padding-bottom: 20px;
+    font-size: 25px;
+    font-weight: 500;
+    line-height: 1.1;
+}
+
+.uploadHeader {
+  font-size: 17px;
+}
+
+.exampleFile {
+    padding-left: 50px;
+}
+
 .step-wrapper {
     padding: 20px 0;
     display: none;
@@ -25,6 +64,16 @@
     float: none;
     padding: 0;
     width: 1%;
+}
+
+.off {
+    display: none;
+}
+
+.border-box {
+    border: 0.3px solid #23527c;
+    padding: 23px;
+    margin: 17px;
 }
 
 .step-indicator > li:after {
