@@ -19,6 +19,12 @@ var dropzone = {
   },
     methods: {
         prepareDropzone: function() {
+            $(document).on('click', '.disclose .discloseLink', (e) => {
+            $(e.target).closest('.disclose').toggleClass('discloseHide');
+            $('#skylinelayoutexample').slideToggle('slow', function() {
+                $('#skylinelayoutexample').toggleClass('off');
+            })
+        });
             $('.wizard-btn').prop('disabled', true);
             //doing this b/c i can't figure out why 2 text areas exist
             if ($('.fd-zone').length > 1) {
@@ -30,6 +36,7 @@ var dropzone = {
                 fileInitFn: this.fileDropped.bind(this),
                 url: "/utilities/parsefile/",
                 processResponseFn: this.fileReturnedFromServer.bind(this),
+                processErrorFn: this.handleError.bind(this),
             });
         },
         fileDropped: function (file, formData) {
@@ -73,9 +80,16 @@ var dropzone = {
             }
             return value;
         },
-
+        handleError: function(response) {
+            if (response.xhr.status === 504) {
+                
+            }
+        },
         fileReturnedFromServer: function(fileContainer, result, response){
+
             //handle csv files
+
+            this.successHandler();
             if (response.file_type === 'csv') {
                 this.rawText(response.file_data);
                 this.csvOutput = this.handleCSV();
@@ -92,6 +106,19 @@ var dropzone = {
                 this.showDetailModal();
             }
         },
+        successHandler: function() {
+            $('<p>', {
+                text: 'Success!',
+                style: 'margin:auto'
+            }).appendTo('#fileUploaded');
+            // $('#fileUploaded').show();
+            $("#fileUploaded").show();
+            //remove alert
+            setTimeout(function () {
+                   $('#fileUploaded').hide();
+                }, 3000);
+
+         },
         showDetailModal: function() {
             this.$emit('clicked-show-detail', this.csvOutput);
         }
@@ -164,7 +191,13 @@ window.addEventListener('load', function () {
                   this.headers = (value['headers']);
                   this.importedData = value['values'];
               }
-
+              this.successfulRedirect();
+            },
+            successfulRedirect: function() {
+            //redirect to lines page
+                setTimeout(function () {
+                   $('.wizard-btn').eq(1).click();
+                }, 1000);
             },
             onComplete: function () {
                 alert('Your data is being imported');
@@ -186,9 +219,14 @@ window.addEventListener('load', function () {
                 alert(event + " " + category);
             },
             selectCategory: function(event) {
-                $('.btn').css('color', 'lightgrey').css('border-color', 'lightgrey');
-                event.target.style.color = '#23527c';
-                $(event.target).css('border-color', '#23527c');
+                if (this.selectedCategory) {
+                    $('#protocols').find('button').removeClass('greyButton').removeClass('selectedButton');
+                    $('#protocols').addClass('off');
+                    $('#fileFormat').addClass('off');
+                    $('.wizard-btn ').prop('disabled', true);
+                }
+                $('.btn').removeClass('selectedButton').addClass('greyButton');
+                $(event.target).removeClass('greyButton').addClass('selectedButton');
                 //get selected text and remove whitespace
                 this.selectedCategory = $(event.target).text().replace(/\s/g, '');
                 if ($(event.target).text() === 'Other') {
@@ -197,7 +235,6 @@ window.addEventListener('load', function () {
                 } else {
                     this.mode = 'std'
                 }
-                $('#protocols').removeClass('off');
                 $(event.target).parent().find('p').remove();
                 let id = this.importOptions.categories.filter(function(d) {
                     return d.name === $(event.target).text().replace(/\s/g, '');
@@ -205,14 +242,17 @@ window.addEventListener('load', function () {
                 id = id[0].id;
                 this.protocols = this.importOptions.protocols.filter(function(d) {
                     return d.category === id
-                })
+                });
+                $('#protocols').removeClass('off');
             },
             selectProtocol: function(event) {
+                if (!this.selectedProtocol) {
+                    $('.wizard-btn ').prop('disabled', true);
+                }
                 //turn all buttons grey
-                $('#protocols').find('button').css('color','lightgrey').css('border-color','lightgrey');
+                $('#protocols').find('button').addClass('greyButton');
                 //turn selected button blue
-                event.target.style.color = '#23527c';
-                $(event.target).css('border-color', '#23527c');
+                $(event.target).addClass('selectedButton');
                 //remove white space before and after text.
                 this.selectedProtocol = $(event.target).text().replace(/^\s\s*/, '').replace(/\s\s*$/, '');
                 //get selected protocol obj
@@ -226,6 +266,8 @@ window.addEventListener('load', function () {
                                 {if (options.formats[key].id === d) {return options.formats[key]}}});
                 if (this.formats.length === 1) {
                    $('.wizard-btn ').prop('disabled', false);
+                } else {
+                    $('.wizard-btn ').prop('disabled', true);
                 }
                 $('#fileFormat').removeClass('off');
             },

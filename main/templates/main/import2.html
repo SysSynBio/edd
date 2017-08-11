@@ -58,32 +58,49 @@
                 </div>
                     <div id="fileFormat" class="border-box off">
                       <span class="headers">File format</span>
-                      <span v-for="format in formats">
+                      <ul v-for="format in formats">
                           <p>
                             <input type="checkbox" v-if="formats.length === 1" checked
                                    v-on:change.prevent="selectFormats">
                             <input type="checkbox" v-else v-on:change.prevent="selectFormats">
                           ${ format.name }
+                               <span class="exampleFile"  v-if="format.name == 'Generic Import File'
+                            || format.name == 'Cufflinks file'">
+                                <a href="{% static 'GC-MS_example.xlsx' %}">Example File</a>
+                            </span>
                           <span class="exampleFile" v-if="format.name == 'Biolector XML File'">
                                 <a href="{% static 'Biolector.xml' %}">Example File</a>
                             </span>
                             <span class="exampleFile" v-if="format.name== 'Skyline'">
                                  <a href="{% static 'skyline_example.csv' %}">Example File</a>
-                            </span>
-                            <span class="exampleFile"  v-if="format.name == 'Generic Import File'
-                            || format.name == 'Cufflinks file'">
-                                <a href="{% static 'GC-MS_example.xlsx' %}">Example File</a>
-                            </span>
+                                <span class="disclose discloseHide">
+                                  <span><a class="discloseLink" href="#">Example</a></span>
+                                  <div class="discloseBody off" id="skylinelayoutexample">
+                                        <p>Use this format for data coming out of Skyline analysis of mass spec data. This import
+                                            expects data to come in four columns, with a sample name in the first
+                                            column, a protein name in the second (represented by its accession ID found on
+                                            <a href="http://www.uniprot.org/uniprot/">UniProt</a>
+                                            ), a peptide in the third column, and a numeric value for peak area in the fourth.
+                                            Here is an example of a <a href="{% static 'skyline_example.csv' %}">Skyline Data File </a>
+                                            that has been successfully imported.</p>
+                                        <img class="exampleImage" src="{% static 'main/images/data_examples/skyline_example_a.png' %}" />
+                                  </div><!-- .discloseBody -->
+                                </span><!-- .disclose -->
                           </p>
-                      </span>
+                      </ul>
                     </div>
               </tab-content>
+
               <tab-content title="Upload File"
                            icon="ti-settings">
-                      <div> <span class="uploadHeader">${ selectedProtocol }</span>
-                            <span>Examples</span>
-                            <span>Download Example</span>
-                      </div>
+                        {# Sucess Alert #}
+                        <div id="fileUploaded" class="alert alert-success alert-dismissible"
+                             role="alert" hidden>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                      <h3>${ selectedProtocol }</h3>
                       <div id="importDropZone2">
                           <textarea style="width:100%" class="fd-zone" rows="16" id="step2textarea2"
                             name="step2textarea2"></textarea>

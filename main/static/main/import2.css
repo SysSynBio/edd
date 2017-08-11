@@ -17,8 +17,13 @@ H3 {
     margin-right: 10px;
 }
 
+.disclose {
+    padding-left: 50px;
+}
+
 .btn-step1:focus {
   background-color: #fff;
+  border: 1px solid #23527c;
 }
 
 .btn-step1:active {
@@ -56,6 +61,16 @@ H3 {
     vertical-align: middle;
     padding-left: 0;
     padding-top: 20px;
+}
+
+.greyButton {
+    color: lightgrey;
+    border-color: lightgrey;
+}
+
+.selectedButton {
+    color: #23527c;
+    border-color: #23527c;
 }
 
 .step-indicator > li {
