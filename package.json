@@ -8,12 +8,15 @@
     "@types/jasmine": "^2.5.53",
     "@types/karma": "^0.13.36",
     "awesome-typescript-loader": "^3.2.1",
+    "dropzone": "^5.1.1",
     "grunt-protractor-runner": "^4.0.0",
     "jquery": "^3.2.1",
     "phantomjs": "^2.1.7",
     "tinymce": "^4.6.4",
     "ts-loader": "^2.2.2",
-    "typescript": "^2.4.1"
+    "typescript": "^2.4.1",
+    "vue": "^2.4.2",
+    "vue-form-wizard": "^0.6.3"
   },
   "devDependencies": {
     "@types/jquery": "^3.2.6",

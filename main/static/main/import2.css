@@ -6,6 +6,10 @@ H3 {
     padding-bottom: 20px;
 }
 
+.table tbody th {
+    font-weight: normal;
+}
+
 /* Overriding bootstrap classes here  */
 .btn :focus {
   background-color: white;

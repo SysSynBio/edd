@@ -588,9 +588,9 @@ export module Utl {
                 var xhr = file.xhr;
                 var dropzone = this;
                 var response = JSON.parse(xhr.response);
-                    if (response.python_error) {
+                if (response.python_error) {
                     // If we were given a function to process the error, use it.
-                        alert(response.python_error);
+                   alert(response.python_error);
                 }
                 else if (file.status === 'error') {
                     // unique class for ice related errors
@@ -614,15 +614,15 @@ export module Utl {
                     }
                     return
                 }
-                if (response.warnings) {
+                else if (response.warnings) {
                     this.options.processWarningFn(file, response);
                     return
                 }
-                if (typeof(this.options.processResponseFn) === 'function') {
+                else if (typeof(this.options.processResponseFn) === 'function') {
                     this.options.processResponseFn(this, file, response);
                     return
                 }
-                if (file.status === 'success' && !response.warnings) {
+                else if (file.status === 'success' && !response.warnings) {
                     this.options.processResponseFn(file, response)
                 }
             });
