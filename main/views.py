@@ -1427,12 +1427,6 @@ def study_describe_experiment(request, pk=None, slug=None):
 def utilities_parse_import_file(request):
     """ Attempt to process posted data as either a TSV or CSV file or Excel spreadsheet and
         extract a table of data automatically. """
-    # These are embedded by the filedrop.js class. Here for reference.
-    # file_name = request.META.get('HTTP_X_FILE_NAME')
-    # file_size = request.META.get('HTTP_X_FILE_SIZE')
-    # file_type = request.META.get('HTTP_X_FILE_TYPE')
-    # file_date = request.META.get('HTTP_X_FILE_DATE')
-
     # In requests from OS X clients, we can use the file_type value. For example, a modern Excel
     # document is reported as "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     # and it's consistent across Safari, Firefox, and Chrome. However, on Windows XP, file_type is

@@ -1,7 +1,8 @@
 import { Utl } from "../modules/Utl"
 import VueFormWizard from 'vue-form-wizard'
+import { EDDAuto } from "../modules/EDDAutocomplete"
 // import 'vue-form-wizard/dist/vue-form-wizard.min.css'
-
+var ATData: any; // Setup by the server.
 var Vue = require('vue/dist/vue');
 
 
@@ -14,10 +15,35 @@ var dropzone = {
     data: function () {
     return {
       csvOutput: '',
-      mode: ''
+      mode: '',
+      lineNames:'',
+      matchedLines: '',
+      matchedAssays: ''
     }
   },
     methods: {
+        getEDDData: function() {
+            var atdata_url:string;
+
+            atdata_url = "/study/" + EDDData.currentStudyID + "/assaydata/";
+
+            EDDAuto.BaseAuto.initPreexisting();
+            // this makes the autocomplete work like a dropdown box
+            // fires off a search as soon as the element gains focus
+            $(document).on('focus', '.autocomp', function (ev) {
+                $(ev.target).addClass('autocomp_search').mcautocomplete('search');
+            });
+
+            // Populate ATData and EDDData objects via AJAX calls
+            jQuery.ajax(atdata_url, {
+                "success": function(data) {
+                    $.extend(ATData, data.ATData);
+                    $.extend(EDDData, data.EDDData);
+                }
+            }).fail(function(x, s, e) {
+                alert(s);
+            });
+        },
         prepareDropzone: function() {
             $(document).on('click', '.disclose .discloseLink', (e) => {
             $(e.target).closest('.disclose').toggleClass('discloseHide');
@@ -82,14 +108,14 @@ var dropzone = {
         },
         handleError: function(response) {
             if (response.xhr.status === 504) {
-                
+                alert('504 error')
             }
         },
         fileReturnedFromServer: function(fileContainer, result, response){
 
-            //handle csv files
-
             this.successHandler();
+            this.uniqueLineNames = this.findUniqueLineNames();
+            //handle csv files
             if (response.file_type === 'csv') {
                 this.rawText(response.file_data);
                 this.csvOutput = this.handleCSV();
@@ -103,9 +129,20 @@ var dropzone = {
             if (response.file_type === "xlsx") {
                 var ws = response.file_data["worksheets"][0];
                 this.csvOutput = ws;
+                // this.csvOutput[0].headers = this.csvOutput[0].headers.map(function(a) {
+                //     return {'header': a}
+                // });
+                // this.csvOutput[0].values = this.csvOutput[0].values.map(function(a) {
+                //     return a.map(function(b){ return {'cell': b}})
+                // });
                 this.showDetailModal();
             }
         },
+        findUniqueLineNames: function() {
+                this.uniqueLineNames = Object.keys(EDDData.Lines).map(function(key, index) {
+                                       return EDDData.Lines[key].name;
+                                    });
+            },
         successHandler: function() {
             $('<p>', {
                 text: 'Success!',
@@ -124,7 +161,8 @@ var dropzone = {
         }
     },
     mounted() {
-      this.prepareDropzone()
+      this.prepareDropzone();
+      this.getEDDData();
     }
 };
 
@@ -143,6 +181,13 @@ window.addEventListener('load', function () {
             selectedCategory: '',
             selectedFormat: '',
             mode: '',
+            requiredInputs: [
+                {type: 'Line Name', id:'1'},
+                {type: 'Measurement', id:'2'},
+                {type: 'Value', id:'3'},
+                {type: 'Units', id:'4'},
+                {type: 'Time (h)', id:'5'},
+                {type: 'Cellular Compartment', id:'6'}],
             importOptions: {
                 categories: [
                     {id: 'abcd', name: 'Proteomics'},
@@ -171,13 +216,11 @@ window.addEventListener('load', function () {
                 ]
             },
             categories: '',
+            yes: true,
             protocols: '',
             formats: '',
-            metabolomics : [
-              { name: 'JBEI Targeted Metabolomics'},
-              { name: 'PNNL Targeted Metabolomics'},
-            ],
             headers: [],
+            unmatchedRows: [],
             importedData: [],
         },
         methods: {
@@ -186,12 +229,26 @@ window.addEventListener('load', function () {
                   value = value.input;
                   this.headers = value.shift();
                   this.importedData = value;
+                  if(this.importedData.length > 50) {
+                      this.yes = false;
+                  }
               } else {
                   value = value[0];
                   this.headers = (value['headers']);
+                  this.headers.unshift('');
                   this.importedData = value['values'];
               }
+              this.identifyHeaders();
               this.successfulRedirect();
+            },
+            identifyHeaders: function() {
+               for (var key in this.requiredInputs) {
+                   for (var i =0; i < this.headers.length; i++) {
+                       if(this.requiredInputs[key].type.includes(this.headers[i])) {
+                           this.requiredInputs[key].exists = true;
+                       }
+                   }
+               }
             },
             successfulRedirect: function() {
             //redirect to lines page
@@ -282,3 +339,23 @@ window.addEventListener('load', function () {
         }
     })
 });
+
+
+
+            //resolved sets. how each input should be sent..
+// var test = {
+//     assay_id:"named_or_new",
+//     assay_name:"2X-Mh",
+//     compartment_id:"0",
+//     data: [[24, 345.5]],
+//     kind:"std",
+//     line_id:"8",
+//     line_name:null,
+//     measurement_id:"1",
+//     measurement_name:null,
+//     metadata_by_id:Object,
+//     metadata_by_name:Object,
+//     protocol_id:5,
+//     units_id:"1"
+// };
+//          parsing stuff
