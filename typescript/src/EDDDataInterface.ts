@@ -171,7 +171,10 @@ interface UserRecord {
     disabled: boolean;
 }
 
-
+interface StudyLines { 
+    id: number;
+    n: string; 
+}
 
 // Declare interface and EDDData variable for highlight support
 interface EDDData {
@@ -192,10 +195,11 @@ interface EDDData {
     Protocols:{[id:number]: ProtocolRecord};
     Strains:{[id:number]: StrainRecord};
     UnitTypes:{[id:number]: UnitType};
-    Users:{[id:number]: UserRecord};
-
+    Users:{[id:number]: UserRecord}
     Exchange:any;
     Species:any;
+    ExistingLines: {id: number; n: string;}[];
+    ExistingAssays:{[index: string]: number[]}
 
     // TODO: is this used anymore?
     MediaTypes:{[shortform:string]: string};

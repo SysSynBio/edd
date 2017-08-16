@@ -2,7 +2,6 @@ import { Utl } from "../modules/Utl"
 import VueFormWizard from 'vue-form-wizard'
 import { EDDAuto } from "../modules/EDDAutocomplete"
 // import 'vue-form-wizard/dist/vue-form-wizard.min.css'
-var ATData: any; // Setup by the server.
 var Vue = require('vue/dist/vue');
 
 
@@ -18,14 +17,14 @@ var dropzone = {
       mode: '',
       lineNames:'',
       matchedLines: '',
-      matchedAssays: ''
+      matchedAssays: '',
     }
   },
     methods: {
         getEDDData: function() {
-            var atdata_url:string;
+            var studydata_url:string;
 
-            atdata_url = "/study/" + EDDData.currentStudyID + "/assaydata/";
+            studydata_url = "/study/" + EDDData.currentStudyID + "/assaydata/";
 
             EDDAuto.BaseAuto.initPreexisting();
             // this makes the autocomplete work like a dropdown box
@@ -35,9 +34,9 @@ var dropzone = {
             });
 
             // Populate ATData and EDDData objects via AJAX calls
-            jQuery.ajax(atdata_url, {
+            jQuery.ajax(studydata_url, {
                 "success": function(data) {
-                    $.extend(ATData, data.ATData);
+                    $.extend(EDDData, data.ATData);
                     $.extend(EDDData, data.EDDData);
                 }
             }).fail(function(x, s, e) {
@@ -114,7 +113,7 @@ var dropzone = {
         fileReturnedFromServer: function(fileContainer, result, response){
 
             this.successHandler();
-            this.uniqueLineNames = this.findUniqueLineNames();
+
             //handle csv files
             if (response.file_type === 'csv') {
                 this.rawText(response.file_data);
@@ -138,11 +137,6 @@ var dropzone = {
                 this.showDetailModal();
             }
         },
-        findUniqueLineNames: function() {
-                this.uniqueLineNames = Object.keys(EDDData.Lines).map(function(key, index) {
-                                       return EDDData.Lines[key].name;
-                                    });
-            },
         successHandler: function() {
             $('<p>', {
                 text: 'Success!',
@@ -181,13 +175,8 @@ window.addEventListener('load', function () {
             selectedCategory: '',
             selectedFormat: '',
             mode: '',
-            requiredInputs: [
-                {type: 'Line Name', id:'1'},
-                {type: 'Measurement', id:'2'},
-                {type: 'Value', id:'3'},
-                {type: 'Units', id:'4'},
-                {type: 'Time (h)', id:'5'},
-                {type: 'Cellular Compartment', id:'6'}],
+            requiredInputs: ["Line Name", "Measurement", "Value", "Units", "Time (h)", "Cellular" +
+            " Compartment"],
             importOptions: {
                 categories: [
                     {id: 'abcd', name: 'Proteomics'},
@@ -222,7 +211,21 @@ window.addEventListener('load', function () {
             headers: [],
             unmatchedRows: [],
             importedData: [],
+            matchedIds: []
         },
+        // computed: {
+        //     set: function() {
+        //         this.importedData.forEach(function(d) {
+        //            return {
+        //             kind: this.mode,
+        //             line_name: null,
+        //             assay_name: null,
+        //             measurement_name: null,
+        //             metadata_by_name: {},
+        //             data: ''
+        //         };
+        //     })
+        // },
         methods: {
             clickedShowDetailModal: function (value) {
               if (value.input) {
@@ -237,19 +240,24 @@ window.addEventListener('load', function () {
                   this.headers = (value['headers']);
                   this.headers.unshift('');
                   this.importedData = value['values'];
+                  var required = this.requiredInputs;
               }
-              this.identifyHeaders();
+              var matched = this.headers.filter(function(d, i) {if ( required.indexOf(d) >= 0) return i});
+              for (var i = 0; i < matched.length; i++ ) {
+                  this.matchedIds.push(this.requiredInputs.indexOf(matched[i]) + 1)
+              }
               this.successfulRedirect();
             },
-            identifyHeaders: function() {
-               for (var key in this.requiredInputs) {
-                   for (var i =0; i < this.headers.length; i++) {
-                       if(this.requiredInputs[key].type.includes(this.headers[i])) {
-                           this.requiredInputs[key].exists = true;
-                       }
-                   }
-               }
-            },
+
+            // identifyHeaders: function() {
+            //    for (var key in this.requiredInputs) {
+            //        for (var i =0; i < this.headers.length; i++) {
+            //            if(this.requiredInputs[key].type.includes(this.headers[i])) {
+            //                this.requiredInputs[key].exists = true;
+            //            }
+            //        }
+            //    }
+            // },
             successfulRedirect: function() {
             //redirect to lines page
                 setTimeout(function () {
@@ -355,7 +363,6 @@ window.addEventListener('load', function () {
 //     measurement_name:null,
 //     metadata_by_id:Object,
 //     metadata_by_name:Object,
-//     protocol_id:5,
 //     units_id:"1"
 // };
 //          parsing stuff

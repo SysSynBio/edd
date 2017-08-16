@@ -1,8 +1,6 @@
 import { EDDATDGraphing } from "../modules/AssayTableDataGraphing"
 import { Utl } from "../modules/Utl"
 import { EDDAuto } from "../modules/EDDAutocomplete"
-import { EDDGraphingTools } from "../modules/EDDGraphingTools"
-declare var ATData: any; // Setup by the server.
 
 // Doing this bullshit because TypeScript/InternetExplorer do not recognize static methods on Number
 var EDD_auto: any;
@@ -132,7 +130,7 @@ module EDDTableImport {
         // Populate ATData and EDDData objects via AJAX calls
         jQuery.ajax(atdata_url, {
             "success": function(data) {
-                $.extend(ATData, data.ATData);
+                $.extend(EDDData, data.ATData);
                 $.extend(EDDData, data.EDDData);
                 EDDTableImport.onReferenceRecordsLoad();
             }
@@ -2352,7 +2350,7 @@ module EDDTableImport {
 
                 assayIn = $('#masterAssay').empty();
                 $('<option>').text('(Create New)').appendTo(assayIn).val('named_or_new').prop('selected', true);
-                currentAssays = ATData.existingAssays[masterP] || [];
+                currentAssays = EDDData.ExistingAssays[masterP] || [];
                 currentAssays.forEach((id: number): void => {
                     var assay = EDDData.Assays[id],
                         line = EDDData.Lines[assay.lid],
@@ -3431,8 +3429,8 @@ module EDDTableImport {
                 assayID: 'named_or_new'
             };
             highest = 0;
-            // ATData.existingAssays is type {[index: string]: number[]}
-            assays = ATData.existingAssays[EDDTableImport.selectMajorKindStep.masterProtocol] || [];
+            // EDDData.ExistingAssays is type {[index: string]: number[]}
+            assays = EDDData.ExistingAssays[EDDTableImport.selectMajorKindStep.masterProtocol] || [];
             assays.every((id: number, i: number): boolean => {
                 var assay: AssayRecord, line: LineRecord, protocol: any, name: string;
                 assay = EDDData.Assays[id];
@@ -3472,8 +3470,8 @@ module EDDTableImport {
             });
             // Now we repeat the practice, separately, for the Line pulldown.
             highest = 0;
-            // ATData.existingLines is type {id: number; n: string;}[]
-            (ATData.existingLines || []).every((line: any, i: number): boolean => {
+            // EDDData.ExistingLines is type {id: number; n: string;}[]
+            (EDDData.ExistingLines || []).every((line: any, i: number): boolean => {
                 if (assayOrLine === line.n) {
                     // The Line name, case-sensitive, is the best match
                     selections.lineID = line.id;
@@ -3545,7 +3543,7 @@ module EDDTableImport {
                     .prop('selected', !defaultSel.assayID);
 
                 // add options to the assay combo box
-                (ATData.existingAssays[EDDTableImport.selectMajorKindStep.masterProtocol] || []).forEach((id: any): void => {
+                (EDDData.ExistingAssays[EDDTableImport.selectMajorKindStep.masterProtocol] || []).forEach((id: any): void => {
                     var assay: AssayRecord, line: LineRecord, protocol: any;
                     assay = EDDData.Assays[id];
                     if (assay.id === defaultSel.assayID && defaultSel.lineID != 'new') {

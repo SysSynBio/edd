@@ -1194,14 +1194,11 @@ def study_edddata(request, pk=None, slug=None):
 def study_assay_table_data(request, pk=None, slug=None):
     """ Request information on assays associated with a study. """
     model = load_study(request, pk=pk, slug=slug)
-    # FIXME filter protocols?
-    protocols = Protocol.objects.all()
     lines = model.line_set.all()
     return JsonResponse({
         "ATData": {
-            "existingProtocols": {p.id: p.name for p in protocols},
-            "existingLines": [{"n": l.name, "id": l.id} for l in lines],
-            "existingAssays": model.get_assays_by_protocol(),
+            "ExistingLines": [{"n": l.name, "id": l.id} for l in lines],
+            "ExistingAssays": model.get_assays_by_protocol(),
         },
         "EDDData": get_edddata_study(model),
     }, encoder=JSONDecimalEncoder)
@@ -1427,6 +1424,12 @@ def study_describe_experiment(request, pk=None, slug=None):
 def utilities_parse_import_file(request):
     """ Attempt to process posted data as either a TSV or CSV file or Excel spreadsheet and
         extract a table of data automatically. """
+    # These are embedded by the filedrop.js class. Here for reference.
+    # file_name = request.META.get('HTTP_X_FILE_NAME')
+    # file_size = request.META.get('HTTP_X_FILE_SIZE')
+    # file_type = request.META.get('HTTP_X_FILE_TYPE')
+    # file_date = request.META.get('HTTP_X_FILE_DATE')
+
     # In requests from OS X clients, we can use the file_type value. For example, a modern Excel
     # document is reported as "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     # and it's consistent across Safari, Firefox, and Chrome. However, on Windows XP, file_type is

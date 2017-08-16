@@ -113,9 +113,10 @@
                       <div class="flex-container">
                           <div class="flex-item">
                             <p> this is where the default unmatched items will go</p>
-                              <div v-for="(input, i) in requiredInputs" class="border-box">
-                                  <p>Default ${input.type} </p>
-                                   <input v-model="requiredInputs[i].default">
+                              <div v-for="(input, i) in requiredInputs" v-if="matchedIds.indexOf
+                              (i + 1) == -1" class="border-box">
+                                  <p>Default ${input}</p>
+                                   <input v-model="requiredInputs[i].default" required>
                                   ${input.default}
                               </div>
                           </div>
@@ -123,11 +124,12 @@
                             <table class="table table-striped">
                                 <thead>
                                     <th v-for="(item, i) in headers">
-                                         <select v-if="i != 0">
+                                        <select v-if="i != 0 && matchedIds.indexOf(i) == -1">
                                             <option>${item}</option>
-                                            <option v-for="(input, index) in requiredInputs"
-                                                    :value="input.id">${ input.type}</option>
+                                            <option v-for="(input, index) in requiredInputs">
+                                                   ${input}</option>
                                          </select>
+                                        <span v-else>${item}</span>
                                     </th>
                                 </thead>
                                 <tbody>
