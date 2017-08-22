@@ -932,7 +932,7 @@ class Study(EDDObject):
     @staticmethod
     def user_permission_q(user, permission, keyword_prefix=''):
         """
-        Constructs a django Q object for testing whether the specified user has the required
+        Constructs a django Q object for testing whether a user has the required
         permission for a study as part of a Study-related Django model query. It's important to
         note that the provided Q object will return one row for each user/group permission that
         gives the user access to the study, so clients that aren't already filtering by primary
@@ -975,10 +975,9 @@ class Study(EDDObject):
     @staticmethod
     def user_role_can_read(user):
         """
-            Tests whether the user's role alone is sufficient to grant read access to this
-            study.
-            :param user: the user
-            :return: True if the user role has read access, false otherwise
+        Tests whether the user's role alone is sufficient to grant read access to this study.
+        :param user: the user
+        :return: True if the user role has read access, false otherwise
         """
         return user.is_superuser
 
@@ -1120,6 +1119,8 @@ class StudyPermission(models.Model):
         (READ, _('Read')),
         (WRITE, _('Write')),
     )
+    CAN_VIEW = (READ, WRITE)
+    CAN_EDIT = (WRITE, )
     study = models.ForeignKey(
         Study,
         help_text=_('Study this permission applies to.'),
@@ -1825,6 +1826,10 @@ class MeasurementType(models.Model, EDDSerialize):
     def is_phosphor(self):
         return self.type_group == MeasurementType.Group.PHOSPHOR
 
+    @classmethod
+    def get_model_class(cls, type_group):
+        return _GROUP_TO_MODEL_CLASS.get(type_group)
+
     def export_name(self):
         return self.type_name
 
@@ -2192,6 +2197,14 @@ class Phosphor(MeasurementType):
         # force PHOSPHOR group
         self.type_group = MeasurementType.Group.PHOSPHOR
         super(Phosphor, self).save(*args, **kwargs)
+
+
+_GROUP_TO_MODEL_CLASS = {
+        MeasurementType.Group.GENERIC: MeasurementType,
+        MeasurementType.Group.METABOLITE: Metabolite,
+        MeasurementType.Group.GENEID: GeneIdentifier,
+        MeasurementType.Group.PROTEINID: ProteinIdentifier,
+        MeasurementType.Group.PHOSPHOR: Phosphor, }
 
 
 @python_2_unicode_compatible

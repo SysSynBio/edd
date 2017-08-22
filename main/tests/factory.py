@@ -15,9 +15,12 @@ class StudyFactory(factory.django.DjangoModelFactory):
         model = models.Study
     name = factory.Faker('catch_phrase')
     description = factory.Faker('text', max_nb_chars=300)
+    contact_extra = ''
 
 
 class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = models.User
     username = factory.Sequence(lambda n: 'user%03d' % n)  # username is unique
+    first_name = 'Firstname'
+    last_name = 'Lastname'

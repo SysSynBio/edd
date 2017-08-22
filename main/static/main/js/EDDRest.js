@@ -25,8 +25,8 @@ var EddRest;
     EddRest.LINE_METADATA_CONTEXT = 'L';
     EddRest.ASSAY_METADATA_CONTEXT = 'A';
     /* REST API resource URLs */
-    var metadata_types_url = "/rest/metadata_type/";
-    var protocols_url = '/rest/protocol/';
+    var metadata_types_url = "/rest/metadata_types/";
+    var protocols_url = '/rest/protocols/';
     var measurement_units_url = '/rest/measurement_unit';
     /**
      * Initiates one or more asynchronous requests to load Protocols from the REST API back
