@@ -516,6 +516,9 @@ def build_values_query(request, query_params, id_override=None, study_id=None):
         query = filter_for_study_permission(request, query, MeasurementValue,
                                             'measurement__assay__line__study__')
 
+    # by default, sort by pk for consistent pagination results
+    query = query.order_by('pk')
+
     return query
 
 
@@ -586,11 +589,17 @@ def build_measurement_type_query(request, query_params, identifier=None):
     if identifier:
         query = query.filter(build_id_q('', identifier))
 
+    # as a stopgap, sort by pk for consistent pagination until better sorting is in place
+    query = query.order_by('pk')
+
     # prevent access to mutator methods unless client has appropriate permissions
     if request.method in HTTP_MUTATOR_METHODS:
         require_role_or_auth_perm(request, model_class)
 
     if not query_params:
+        # sort by pk by default for consistent pagination results
+        query = query.order_by('pk')
+
         return query
 
     if group_filter:
@@ -608,6 +617,9 @@ def build_measurement_type_query(request, query_params, identifier=None):
 
         if sort == REVERSE_SORT_VALUE:
             query = query.reverse()
+    else:
+        # sort by pk by default for consistent pagination results
+        query = query.order_by('pk')
 
     return query
 
@@ -679,6 +691,9 @@ def build_metadata_type_query(request, query_params, identifier=None):
 
         if sort == REVERSE_SORT_VALUE:
             queryset = queryset.reverse()
+    else:
+        # sort by pk for consistent pagination results
+        queryset = queryset.order_by('pk')
 
     queryset = _optional_regex_filter(query_params, queryset, _TYPE_NAME_PROPERTY,
                                       METADATA_TYPE_NAME_REGEX, METADATA_TYPE_LOCALE, )
@@ -822,7 +837,8 @@ class MetadataGroupViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that supports read-only access to EDD's metadata groups.
     """
-    queryset = MetadataGroup.objects.all()  # must be defined for DjangoModelPermissions
+    # by default, sort by pk for consistent pagination results
+    queryset = MetadataGroup.objects.all().order_by('pk')
     serializer_class = MetadataGroupSerializer
 
     def list(self, request, *args, **kwargs):
@@ -849,8 +865,12 @@ class UsersViewSet(viewsets.ReadOnlyModelViewSet):
 
         user = self.kwargs.get('pk')
         if user:
-            return User.objects.filter(pk=user)
-        return User.objects.filter()
+            query = User.objects.filter(pk=user)
+        else:
+            query = User.objects.all()
+
+        # by default, sort by pk for consistent pagination results
+        query = query.order_by('pk')
 
 
 class StrainsViewSet(CustomFilteringMixin, mixins.CreateModelMixin,
@@ -911,6 +931,9 @@ class StrainsViewSet(CustomFilteringMixin, mixins.CreateModelMixin,
                                            STRAIN_REGISTRY_URL_REGEX, '')
             query = _optional_regex_filter(query_params, query, 'name', STRAIN_NAME_REGEX, None)
             query = _optional_timestamp_filter(query, query_params)
+
+        # by default, sort by pk for consistent pagination results
+        query = query.order_by('pk')
 
         # filter results to ONLY the strains accessible by this user. Note that this may
         # prevent some users from accessing strains, depending on how EDD's permissions are set up,
@@ -1136,8 +1159,7 @@ class StudiesViewSet(CustomFilteringMixin, mixins.CreateModelMixin,
             self.request.data['contact_extra'] = contact.get_full_name()
 
 
-def build_study_query(request, query_params, identifier=None, skip_study_auth_perms=False,
-                      skip_non_id_filtering=False):
+def build_study_query(request, query_params, identifier=None):
     """
     A helper method for constructing a Study QuerySet while consistently applying Study permissions
     :param skip_study_auth_perms: True to disallow access to the study based on class-level
@@ -1156,10 +1178,8 @@ def build_study_query(request, query_params, identifier=None, skip_study_auth_pe
     if identifier:
         study_query = study_query.filter(build_study_id_q('', identifier))
 
-    # apply standard filtering options, but skip ID-based filtering we've just finished
-    if not skip_non_id_filtering:
-        study_query = optional_edd_object_filtering(query_params, study_query,
-                                                    skip_id_filtering=True)
+    # apply standard filtering options
+    study_query = optional_edd_object_filtering(query_params, study_query, skip_id_filtering=True)
 
     # apply study permissions
     study_query = filter_for_study_permission(request, study_query, Study, '')
@@ -1205,6 +1225,9 @@ def optional_edd_object_filtering(params, query, skip_id_filtering=False, id_ove
     # django to apply security checks, for starters we'll expose the HStoreField query
     # parameters to clients more-or-less directly.
     meta_comparisons = params.get(META_SEARCH_PARAM)
+
+    # as a stopgap, sort by pk for consistent pagination until better sorting is in place
+    query = query.order_by('pk')
 
     if not meta_comparisons:
         return query
