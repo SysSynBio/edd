@@ -174,7 +174,19 @@ window.addEventListener('load', function () {
             selectedProtocol: '',
             selectedCategory: '',
             selectedFormat: '',
+            selectedMeasurement:'',
+            selectedMeasurementId: '',
             mode: '',
+            defaults: [{
+                "Line Name": {default: ''},
+                "Measurement": {default: ''},
+                 "Value":  {default: ''},
+                "Units":  {default: ''},
+                "Time (h)":  {default: ''},
+                "Cellular Compartment":  {default: ''},
+             }   
+            ],
+            updatedHeader: [],
             requiredInputs: ["Line Name", "Measurement", "Value", "Units", "Time (h)", "Cellular" +
             " Compartment"],
             importOptions: {
@@ -204,6 +216,20 @@ window.addEventListener('load', function () {
                     {id: 'f024', name: 'Biolector XML File'},
                 ]
             },
+            emptyDataEntry: {
+                assay_id:"named_or_new",
+                assay_name:"new",
+                compartment_id:"",
+                data: [],
+                kind: 'std',
+                line_id:"",
+                line_name:null,
+                measurement_id: '',
+                measurement_name: '',
+                metadata_by_id: "",
+                metadata_by_name: "",
+                units_id:""
+            },
             categories: '',
             yes: true,
             protocols: '',
@@ -211,21 +237,9 @@ window.addEventListener('load', function () {
             headers: [],
             unmatchedRows: [],
             importedData: [],
-            matchedIds: []
+            matchedIds: [],
+            importData: '',
         },
-        // computed: {
-        //     set: function() {
-        //         this.importedData.forEach(function(d) {
-        //            return {
-        //             kind: this.mode,
-        //             line_name: null,
-        //             assay_name: null,
-        //             measurement_name: null,
-        //             metadata_by_name: {},
-        //             data: ''
-        //         };
-        //     })
-        // },
         methods: {
             clickedShowDetailModal: function (value) {
               if (value.input) {
@@ -240,15 +254,55 @@ window.addEventListener('load', function () {
                   this.headers = (value['headers']);
                   this.headers.unshift('');
                   this.importedData = value['values'];
-                  var required = this.requiredInputs;
-              }
-              var matched = this.headers.filter(function(d, i) {if ( required.indexOf(d) >= 0) return i});
-              for (var i = 0; i < matched.length; i++ ) {
-                  this.matchedIds.push(this.requiredInputs.indexOf(matched[i]) + 1)
               }
               this.successfulRedirect();
+              this.matchInputs();
+              this.findMatchedInputs();
             },
-
+            matchInputs: function() {
+              this.importData = this.importedData.map(function(d) {
+                  return {
+                    assay_id:"named_or_new",
+                    assay_name:"new",
+                    input: d[0],
+                    compartment_id:"",
+                    data: [[24, d[3]]],
+                    kind: 'std',
+                    line_id:"",
+                    line_name:null,
+                    measurement_id: '',
+                    measurement_name: d[2],
+                    metadata_by_id: "",
+                    metadata_by_name: "",
+                    units_id:""
+                  }
+              });
+              this.importData.forEach(function(d) {
+                  // var measurement = this.selectedMeasurement;
+                  // var measurementId = this.selectedMeasurementId;
+                  return EDDData.ExistingLines.forEach(function(m) {
+                      if (m.n === d.input) {
+                          d.line_name = d.input;
+                          d.line_id = m.id;
+                      }
+                  })
+              });
+            },
+            findMatchedInputs: function() {
+                var required = this.requiredInputs;
+                var matched = this.headers.filter(function(d, i) {
+                    if (required.indexOf(d) >= 0) return i});
+                for (var i = 0; i < matched.length; i++ ) {
+                    this.matchedIds.push(this.requiredInputs.indexOf(matched[i]) + 1)
+                }
+            },
+            defaultInput: function(input, type) {
+                if (type === 'Measurement') {
+                    this.importData.forEach(function(d) {
+                      d.measurement = input;
+                    })
+                }
+            },
             // identifyHeaders: function() {
             //    for (var key in this.requiredInputs) {
             //        for (var i =0; i < this.headers.length; i++) {
@@ -258,14 +312,21 @@ window.addEventListener('load', function () {
             //        }
             //    }
             // },
+
             successfulRedirect: function() {
             //redirect to lines page
                 setTimeout(function () {
                    $('.wizard-btn').eq(1).click();
                 }, 1000);
             },
+            changeItem: function(ev, a) {
+               $("table").find("tr td:nth-child(" + (a + 1) + ")").removeClass('unMatched');
+               let name = $(event.target).val().slice(0,3);
+                $('.' + name).hide();
+            },
             onComplete: function () {
-                alert('Your data is being imported');
+                let studydata_url = "/study/" + EDDData.currentStudyID;
+                window.location.pathname = studydata_url;
             },
             setLoading: function (value) {
                 this.loadingWizard = value
@@ -366,3 +427,6 @@ window.addEventListener('load', function () {
 //     units_id:"1"
 // };
 //          parsing stuff
+
+//below returns input matched at B-Mm where var t =$('table input')
+// t.filter( function(d) {return ($(this).val().replace(/\s/g, '') === 'B-Mm')})

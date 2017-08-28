@@ -10,6 +10,11 @@ H3 {
     font-weight: normal;
 }
 
+.unMatched {
+    color: grey;
+}
+
+
 .flex-container {
     display: -ms-flexbox;
     display: -webkit-flex;
