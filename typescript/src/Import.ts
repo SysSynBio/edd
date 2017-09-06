@@ -1,9 +1,10 @@
 import { EDDATDGraphing } from "../modules/AssayTableDataGraphing"
 import { Utl } from "../modules/Utl"
 import { EDDAuto } from "../modules/EDDAutocomplete"
+import { EDDGraphingTools } from "../modules/EDDGraphingTools"
 
 // Doing this bullshit because TypeScript/InternetExplorer do not recognize static methods on Number
-var EDD_auto: any;
+declare var EDD_auto: any;
 var JSNumber: any;
 JSNumber = Number;
 JSNumber.isFinite = JSNumber.isFinite || function (value: any) {
@@ -14,9 +15,9 @@ JSNumber.isNaN = JSNumber.isNaN || function (value: any) {
 };
 
 // Type name for the grid of values pasted in
-interface RawInput extends Array<string[]> { }
+export interface RawInput extends Array<string[]> { }
 // type for the stats generated from parsing input text
-interface RawInputStat {
+export interface RawInputStat {
     input: RawInput;
     columns: number;
 }
@@ -27,7 +28,7 @@ interface RawInputStat {
 // Each class pulls data from one or more previous steps, does some internal processing,
 // then triggers a callback function, announcing the availability of its own new data.
 // The callback function triggers the instance of the next step.
-module EDDTableImport {
+export module EDDTableImport {
     'use strict';
     // During initialization we will allocate one instance of each of the classes
     // that handle the major steps of the import process.
@@ -272,12 +273,15 @@ module EDDTableImport {
             // For example, a user should be free to change "merge" to "replace" without having
             // their edits in Step 2 erased.
             $("#masterProtocol").on('change', this.queueReconfigure.bind(this));
-
+            $("#protocols2").on('change', this.queueReconfigure.bind(this));
             // Using "change" for these because it's more efficient AND because it works around an
             // irritating Chrome inconsistency
             // For some of these, changing them shouldn't actually affect processing until we
             // implement an overwrite-checking feature or something similar
             $(':radio[name=datalayout]', '#selectMajorKindStep').on(
+                'change', this.queueReconfigure.bind(this)
+            );
+            $('#fileFormat').on(
                 'change', this.queueReconfigure.bind(this)
             );
         }
@@ -310,7 +314,7 @@ module EDDTableImport {
         checkInterpretationMode(): boolean {
             // Find every input element with the name attribute of 'datalayout' that's checked.
             // Should return 0 or 1 elements.
-            var modeRadio = $("[name='datalayout']:checked");
+            var modeRadio =$("#fileFormat input:checked")
             // If none of them are checked, we don't have enough information to handle any next steps.
             if (modeRadio.length < 1) { return false; }
             var radioValue = modeRadio.val();
@@ -323,7 +327,7 @@ module EDDTableImport {
         // If the master Protocol pulldown value has changed, note the change and return 'true'.
         // Otherwise return 'false'.
         checkMasterProtocol():boolean {
-            var protocolRaw = $('#masterProtocol').val();
+            var protocolRaw = $('#protocols2').val();
             var p:any = (protocolRaw == DEFAULT_MASTER_PROTOCOL) ? 0 : parseInt(protocolRaw, 10);
             if (this.masterProtocol === p) { return false; }
             this.masterProtocol = p;
@@ -619,10 +623,11 @@ module EDDTableImport {
 
 
             Utl.FileDropZone.create({
-                elementId: "importDropZone",
+                elementId: "importDropZone2",
                 fileInitFn: this.fileDropped.bind(this),
                 url: "/utilities/parsefile/",
                 processResponseFn: this.fileReturnedFromServer.bind(this),
+                processErrorFn: this.fileReturnedError.bind(this)
             });
 
             this.processingFileCallback = processingFileCallback;
@@ -781,9 +786,9 @@ module EDDTableImport {
         // This is called upon receiving a response from a file upload operation, and unlike
         // fileRead() above, is passed a processed result from the server as a second argument,
         // rather than the raw contents of the file.
-        fileReturnedFromServer(fileContainer, result, response): void {
+            fileReturnedFromServer(fileContainer, result, response): void {
             var mode = this.selectMajorKindStep.interpretationMode;
-
+            this.successHandler();
             if (mode === 'biolector' || mode === 'hplc' || mode === 'skyline') {
                 var data: any[], count: number, points: number;
                 data = response.file_data;
@@ -824,6 +829,29 @@ module EDDTableImport {
                 this.reprocessRawData();
                 return;
             }
+        }
+
+
+        successHandler():void {
+            $('<p>', {
+                text: 'Success!',
+                style: 'margin:auto'
+            }).appendTo('#fileUploaded');
+            // $('#fileUploaded').show();
+            $("#fileUploaded").show();
+            $('.wizard-footer-right1').removeClass('disable-btn')
+            //remove alert
+            setTimeout(function () {
+                   $('#fileUploaded').hide();
+                   $('.wizard-btn').eq(1).click();
+                }, 2000);
+
+        }
+
+        fileReturnedError(fileContainer, xhr):void {
+            let obj = JSON.parse(xhr.response);
+
+            console.log(obj.errors)
         }
 
         updateInputVisible():void {
@@ -1124,6 +1152,7 @@ module EDDTableImport {
         selectMajorKindStep: SelectMajorKindStep;
         nextStepCallback: any;
 
+
         warningMessages:ImportMessage[];
         errorMessages:ImportMessage[];
 
@@ -1178,6 +1207,7 @@ module EDDTableImport {
 
             this.warningMessages=[];
             this.errorMessages=[];
+
 
             $('#dataTableDiv')
                 .on('mouseover mouseout', 'td', this.highlighterF.bind(this))
@@ -2156,8 +2186,8 @@ module EDDTableImport {
         }
 
         remakeGraphArea():void {
-            // let eddGraphing = new EDDGraphingTools(),
-           let     mode = this.selectMajorKindStep.interpretationMode,
+            let eddGraphing = new EDDGraphingTools(),
+                mode = this.selectMajorKindStep.interpretationMode,
                 sets = this.graphSets,
                 graph = $('#graphDiv'),
                 dataSets = []
@@ -2168,19 +2198,19 @@ module EDDTableImport {
 
             $('#processingStep2ResultsLabel').removeClass('off');
 
-            // atdGraphing.clearAllSets();
+            atdGraphing.clearAllSets();
 
             // If we're not in either of these modes, drawing a graph is nonsensical.
-            // if ((mode === "std" || mode === 'biolector' || mode === 'hplc') && (sets.length > 0)) {
-            //     graph.removeClass('off');
-            //     sets.forEach(function(set) {
-            //         var singleAssayObj = eddGraphing.transformNewLineItem(EDDData, set);
-            //         dataSets.push(singleAssayObj);
-            //     });
-            //     atdGraphing.addNewSet(dataSets);
-            // } else {
-            //     graph.addClass('off');
-            // }
+            if ((mode === "std" || mode === 'biolector' || mode === 'hplc') && (sets.length > 0)) {
+                graph.removeClass('off');
+                sets.forEach(function(set) {
+                    var singleAssayObj = eddGraphing.transformNewLineItem(EDDData, set);
+                    dataSets.push(singleAssayObj);
+                });
+                atdGraphing.addNewSet(dataSets);
+            } else {
+                graph.addClass('off');
+            }
 
             $('#processingStep2ResultsLabel').addClass('off');
         }
@@ -3619,7 +3649,7 @@ module EDDTableImport {
                 $('<p>').text('No errors or warnings! Go ahead and import!').appendTo(summaryDiv);
             }
             $('#completeAllStepsFirstLabel').toggleClass('off', hasRequiredInitialInputs);
-            $('#submitForImport').toggleClass('off', !hasRequiredInitialInputs);
+            $('.wizard-footer-right2').toggleClass('disable-btn', !hasRequiredInitialInputs);
 
             // remake error / warning subsections based on input from previous steps
             var errorsWrapperDiv = $('#reviewErrorsSection');
