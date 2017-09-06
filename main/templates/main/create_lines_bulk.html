@@ -2,10 +2,11 @@
 {% load staticfiles %}
 
 {% block js_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'main/create_lines_bulk.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'main/js/lib/jquery-ui/jquery-ui.min.css' %}"/>
     {{ block.super }}
     <!-- TODO: template-ize script / stylesheet references -->
-    <link rel="stylesheet" type="text/css" href="{% static 'main/create_lines_bulk.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'main/js/lib/jquery-ui/jquery-ui.min.css' %}"/>
+
     <script type="text/javascript" src="{% static 'main/js/lib/jquery-ui/jquery-ui.min.js' %}"></script>
     <script src="{% static 'main/js/EDDAutocomplete.js' %}"></script>
     <script src="{% static 'main/js/CreateLines.js' %}"></script>
@@ -28,7 +29,7 @@
 <h1>Create lines for <a href="/study/{{ study.id }}">{{ study.name }}</a></h1>
     <!-- Step 1 -->
     <div class="pageSection" id="select_input_source_step">
-        <div class="sectionHead">Step 1: Choose the source(s) for line definitions:</div>
+        <div class="sectionHead">Step 1: Choose the source(s) for line definitions</div>
             <div class="sectionContent">
                 <ul id="step1_list">
                     <li>
@@ -52,7 +53,7 @@
     </div>
     <!-- Step 2 (Dynamic) -->
     <div class="pageSection" id="select_line_properties_step_dynamic">
-        <div class="sectionHead">Step 2: Choose properties to apply to each new line:</div>
+        <div class="sectionHead">Step 2: Choose properties to apply to each new line</div>
         <div class="sectionContent">
             <div class="step2_table_heading">
                 <div class="step2_table_cell">
@@ -81,11 +82,11 @@
                     <div class="step2_table_cell"><label>Ordering:</label></div>
                     <div class="step2_table_cell"></div>
                 </div>
-                <div class="row">
+                <div class="table-row">
                     <div class="step2_table_cell subsection"><label>Line Name Elements:</label></div>
                     <div class="step2_table_cell subsection"><label>Unused Elements:</label></div>
                 </div>
-                <div class="row">
+                <div class="table-row">
                     <!-- Line Name Elements List -->
                     <div class="step2_table_cell name_elt_cell">
                         <div>
@@ -107,7 +108,7 @@
                     <div class="step2_table_cell"><label>Abbreviations:</label></div>
                     <div class="step2_table_cell"><button name="add_abbreviation">+</button></div>
                 </div>
-                <div class="row">
+                <div class="table-row">
                     <div class="step2_table_cell"><label>Label</label></div>
                     <div class="step2_table_cell"><label>Value</label></div>
                     <div class="step2_table_cell"><label>Element</label></div>
@@ -136,16 +137,16 @@
                 <div id="indicator"></div>
                 <textarea id="jsonTest"/>
                 <div class="step2-table">
-                    <div class="row">
+                    <div class="table-row">
                         <div class="step2_table_cell"><label>Total lines to be created</label></div>
                         <div class="step2_table_cell"><label>24</label></div>
                     </div>
-                    <div class="row">
+                    <div class="table-row">
                         <div class="step2_table_cell"><label>Other important stats (e.g. # variations /
                             metadata type)</label></div>
                         <div class="step2_table_cell"><label>TBD</label></div>
                     </div>
-                    <div class="row">
+                    <div class="table-row">
                         <div class="step2_table_cell"><label>Sample Line Names</label></div>
                         <div class="step2_table_cell"><label>Blah</label></div>
                     </div>

@@ -31,6 +31,7 @@ var CreateLines;
     var LineCreationInput = (function () {
         function LineCreationInput(options) {
             this.rows = [];
+            this.displayText = options.labelText;
             this.uiLabel = $('<label>')
                 .text(options.labelText + ':')
                 .addClass('not-in-use');
@@ -154,7 +155,7 @@ var CreateLines;
             var newRow, parent, atMax, prevRow;
             prevRow = this.rows[this.rows.length - 1];
             newRow = $('<div>')
-                .addClass('row')
+                .addClass('table-row')
                 .insertAfter(prevRow);
             this.fillRow(newRow);
             this.addButton.prop('disabled', !this.canAddRows());
@@ -237,7 +238,7 @@ var CreateLines;
             var newRow, parent, atMax, prevRow;
             prevRow = this.rows[this.rows.length - 1];
             newRow = $('<div>')
-                .addClass('row')
+                .addClass('table-row')
                 .insertAfter(prevRow);
             this.fillRow(newRow);
             this.addButton.prop('disabled', !this.canAddRows());
@@ -421,6 +422,7 @@ var CreateLines;
             this.dataElements = [];
             this.nameElements = [];
             this.unusedNameElements = [];
+            this.usedMetadataNames = [];
             this.colors = ['red', 'blue', 'yellow', 'orange', 'purple'];
             this.colorIndex = 0;
             console.log('In constructor!');
@@ -465,7 +467,7 @@ var CreateLines;
             console.log('insertInputRow');
             parentDiv = $('#select_line_properties_step_dynamic').find('.sectionContent');
             row = $('<div>')
-                .addClass('row')
+                .addClass('table-row')
                 .appendTo(parentDiv);
             input.fillRow(row);
         };
@@ -475,6 +477,8 @@ var CreateLines;
             this.dataElements.forEach(function (input, i) {
                 _this.insertInputRow(input);
             });
+            // add options for any naming elements that should be available by default
+            this.updateNameElements();
         };
         CreationManager.prototype.updateNameElements = function () {
             var availableElts, removedFromNameElts, newElts, unusedList, newElt;
@@ -485,25 +489,28 @@ var CreateLines;
                 var elts = input.getNameElements();
                 availableElts = availableElts.concat(elts);
             });
+            // loop over available elements, removing any from the "new list
             newElts = availableElts.slice();
             $('#line_name_elts').children().each(function () {
-                var text, element, index, data;
+                var text, element, foundIndex, data, index;
                 // start to build up a list of newly-available selections. we'll clear out more of them from the
                 // list of unavailable ones
-                index = newElts.indexOf($(this).data());
-                if (index >= 0) {
-                    newElts.splice(index, 1);
-                    return true; // continue looping
+                data = $(this).data();
+                for (index = 0; index < newElts.length; index++) {
+                    element = newElts[index];
+                    if (element.jsonId == data.jsonId) {
+                        newElts.splice(index, 1);
+                        return true; // continue outer loop
+                    }
                 }
-                else {
-                    console.log('removing ' + this.text + 'from name elts list');
-                    this.remove();
-                }
+                $(this).remove();
+                return true; // continue looping
             });
             console.log('Available name elements: ' + availableElts);
             unusedList = $('#unused_line_name_elts');
             unusedList.children().each(function () {
-                var availableElt, index;
+                var availableElt, index, data;
+                data = $(this).data();
                 for (index = 0; index < newElts.length; index++) {
                     availableElt = newElts[index];
                     if (availableElt.displayText == this.textContent) {
@@ -547,16 +554,24 @@ var CreateLines;
                 resizable: false,
                 modal: true,
                 buttons: {
-                    'Add data': function () {
-                        var meta_name, meta_pk;
-                        console.log('Add data pressed');
-                        meta_name = $('#add-line-metadata-text').val();
-                        meta_pk = $('#add-line-metadata-value').val();
+                    'Add Property': function () {
+                        var meta_name, meta_pk, textInput, hiddenInput;
+                        textInput = $('#add-line-metadata-text');
+                        hiddenInput = $('#add-line-metadata-value');
+                        meta_name = textInput.val();
+                        meta_pk = hiddenInput.val();
                         CreateLines.creationManager.addInput(meta_name, meta_name.toLowerCase());
                         $(this).dialog('close');
+                        textInput.val(null);
+                        hiddenInput.val(null);
                     },
                     'Cancel': function () {
+                        var textInput, hiddenInput;
                         $(this).dialog('close');
+                        textInput = $('#add-line-metadata-text');
+                        hiddenInput = $('#add-line-metadata-value');
+                        textInput.val(null);
+                        hiddenInput.val(null);
                     }
                 }
             });

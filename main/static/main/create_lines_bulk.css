@@ -39,7 +39,7 @@
 .property_radio {
     margin: auto;
 }
-.row {
+.table-row {
     display: table-row;
 }
 
@@ -56,6 +56,10 @@
     padding-left: 8px;
     padding-right: 8px;
     padding-top: 8px;
+}
+
+.step2_table_heading label {
+    text-decoration: underline; /* TODO: doesn't work */
 }
 
 /* TODO: unused! fix and use! */
