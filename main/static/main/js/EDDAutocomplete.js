@@ -68,6 +68,7 @@ var EDDAuto;
             }
             this.visibleInput.data('edd', { 'autocompleteobj': this });
             this.hiddenInput.data('edd', { 'autocompleteobj': this });
+            this.omit_keys = this.opt.omit_keys || [];
             this.display_key = 'name';
             this.value_key = 'id';
             this.search_uri = this.opt.search_uri || "/search/";
@@ -156,12 +157,22 @@ var EDDAuto;
                 // The rest of the options are for configuring the ajax webservice call.
                 'minLength': 0,
                 'source': function (request, response) {
-                    var result, modelCache, termCachedResults;
+                    var result, modelCache, termCachedResults, filteredCacheResults;
                     modelCache = EDD_auto.request_cache[self.modelName] || {};
                     EDD_auto.request_cache[self.modelName] = modelCache;
                     termCachedResults = modelCache[request.term];
                     if (termCachedResults) {
-                        response(termCachedResults);
+                        // build a list of filtered cache results according to client requests
+                        // for items to omit (which may change during use, and so shouldn't affect
+                        // the cache itself)
+                        filteredCacheResults = [];
+                        termCachedResults.forEach(function (item) {
+                            var cacheKeyStr = String(item[self.value_key]);
+                            if (self.omit_keys.indexOf(cacheKeyStr) < 0) {
+                                filteredCacheResults.push(item);
+                            }
+                        });
+                        response(filteredCacheResults);
                         return;
                     }
                     $.ajax({
@@ -174,22 +185,30 @@ var EDDAuto;
                         // The success event handler will display "No Results Found" if no
                         // items are returned.
                         'success': function (data) {
-                            var result;
+                            var result, filteredResult;
                             if (!data || !data.rows || data.rows.length === 0) {
                                 result = [NonValueItem.NO_RESULT];
                             }
                             else {
                                 result = data.rows;
+                                filteredResult = [];
                                 // store returned results in cache
                                 result.forEach(function (item) {
-                                    var cacheKey = item[self.value_key], cache_record = self.cache[cacheKey] || {};
+                                    var cacheKey = item[self.value_key], cache_record = self.cache[cacheKey] || {}, cacheKeyStr = String(cacheKey);
+                                    // self.omit_keys.forEach(function(omittedKey) {
+                                    //     if(String(omittedKey) == String(
+                                    // });
+                                    if (self.omit_keys.indexOf(cacheKeyStr) < 0) {
+                                        console.log('Including cache key ' + cacheKey);
+                                        filteredResult.push(item);
+                                    }
                                     self.cache[cacheKey] = cache_record;
                                     $.extend(cache_record, item);
                                 });
                             }
                             modelCache[request.term] = result;
-                            response(result);
-                        },
+                            response(filteredResult);
+                        }.bind(this),
                         'error': function (jqXHR, status, err) {
                             response([NonValueItem.ERROR]);
                         }
@@ -235,6 +254,19 @@ var EDDAuto;
         };
         BaseAuto.prototype.val = function () {
             return this.hiddenInput.val();
+        };
+        BaseAuto.prototype.omitKey = function (key) {
+            if (this.omit_keys.indexOf(key) >= 0) {
+                return;
+            }
+            console.log('Client requested omitting key ' + key);
+            this.omit_keys.push(key);
+        };
+        BaseAuto.prototype.reinstateKey = function (key) {
+            var index = this.omit_keys.indexOf(key);
+            if (index >= 0) {
+                this.omit_keys.splice(index, 1);
+            }
         };
         BaseAuto._uniqueIndex = 1;
         return BaseAuto;

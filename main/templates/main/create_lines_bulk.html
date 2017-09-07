@@ -20,11 +20,16 @@
     <h1>Bulk Line Creation for <a href="/study/{{ study.id }}">{{ study.name }}</a></h1>
 {% endblock body_title %}
 {% block content %}
-<div id="dialog-confirm" title="Add Line Property">
+<div id="add-prop-dialog" title="Add Line Property">
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>
-        Which type of line data do you want to add?</p>
+        Choose one or more line properties to add:</p>
     <input id="add-line-metadata-text" type="text" eddautocompletetype="LineMetadataType"/>
     <input id="add-line-metadata-value" type="hidden"/>
+</div>
+<div id="add-abbrev-dialog" title="Add Abbreviation">
+    <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>
+        Choose one or more line properties to add abbreviations for:</p>
+    <ul id="line-name-abbrev-list"></ul>
 </div>
 <h1>Create lines for <a href="/study/{{ study.id }}">{{ study.name }}</a></h1>
     <!-- Step 1 -->
@@ -104,9 +109,9 @@
             <div class="step2-table" id="name_customization_table">
                 <div class="step2_table_heading">
                     <div class="step2_table_cell"><label>Custom Name Elements:</label></div>
-                    <div class="step2_table_cell"><button name="add_custom_label">+</button></div>
+                    <div class="step2_table_cell"><button name="add_custom_label"><span class="ui-icon ui-icon-plusthick"></span></button></div>
                     <div class="step2_table_cell"><label>Abbreviations:</label></div>
-                    <div class="step2_table_cell"><button name="add_abbreviation">+</button></div>
+                    <div class="step2_table_cell"><button id="addAbbreviationButton"><span class="ui-icon ui-icon-plusthick"></span></button></div>
                 </div>
                 <div class="table-row">
                     <div class="step2_table_cell"><label>Label</label></div>

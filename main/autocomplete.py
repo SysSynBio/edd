@@ -59,6 +59,7 @@ def search_group(request):
     term = request.GET.get('term', '')
     re_term = re.escape(term)
     found = Group.objects.filter(name__iregex=re_term).order_by('name').values('id', 'name')
+    found = optional_sort(request, found)
     found = found[:DEFAULT_RESULT_COUNT]
     return JsonResponse({
         'rows': list(found),  # force QuerySet to list
@@ -89,16 +90,41 @@ def search_metadata(request, context):
         are searched. """
     term = request.GET.get('term', '')
     re_term = re.escape(term)
+
     term_filters = [
         Q(type_name__iregex=re_term),
         Q(group__group_name__iregex=re_term),
     ]
+
+    print(request.GET)
     type_filter = AUTOCOMPLETE_METADATA_LOOKUP.get(context, Q())
     q_filter = reduce(operator.or_, term_filters, Q()) & type_filter
     found_qs = edd_models.MetadataType.objects.filter(q_filter).select_related('group')
+    found_qs = optional_sort(request, found_qs)
+
     return JsonResponse({
         'rows': [item.to_json() for item in found_qs[:DEFAULT_RESULT_COUNT]],
     })
+
+
+def optional_sort(request, queryset):
+    sort_field = request.GET.get('sort', None)
+
+    if not sort_field:
+        return queryset
+
+    if sort_field:
+        queryset = queryset.order_by(sort_field)
+
+        sort_order = request.GET.get('sort_order', None)
+
+        if not sort_order:
+            return queryset
+
+        if sort_order.lower() == 'ascending':
+            return queryset.asc()
+        elif sort_order.lower() == 'descending':
+            return queryset.desc()
 
 
 def search_study_lines(request):
@@ -121,13 +147,15 @@ def search_study_lines(request):
         study = Study.objects.filter(permission_check, pk=study_pk).distinct().get()
         query = study.line_set.all()
 
-    # if study doesn't exist or requesting user doesn't have read acccess, return an empty
+    # if study doesn't exist or requesting user doesn't have read access, return an empty
     # set of lines
     except Study.DoesNotExist as e:
         query = Line.objects.none()
 
     name_filters = [Q(name__iregex=name_regex), Q(strains__name__iregex=name_regex)]
-    query = query.filter(reduce(operator.or_, name_filters, Q()))[:DEFAULT_RESULT_COUNT]
+    query = query.filter(reduce(operator.or_, name_filters, Q()))
+    query = optional_sort(request, query)
+    query = query[:DEFAULT_RESULT_COUNT]
     return JsonResponse({
         'rows': [{'name': line.name,
                   'id': line.id,
