@@ -1,10 +1,59 @@
 /// <reference path="typescript-declarations.d.ts" />
 /// <reference path="EDDAutocomplete.ts" />
+/// <reference path="EDDRest.ts" />
 
 module CreateLines {
     'use strict';
+    import LINE_ATTRIBUTE_META_TYPES = EddRest.LINE_ATTRIBUTE_META_TYPES;
     const DATA_FORMAT_STRING:string = 'string';
     const ROW_INDEX = 'rowIndex';
+
+    function loadAllLineMetadataTypes():void {
+        $('#addPropertyButton').prop('disabled', true);
+        EddRest.loadMetadataTypes(
+            {
+                'success': lineMetaSuccessHandler,
+                'error': showMetaLoadFailed,
+                'request_all': true, // get all result pages
+                'wait': showWaitMessage,
+                'context': EddRest.LINE_METADATA_CONTEXT,
+                'sort_order': EddRest.ASCENDING_SORT,
+            });
+    }
+
+    function lineMetaSuccessHandler(metadataTypes:any[]) {
+        $('#step2_status_div').empty();
+        $('#addPropertyButton').prop('disabled', false);
+        console.log('Successfully loaded ' + metadataTypes.length + " line metadata types.");
+
+    }
+
+    function showWaitMessage(): void {
+        console.log('Showing wait message');
+        var div: JQuery, span;
+        div = $('#step2_status_div');
+        div.empty();
+
+        span = $("<span>")
+            .text('Loading line metadata types...')
+            .addClass('errorMessage')
+            .appendTo(div);
+    }
+
+    function showMetaLoadFailed(jqXHR, textStatus:string, errorThrown:string): void {
+        var div: JQuery, span;
+        div = $('#step2_status_div');
+        div.empty();
+
+        span = $("<span>")
+            .text('Unable to load line metadata from EDD. Property selection is disabled.')
+            .addClass('errorMessage')
+            .appendTo(div);
+
+        $('<a>').text(' Retry').on('click', () => {
+            loadAllLineMetadataTypes();
+        }).appendTo(span);
+    }
 
     class LineAttributeDescriptor {
         jsonId: any;
@@ -289,69 +338,6 @@ module CreateLines {
         }
     }
 
-    export class LineMetadataInput extends LinePropertyInput {  // TODO: consider merging with sibling following initial test
-        autoInput: EDDAuto.BaseAuto;
-        metaTypeIndexes:any = {};
-
-        constructor(options:any) {
-            super(options);
-        }
-
-        // TODO: override parent behavior to launch a modal dialog...prompt for metadata type first to avoid problems
-        // in allowing selection in the main form
-        appendRow(): void {
-
-            var newRow: JQuery, parent: JQuery, atMax: boolean, prevRow: JQuery;
-
-            prevRow = this.rows[this.rows.length-1];
-
-            newRow = $('<div>')
-                .addClass('table-row')
-                .insertAfter(prevRow);
-            this.fillRow(newRow);
-
-            this.addButton.prop('disabled', !this.canAddRows());
-        }
-
-        hasValidInput(rowIndex: number ): boolean {
-            var row: JQuery, hasType: boolean, hasValue: boolean, selectedType:any;
-            row = this.rows[rowIndex];
-            hasValue = row.find('.step2-text-input').val() != undefined;
-            return  hasValue;
-        }
-
-        fillInputControls(rowContainer: JQuery): void {
-            var visibleType: JQuery, hiddenType: JQuery, valueInput: JQuery, hiddenVal: JQuery;
-
-            valueInput = $('<input type="text" name="value">')
-                .addClass('step2-text-input')
-                .addClass('meta-value')
-                .appendTo(rowContainer);
-
-            valueInput.on('change', function() {
-                creationManager.updateNameElementChoices();
-            });
-
-            this.buildRemoveControl(rowContainer);
-        }
-
-        getNameElements(): LineAttributeDescriptor[] {
-            var elts: LineAttributeDescriptor[];
-            elts = [];
-            this.rows.forEach((row: JQuery, index:number):void => {
-                var metaPk: number, displayName: string;
-
-                if(this.hasValidInput(index)) {
-                    metaPk = row.find(':hidden').first().val();
-                    displayName = row.find(':input').first().val();
-                    elts.push(new LineAttributeDescriptor(metaPk, displayName));
-                }
-            });
-
-            return elts;
-        }
-    }
-
     export class LineAttributeInput extends LinePropertyInput {
 
         constructor(options: any) {
@@ -405,9 +391,10 @@ module CreateLines {
 
             rowContainer.append(visible).append(hidden);
 
-            switch (this.jsonId) {
+            switch (this.lineAttribute.jsonId) {
                 case 'experimenter':
                 case 'contact':
+                    visible.attr('eddautocompletetype', "User")
                     this.autoInput = new EDDAuto.User({
                         'container': rowContainer,
                         'visibleInput': visible,
@@ -415,6 +402,7 @@ module CreateLines {
                     });
                     break;
                 case 'carbon_source':
+                    visible.attr('eddautocompletetype', "CarbonSource")
                     this.autoInput = new EDDAuto.CarbonSource({
                         'container': rowContainer,
                         'visibleInput': visible,
@@ -422,6 +410,7 @@ module CreateLines {
                     });
                     break;
                 case 'strain':
+                    visible.attr('eddautocompletetype', "Registry")
                     this.autoInput = new EDDAuto.Registry({
                         'container': rowContainer,
                         'visibleInput': visible,
@@ -521,21 +510,6 @@ module CreateLines {
         constructor() {
             console.log('In constructor!');
             this.lineProperties = [
-  /*              new LineAttributeAutoInput(
-                    {'labelText':'Contact',
-                    'jsonId': 'contact', }),
-                new LineAttributeAutoInput(
-                    {'labelText':'Experimenter',
-                    'jsonId': 'experimenter', }),
-                new LineAttributeAutoInput(
-                    {'labelText':'Carbon Source',
-                    'jsonId': 'carbon_source', }),
-                new LineAttributeAutoInput(
-                    {'labelText':'Strain',
-                    'jsonId': 'combinatorial_strain_id_groups', }),
-                new AutofillInput(
-                    {'labelText': 'Metadata',
-                    'jsonId': 'N/A', }),*/
                 new ControlInput({
                     'lineAttribute': new LineAttributeDescriptor('control', 'Control'),
                     'maxRows': 1}),
@@ -565,10 +539,10 @@ module CreateLines {
         }
 
         buildInputs(): void {
-            console.log('In onDocumentReady.  lineProperties = ' + this.lineProperties);
+            console.log('In buildInputs().  lineProperties = ' + this.lineProperties);
 
             // style the replicates spinner
-            $( "#spinner" ).spinner({
+            $("#spinner").spinner({
                 min: 1,
                 change: function(event, ui) {
                         creationManager.updateNameElementChoices();
@@ -597,8 +571,9 @@ module CreateLines {
         }
 
         updateNameElementChoices(): void {
-            var availableElts: LineAttributeDescriptor[], prevNameElts: LineAttributeDescriptor[], newElts: LineAttributeDescriptor[],
-                unusedList: JQuery, namingUnchanged:boolean, self:CreationManager;
+            var availableElts: LineAttributeDescriptor[], prevNameElts: LineAttributeDescriptor[],
+                newElts: LineAttributeDescriptor[], unusedList: JQuery, namingUnchanged:boolean,
+                self:CreationManager;
             console.log('updating available naming elements');
 
             //build an updated list of available naming elements based on user entries in step 1
@@ -815,7 +790,9 @@ module CreateLines {
         // set up selectable list for abbreviations
         $('#line-name-abbrev-list').selectable();
 
-        // load line metadata types from the REST API. This allows us to
+        // load line metadata types from the REST API. This allows us to display them more
+        // responsively if there are many, and also to show them in the
+        loadAllLineMetadataTypes();
     }
 
     //TODO: remove if unused

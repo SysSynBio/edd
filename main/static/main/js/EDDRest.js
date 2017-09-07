@@ -21,6 +21,10 @@ var EddRest;
     EddRest.RECEIVED_SO_FAR_OPTION = 'received_so_far';
     EddRest.SUCCESS_OPTION = 'success';
     EddRest.ERROR_OPTION = 'error';
+    // Metadata types present in the database that should be omitted user-displayed lists in
+    // contexts where separate display is available for line attributes.
+    EddRest.LINE_ATTRIBUTE_META_TYPES = ['Line Name', 'Line Description', 'Line Contact',
+        'Line Experimenter', 'Strain(s)'];
     /* MetadataType API query parameter values */
     EddRest.LINE_METADATA_CONTEXT = 'L';
     EddRest.ASSAY_METADATA_CONTEXT = 'A';

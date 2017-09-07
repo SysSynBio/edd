@@ -26,6 +26,11 @@ namespace EddRest {
     export const SUCCESS_OPTION = 'success';
     export const ERROR_OPTION = 'error';
 
+    // Metadata types present in the database that should be omitted user-displayed lists in
+    // contexts where separate display is available for line attributes.
+    export const LINE_ATTRIBUTE_META_TYPES = ['Line Name', 'Line Description', 'Line Contact',
+        'Line Experimenter', 'Strain(s)'];
+
     /* MetadataType API query parameter values */
     export const LINE_METADATA_CONTEXT = 'L';
     export const ASSAY_METADATA_CONTEXT = 'A';

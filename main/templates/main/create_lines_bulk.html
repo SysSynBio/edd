@@ -10,6 +10,7 @@
     <script type="text/javascript" src="{% static 'main/js/lib/jquery-ui/jquery-ui.min.js' %}"></script>
     <script src="{% static 'main/js/EDDAutocomplete.js' %}"></script>
     <script src="{% static 'main/js/CreateLines.js' %}"></script>
+    <script type="text/javascript" src="{% static 'main/js/EDDRest.js' %}"></script>
 {% endblock js_css %}
 
 {% block head_title %}
@@ -60,6 +61,7 @@
     <div class="pageSection" id="select_line_properties_step_dynamic">
         <div class="sectionHead">Step 2: Choose properties to apply to each new line</div>
         <div class="sectionContent">
+            <div id="step2_status_div"></div>
             <div class="step2_table_heading">
                 <div class="step2_table_cell">
                     <label>Property</label>

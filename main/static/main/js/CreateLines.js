@@ -1,5 +1,6 @@
 /// <reference path="typescript-declarations.d.ts" />
 /// <reference path="EDDAutocomplete.ts" />
+/// <reference path="EDDRest.ts" />
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -10,6 +11,44 @@ var CreateLines;
     'use strict';
     var DATA_FORMAT_STRING = 'string';
     var ROW_INDEX = 'rowIndex';
+    function loadAllLineMetadataTypes() {
+        $('#addPropertyButton').prop('disabled', true);
+        EddRest.loadMetadataTypes({
+            'success': lineMetaSuccessHandler,
+            'error': showMetaLoadFailed,
+            'request_all': true,
+            'wait': showWaitMessage,
+            'context': EddRest.LINE_METADATA_CONTEXT,
+            'sort_order': EddRest.ASCENDING_SORT,
+        });
+    }
+    function lineMetaSuccessHandler(metadataTypes) {
+        $('#step2_status_div').empty();
+        $('#addPropertyButton').prop('disabled', false);
+        console.log('Successfully loaded ' + metadataTypes.length + " line metadata types.");
+    }
+    function showWaitMessage() {
+        console.log('Showing wait message');
+        var div, span;
+        div = $('#step2_status_div');
+        div.empty();
+        span = $("<span>")
+            .text('Loading line metadata types...')
+            .addClass('errorMessage')
+            .appendTo(div);
+    }
+    function showMetaLoadFailed(jqXHR, textStatus, errorThrown) {
+        var div, span;
+        div = $('#step2_status_div');
+        div.empty();
+        span = $("<span>")
+            .text('Unable to load line metadata from EDD. Property selection is disabled.')
+            .addClass('errorMessage')
+            .appendTo(div);
+        $('<a>').text(' Retry').on('click', function () {
+            loadAllLineMetadataTypes();
+        }).appendTo(span);
+    }
     var LineAttributeDescriptor = (function () {
         function LineAttributeDescriptor(json_elt, displayText) {
             this.jsonId = json_elt;
@@ -237,57 +276,6 @@ var CreateLines;
         return LinePropertyInput;
     }(MultiValueInput));
     CreateLines.LinePropertyInput = LinePropertyInput;
-    var LineMetadataInput = (function (_super) {
-        __extends(LineMetadataInput, _super);
-        function LineMetadataInput(options) {
-            _super.call(this, options);
-            this.metaTypeIndexes = {};
-        }
-        // TODO: override parent behavior to launch a modal dialog...prompt for metadata type first to avoid problems
-        // in allowing selection in the main form
-        LineMetadataInput.prototype.appendRow = function () {
-            var newRow, parent, atMax, prevRow;
-            prevRow = this.rows[this.rows.length - 1];
-            newRow = $('<div>')
-                .addClass('table-row')
-                .insertAfter(prevRow);
-            this.fillRow(newRow);
-            this.addButton.prop('disabled', !this.canAddRows());
-        };
-        LineMetadataInput.prototype.hasValidInput = function (rowIndex) {
-            var row, hasType, hasValue, selectedType;
-            row = this.rows[rowIndex];
-            hasValue = row.find('.step2-text-input').val() != undefined;
-            return hasValue;
-        };
-        LineMetadataInput.prototype.fillInputControls = function (rowContainer) {
-            var visibleType, hiddenType, valueInput, hiddenVal;
-            valueInput = $('<input type="text" name="value">')
-                .addClass('step2-text-input')
-                .addClass('meta-value')
-                .appendTo(rowContainer);
-            valueInput.on('change', function () {
-                CreateLines.creationManager.updateNameElementChoices();
-            });
-            this.buildRemoveControl(rowContainer);
-        };
-        LineMetadataInput.prototype.getNameElements = function () {
-            var _this = this;
-            var elts;
-            elts = [];
-            this.rows.forEach(function (row, index) {
-                var metaPk, displayName;
-                if (_this.hasValidInput(index)) {
-                    metaPk = row.find(':hidden').first().val();
-                    displayName = row.find(':input').first().val();
-                    elts.push(new LineAttributeDescriptor(metaPk, displayName));
-                }
-            });
-            return elts;
-        };
-        return LineMetadataInput;
-    }(LinePropertyInput));
-    CreateLines.LineMetadataInput = LineMetadataInput;
     var LineAttributeInput = (function (_super) {
         __extends(LineAttributeInput, _super);
         function LineAttributeInput(options) {
@@ -331,9 +319,10 @@ var CreateLines;
                 CreateLines.creationManager.updateNameElementChoices();
             });
             rowContainer.append(visible).append(hidden);
-            switch (this.jsonId) {
+            switch (this.lineAttribute.jsonId) {
                 case 'experimenter':
                 case 'contact':
+                    visible.attr('eddautocompletetype', "User");
                     this.autoInput = new EDDAuto.User({
                         'container': rowContainer,
                         'visibleInput': visible,
@@ -341,6 +330,7 @@ var CreateLines;
                     });
                     break;
                 case 'carbon_source':
+                    visible.attr('eddautocompletetype', "CarbonSource");
                     this.autoInput = new EDDAuto.CarbonSource({
                         'container': rowContainer,
                         'visibleInput': visible,
@@ -348,6 +338,7 @@ var CreateLines;
                     });
                     break;
                 case 'strain':
+                    visible.attr('eddautocompletetype', "Registry");
                     this.autoInput = new EDDAuto.Registry({
                         'container': rowContainer,
                         'visibleInput': visible,
@@ -440,21 +431,6 @@ var CreateLines;
             this.colorIndex = 0;
             console.log('In constructor!');
             this.lineProperties = [
-                /*              new LineAttributeAutoInput(
-                                  {'labelText':'Contact',
-                                  'jsonId': 'contact', }),
-                              new LineAttributeAutoInput(
-                                  {'labelText':'Experimenter',
-                                  'jsonId': 'experimenter', }),
-                              new LineAttributeAutoInput(
-                                  {'labelText':'Carbon Source',
-                                  'jsonId': 'carbon_source', }),
-                              new LineAttributeAutoInput(
-                                  {'labelText':'Strain',
-                                  'jsonId': 'combinatorial_strain_id_groups', }),
-                              new AutofillInput(
-                                  {'labelText': 'Metadata',
-                                  'jsonId': 'N/A', }),*/
                 new ControlInput({
                     'lineAttribute': new LineAttributeDescriptor('control', 'Control'),
                     'maxRows': 1 }),
@@ -481,7 +457,7 @@ var CreateLines;
         };
         CreationManager.prototype.buildInputs = function () {
             var _this = this;
-            console.log('In onDocumentReady.  lineProperties = ' + this.lineProperties);
+            console.log('In buildInputs().  lineProperties = ' + this.lineProperties);
             // style the replicates spinner
             $("#spinner").spinner({
                 min: 1,
@@ -690,7 +666,9 @@ var CreateLines;
         }).disableSelection();
         // set up selectable list for abbreviations
         $('#line-name-abbrev-list').selectable();
-        // load line metadata types from the REST API. This allows us to
+        // load line metadata types from the REST API. This allows us to display them more
+        // responsively if there are many, and also to show them in the
+        loadAllLineMetadataTypes();
     }
     CreateLines.onDocumentReady = onDocumentReady;
 })(CreateLines || (CreateLines = {}));
