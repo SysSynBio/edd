@@ -11,21 +11,22 @@ var CreateLines;
     'use strict';
     var DATA_FORMAT_STRING = 'string';
     var ROW_INDEX = 'rowIndex';
+    var LINE_EXPERIMENTER_META_NAME = 'Line Experimenter';
+    var LINE_CONTACT_META_NAME = 'Line Contact';
+    var CARBON_SOURCE_META_NAME = 'Carbon Source(s)';
+    var STRAINS_META_NAME = 'Strain(s)';
+    var autocompleteMetadataNames = [LINE_EXPERIMENTER_META_NAME, LINE_CONTACT_META_NAME,
+        CARBON_SOURCE_META_NAME, STRAINS_META_NAME];
     function loadAllLineMetadataTypes() {
         $('#addPropertyButton').prop('disabled', true);
         EddRest.loadMetadataTypes({
-            'success': lineMetaSuccessHandler,
+            'success': CreateLines.creationManager.setLineMetaTypes.bind(CreateLines.creationManager),
             'error': showMetaLoadFailed,
             'request_all': true,
             'wait': showWaitMessage,
             'context': EddRest.LINE_METADATA_CONTEXT,
             'sort_order': EddRest.ASCENDING_SORT,
         });
-    }
-    function lineMetaSuccessHandler(metadataTypes) {
-        $('#step2_status_div').empty();
-        $('#addPropertyButton').prop('disabled', false);
-        console.log('Successfully loaded ' + metadataTypes.length + " line metadata types.");
     }
     function showWaitMessage() {
         console.log('Showing wait message');
@@ -119,23 +120,15 @@ var CreateLines;
             _super.call(this, options);
         }
         LinePropertyInput.prototype.getNameElements = function () {
+            var hasInput = this.hasAnyValidInput();
+            this.highlightRowLabel(hasInput);
             // only allow naming inputs to be used if there's at least one valid value to insert into line names.
             // note that allowing non-unique values to be used in line names during bulk creation can be helpful since
             // they may differentiate new lines from those already in the study.
-            if (!this.hasAnyValidInput()) {
+            if (!hasInput) {
                 return [];
             }
-            switch (this.jsonId) {
-                case 'contact':
-                case 'experimenter':
-                case 'carbon_source':
-                case 'description':
-                    return [new LineAttributeDescriptor(this.jsonId, 'Description')];
-                case 'replicate_num':
-                    return [new LineAttributeDescriptor(this.jsonId, 'Replicate #')];
-                case 'strain':
-                    return [new LineAttributeDescriptor('strain', 'Strain')];
-            }
+            return [this.lineAttribute];
         };
         LinePropertyInput.prototype.getValueJson = function () {
             var _this = this;
@@ -152,11 +145,13 @@ var CreateLines;
             return this.uiLabel;
         };
         LinePropertyInput.prototype.buildYesComboButton = function () {
-            return $('<input type="radio">').prop('name', this.jsonId).val('Yes');
+            return $('<input type="radio">')
+                .prop('name', this.lineAttribute.jsonId)
+                .val('Yes');
         };
         LinePropertyInput.prototype.buildNoComboButton = function () {
             return $('<input type="radio">')
-                .prop('name', this.jsonId)
+                .prop('name', this.lineAttribute.jsonId)
                 .prop('checked', true)
                 .val('No')
                 .addClass('property_radio');
@@ -319,9 +314,9 @@ var CreateLines;
                 CreateLines.creationManager.updateNameElementChoices();
             });
             rowContainer.append(visible).append(hidden);
-            switch (this.lineAttribute.jsonId) {
-                case 'experimenter':
-                case 'contact':
+            switch (this.lineAttribute.displayText) {
+                case LINE_EXPERIMENTER_META_NAME:
+                case LINE_CONTACT_META_NAME:
                     visible.attr('eddautocompletetype', "User");
                     this.autoInput = new EDDAuto.User({
                         'container': rowContainer,
@@ -329,7 +324,7 @@ var CreateLines;
                         'hiddenInput': hidden,
                     });
                     break;
-                case 'carbon_source':
+                case CARBON_SOURCE_META_NAME:
                     visible.attr('eddautocompletetype', "CarbonSource");
                     this.autoInput = new EDDAuto.CarbonSource({
                         'container': rowContainer,
@@ -337,7 +332,7 @@ var CreateLines;
                         'hiddenInput': hidden,
                     });
                     break;
-                case 'strain':
+                case STRAINS_META_NAME:
                     visible.attr('eddautocompletetype', "Registry");
                     this.autoInput = new EDDAuto.Registry({
                         'container': rowContainer,
@@ -353,8 +348,8 @@ var CreateLines;
     CreateLines.LineAttributeAutoInput = LineAttributeAutoInput;
     var ControlInput = (function (_super) {
         __extends(ControlInput, _super);
-        function ControlInput() {
-            _super.apply(this, arguments);
+        function ControlInput(options) {
+            _super.call(this, options);
         }
         ControlInput.prototype.fillInputControls = function (rowContainer) {
             this.yesCheckbox = $('<input type="checkbox">')
@@ -377,15 +372,6 @@ var CreateLines;
         ControlInput.prototype.hasValidInput = function (rowIndex) {
             return this.yesCheckbox.prop('checked') || this.noCheckbox.prop('checked');
         };
-        ControlInput.prototype.getNameElements = function () {
-            var hasInput;
-            hasInput = this.hasAnyValidInput();
-            this.highlightRowLabel(hasInput);
-            if (hasInput) {
-                return [new LineAttributeDescriptor('control', 'Control')];
-            }
-            return [];
-        };
         return ControlInput;
     }(LinePropertyInput));
     CreateLines.ControlInput = ControlInput;
@@ -407,12 +393,6 @@ var CreateLines;
                 .addClass('step2-value-input')
                 .appendTo(rowContainer);
         };
-        ReplicateInput.prototype.getNameElements = function () {
-            var hasInput;
-            hasInput = this.hasAnyValidInput();
-            this.highlightRowLabel(hasInput);
-            return [new LineAttributeDescriptor('replicate_num', 'Replicate #')];
-        };
         return ReplicateInput;
     }(LinePropertyInput));
     CreateLines.ReplicateInput = ReplicateInput;
@@ -426,6 +406,8 @@ var CreateLines;
             this.unusedNameElements = [];
             this.usedMetadataNames = [];
             this.lineMetaAutocomplete = null;
+            this.nonAutocompleteLineMetaTypes = [];
+            this.autocompleteLineMetaTypes = {};
             this.indicatorColorIndex = 0;
             this.colors = ['red', 'blue', 'yellow', 'orange', 'purple'];
             this.colorIndex = 0;
@@ -440,9 +422,15 @@ var CreateLines;
                     'lineAttribute': new LineAttributeDescriptor('replicates', 'Replicates') })
             ];
         }
-        CreationManager.prototype.addInput = function (nameElement) {
-            var newInput;
-            newInput = new LineAttributeInput({ 'lineAttribute': nameElement });
+        CreationManager.prototype.addInput = function (lineAttr) {
+            var newInput, autocompleteMetaItem, cache;
+            autocompleteMetaItem = this.autocompleteLineMetaTypes[lineAttr.jsonId];
+            if (autocompleteMetaItem) {
+                newInput = new LineAttributeAutoInput({ 'lineAttribute': lineAttr });
+            }
+            else {
+                newInput = new LineAttributeInput({ 'lineAttribute': lineAttr });
+            }
             this.lineProperties.push(newInput);
             this.insertInputRow(newInput);
         };
@@ -482,7 +470,7 @@ var CreateLines;
             this.updateNameElementChoices();
         };
         CreationManager.prototype.updateNameElementChoices = function () {
-            var availableElts, prevNameElts, newElts, unusedList, namingUnchanged, self;
+            var availableElts, prevNameElts, newElts, unusedList, unusedChildren, namingUnchanged, self;
             console.log('updating available naming elements');
             //build an updated list of available naming elements based on user entries in step 1
             availableElts = [];
@@ -513,22 +501,26 @@ var CreateLines;
             });
             console.log('Available name elements: ' + availableElts);
             unusedList = $('#unused_line_name_elts');
-            unusedList.children().each(function () {
-                var availableElt, index, nameElement;
-                nameElement = $(this).data();
-                for (index = 0; index < newElts.length; index++) {
-                    availableElt = newElts[index];
-                    if (availableElt.lineAttribute.displayText == this.textContent) {
-                        console.log('Found matching element ' + this.textContent);
-                        newElts.splice(index, 1);
-                        return true;
+            unusedChildren = unusedList.children();
+            if (unusedChildren) {
+                unusedChildren.each(function (unusedIndex, listElement) {
+                    var availableElt, newIndex, listElement;
+                    listElement = this;
+                    for (newIndex = 0; newIndex < newElts.length; newIndex++) {
+                        availableElt = newElts[newIndex];
+                        if (availableElt.displayText == listElement.textContent) {
+                            console.log('Found matching element ' + listElement.textContent);
+                            newElts.splice(newIndex, 1);
+                            return true;
+                        }
                     }
-                }
-                console.log('Removing ' + this.textContent + ' from unused list');
-                this.remove();
-                return true;
-            });
-            // add newly-inserted elements into the 'unused' section. that way previous configuration stays unaltered
+                    console.log('Removing ' + this.textContent + ' from unused list');
+                    this.remove();
+                    return true;
+                });
+            }
+            // add newly-inserted elements into the 'unused' section. that way previous
+            // configuration stays unaltered
             newElts.forEach(function (elt) {
                 var li;
                 li = $('<li>')
@@ -568,6 +560,21 @@ var CreateLines;
             console.log('Color index = ' + this.colorIndex);
             this.buildJson();
         };
+        CreationManager.prototype.setLineMetaTypes = function (metadataTypes) {
+            var self = this;
+            $('#step2_status_div').empty();
+            $('#addPropertyButton').prop('disabled', false);
+            this.nonAutocompleteLineMetaTypes = [];
+            this.autocompleteLineMetaTypes = {};
+            metadataTypes.forEach(function (metaType) {
+                if (autocompleteMetadataNames.indexOf(metaType.type_name) < 0) {
+                    self.nonAutocompleteLineMetaTypes.push(metaType);
+                }
+                else {
+                    self.autocompleteLineMetaTypes[metaType.pk] = metaType;
+                }
+            });
+        };
         CreationManager.prototype.showAddProperty = function () {
             $('#add-prop-dialog').dialog('open');
         };
@@ -585,7 +592,7 @@ var CreateLines;
                         meta_name = textInput.val();
                         meta_pk = hiddenInput.val();
                         self.lineMetaAutocomplete.omitKey(String(meta_pk));
-                        CreateLines.creationManager.addInput(new LineAttributeDescriptor(meta_name.toLowerCase(), meta_name));
+                        CreateLines.creationManager.addInput(new LineAttributeDescriptor(meta_pk, meta_name));
                         textInput.val(null);
                         hiddenInput.val(null);
                     },

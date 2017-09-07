@@ -4,28 +4,27 @@
 
 module CreateLines {
     'use strict';
-    import LINE_ATTRIBUTE_META_TYPES = EddRest.LINE_ATTRIBUTE_META_TYPES;
     const DATA_FORMAT_STRING:string = 'string';
     const ROW_INDEX = 'rowIndex';
+
+    const LINE_EXPERIMENTER_META_NAME = 'Line Experimenter';
+    const LINE_CONTACT_META_NAME = 'Line Contact';
+    const CARBON_SOURCE_META_NAME = 'Carbon Source(s)';
+    const STRAINS_META_NAME = 'Strain(s)';
+    const autocompleteMetadataNames = [LINE_EXPERIMENTER_META_NAME, LINE_CONTACT_META_NAME,
+                                       CARBON_SOURCE_META_NAME, STRAINS_META_NAME];
 
     function loadAllLineMetadataTypes():void {
         $('#addPropertyButton').prop('disabled', true);
         EddRest.loadMetadataTypes(
             {
-                'success': lineMetaSuccessHandler,
+                'success': creationManager.setLineMetaTypes.bind(creationManager),
                 'error': showMetaLoadFailed,
                 'request_all': true, // get all result pages
                 'wait': showWaitMessage,
                 'context': EddRest.LINE_METADATA_CONTEXT,
                 'sort_order': EddRest.ASCENDING_SORT,
             });
-    }
-
-    function lineMetaSuccessHandler(metadataTypes:any[]) {
-        $('#step2_status_div').empty();
-        $('#addPropertyButton').prop('disabled', false);
-        console.log('Successfully loaded ' + metadataTypes.length + " line metadata types.");
-
     }
 
     function showWaitMessage(): void {
@@ -72,7 +71,6 @@ module CreateLines {
     export class MultiValueInput {
         uiLabel: JQuery;
         lineAttribute: LineAttributeDescriptor;
-        jsonId: string;
         maxRows: number;
         minEntries: number;
 
@@ -142,24 +140,17 @@ module CreateLines {
          }
 
         getNameElements(): LineAttributeDescriptor[] {
+             var hasInput:boolean = this.hasAnyValidInput();
+             this.highlightRowLabel(hasInput);
+
             // only allow naming inputs to be used if there's at least one valid value to insert into line names.
             // note that allowing non-unique values to be used in line names during bulk creation can be helpful since
             // they may differentiate new lines from those already in the study.
-            if(!this.hasAnyValidInput()) {
+            if(!hasInput) {
                 return [];
             }
 
-            switch(this.jsonId) {
-                case 'contact':
-                case 'experimenter':
-                case 'carbon_source':
-                case 'description':
-                    return [new LineAttributeDescriptor(this.jsonId, 'Description')];
-                case 'replicate_num':
-                    return [new LineAttributeDescriptor(this.jsonId, 'Replicate #')];
-                case 'strain':
-                    return [new LineAttributeDescriptor('strain', 'Strain')];
-            }
+            return [this.lineAttribute];
         }
 
         getValueJson(): string[] {
@@ -178,12 +169,14 @@ module CreateLines {
         }
 
         buildYesComboButton(): JQuery {
-            return $('<input type="radio">').prop('name', this.jsonId).val('Yes');
+            return $('<input type="radio">')
+                .prop('name', this.lineAttribute.jsonId)
+                .val('Yes');
         }
 
         buildNoComboButton(): JQuery {
             return $('<input type="radio">')
-                .prop('name', this.jsonId)
+                .prop('name', this.lineAttribute.jsonId)
                 .prop('checked', true)
                 .val('No')
                 .addClass('property_radio');
@@ -372,7 +365,6 @@ module CreateLines {
 
         constructor(options) {
             super(options);
-
         }
 
         // build custom input controls whose type depends on the data type of the Line attribute
@@ -391,26 +383,26 @@ module CreateLines {
 
             rowContainer.append(visible).append(hidden);
 
-            switch (this.lineAttribute.jsonId) {
-                case 'experimenter':
-                case 'contact':
-                    visible.attr('eddautocompletetype', "User")
+            switch (this.lineAttribute.displayText) {
+                case LINE_EXPERIMENTER_META_NAME:
+                case LINE_CONTACT_META_NAME:
+                    visible.attr('eddautocompletetype', "User");
                     this.autoInput = new EDDAuto.User({
                         'container': rowContainer,
                         'visibleInput': visible,
                         'hiddenInput': hidden,
                     });
                     break;
-                case 'carbon_source':
-                    visible.attr('eddautocompletetype', "CarbonSource")
+                case CARBON_SOURCE_META_NAME:
+                    visible.attr('eddautocompletetype', "CarbonSource");
                     this.autoInput = new EDDAuto.CarbonSource({
                         'container': rowContainer,
                         'visibleInput': visible,
                         'hiddenInput': hidden,
                     });
                     break;
-                case 'strain':
-                    visible.attr('eddautocompletetype', "Registry")
+                case STRAINS_META_NAME:
+                    visible.attr('eddautocompletetype', "Registry");
                     this.autoInput = new EDDAuto.Registry({
                         'container': rowContainer,
                         'visibleInput': visible,
@@ -425,6 +417,10 @@ module CreateLines {
     export class ControlInput extends LinePropertyInput {
         yesCheckbox: JQuery;
         noCheckbox: JQuery;
+
+        constructor(options:any) {
+            super(options);
+        }
 
         fillInputControls(rowContainer: JQuery): void {
             this.yesCheckbox = $('<input type="checkbox">')
@@ -448,16 +444,6 @@ module CreateLines {
         hasValidInput(rowIndex: number) {
             return this.yesCheckbox.prop('checked') || this.noCheckbox.prop('checked');
         }
-
-        getNameElements(): LineAttributeDescriptor[] {
-            var hasInput: boolean;
-            hasInput = this.hasAnyValidInput();
-            this.highlightRowLabel(hasInput);
-            if(hasInput) {
-                return [new LineAttributeDescriptor('control', 'Control')];
-            }
-            return [];
-        }
     }
 
     export class ReplicateInput extends LinePropertyInput {
@@ -479,14 +465,6 @@ module CreateLines {
                 .addClass('step2-value-input')
                 .appendTo(rowContainer);
         }
-
-        getNameElements(): LineAttributeDescriptor[] {
-            var hasInput: boolean;
-            hasInput = this.hasAnyValidInput();
-            this.highlightRowLabel(hasInput);
-
-            return [new LineAttributeDescriptor('replicate_num', 'Replicate #')];
-        }
     }
 
     export class CreationManager {
@@ -502,6 +480,9 @@ module CreateLines {
         usedMetadataNames = [];
 
         lineMetaAutocomplete:EDDAuto.LineMetadataType = null;
+
+        nonAutocompleteLineMetaTypes: any[] = [];
+        autocompleteLineMetaTypes: any = {};
 
         indicatorColorIndex:number = 0;
         colors = ['red', 'blue', 'yellow', 'orange', 'purple'];
@@ -521,9 +502,17 @@ module CreateLines {
             ];
         }
 
-        addInput(nameElement: LineAttributeDescriptor): void {
-            var newInput: LinePropertyInput;
-            newInput = new LineAttributeInput({'lineAttribute': nameElement});
+        addInput(lineAttr: LineAttributeDescriptor): void {
+            var newInput: LinePropertyInput, autocompleteMetaItem:any, cache:any;
+
+            autocompleteMetaItem = this.autocompleteLineMetaTypes[lineAttr.jsonId];
+            if(autocompleteMetaItem) {
+                newInput = new LineAttributeAutoInput({'lineAttribute': lineAttr});
+            }
+            else {
+                newInput = new LineAttributeInput({'lineAttribute': lineAttr});
+            }
+
             this.lineProperties.push(newInput);
             this.insertInputRow(newInput);
         }
@@ -572,8 +561,8 @@ module CreateLines {
 
         updateNameElementChoices(): void {
             var availableElts: LineAttributeDescriptor[], prevNameElts: LineAttributeDescriptor[],
-                newElts: LineAttributeDescriptor[], unusedList: JQuery, namingUnchanged:boolean,
-                self:CreationManager;
+                newElts: LineAttributeDescriptor[], unusedList: JQuery, unusedChildren: JQuery,
+                namingUnchanged:boolean, self:CreationManager;
             console.log('updating available naming elements');
 
             //build an updated list of available naming elements based on user entries in step 1
@@ -612,24 +601,31 @@ module CreateLines {
             console.log('Available name elements: ' + availableElts);
 
             unusedList = $('#unused_line_name_elts');
-            unusedList.children().each(function() {
-                var availableElt: any, index: number, nameElement: JQuery;
+            unusedChildren = unusedList.children();
 
-                nameElement = $(this).data();
-                for(index = 0; index < newElts.length; index++) {
-                    availableElt = newElts[index];
-                    if(availableElt.lineAttribute.displayText == this.textContent) {
-                        console.log('Found matching element ' + this.textContent);
-                        newElts.splice(index, 1);
-                        return true;
+            if(unusedChildren){
+                unusedChildren.each(function(unusedIndex: number, listElement: Element) {
+                    var availableElt: any, newIndex: number, listElement: Element;
+                    listElement = this;
+
+                    for(newIndex = 0; newIndex < newElts.length; newIndex++) {
+                        availableElt = newElts[newIndex];
+
+                        if(availableElt.displayText == listElement.textContent) {
+                            console.log('Found matching element ' + listElement.textContent);
+                            newElts.splice(newIndex, 1);
+                            return true;
+                        }
                     }
-                }
-                console.log('Removing ' + this.textContent + ' from unused list');
-                this.remove();
-                return true;
-            });
+                    console.log('Removing ' + this.textContent + ' from unused list');
+                    this.remove();
+                    return true;
+                });
+            }
 
-            // add newly-inserted elements into the 'unused' section. that way previous configuration stays unaltered
+
+            // add newly-inserted elements into the 'unused' section. that way previous
+            // configuration stays unaltered
             newElts.forEach((elt:LineAttributeDescriptor) => {
                 var li: JQuery;
                 li = $('<li>')
@@ -676,6 +672,23 @@ module CreateLines {
             this.buildJson();
         }
 
+        setLineMetaTypes(metadataTypes:any[]) {
+            var self:CreationManager = this;
+            $('#step2_status_div').empty();
+            $('#addPropertyButton').prop('disabled', false);
+
+            this.nonAutocompleteLineMetaTypes = [];
+            this.autocompleteLineMetaTypes = {};
+            metadataTypes.forEach(function(metaType) {
+                if(autocompleteMetadataNames.indexOf(metaType.type_name) < 0) {
+                    self.nonAutocompleteLineMetaTypes.push(metaType);
+                }
+                else {
+                    self.autocompleteLineMetaTypes[metaType.pk] = metaType;
+                }
+            });
+        }
+
         showAddProperty(): void {
             $('#add-prop-dialog').dialog('open');
         }
@@ -694,7 +707,8 @@ module CreateLines {
                         meta_name = textInput.val();
                         meta_pk = hiddenInput.val();
                         self.lineMetaAutocomplete.omitKey(String(meta_pk));
-                        creationManager.addInput(new LineAttributeDescriptor(meta_name.toLowerCase(), meta_name));
+                        creationManager.addInput(new LineAttributeDescriptor(
+                            meta_pk, meta_name));
                         textInput.val(null);
                         hiddenInput.val(null);
                     },
