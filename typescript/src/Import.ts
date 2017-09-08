@@ -312,9 +312,15 @@ export module EDDTableImport {
         // If the interpretation mode value has changed, note the change and return 'true'.
         // Otherwise return 'false'.
         checkInterpretationMode(): boolean {
-            // Find every input element with the name attribute of 'datalayout' that's checked.
+            //IMPORT 2
+            if (window.location.pathname.split('/')[3] === 'import2') {
+                // Find every input element with the name attribute of 'datalayout' that's checked.
             // Should return 0 or 1 elements.
-            var modeRadio =$("#fileFormat input:checked")
+                var modeRadio =$("#fileFormat input:checked")
+            } else {
+                //Regular Import
+                var modeRadio = $("[name='datalayout']:checked");
+            }
             // If none of them are checked, we don't have enough information to handle any next steps.
             if (modeRadio.length < 1) { return false; }
             var radioValue = modeRadio.val();
@@ -327,7 +333,8 @@ export module EDDTableImport {
         // If the master Protocol pulldown value has changed, note the change and return 'true'.
         // Otherwise return 'false'.
         checkMasterProtocol():boolean {
-            var protocolRaw = $('#protocols2').val();
+
+            var protocolRaw = $('#masterProtocol').val();
             var p:any = (protocolRaw == DEFAULT_MASTER_PROTOCOL) ? 0 : parseInt(protocolRaw, 10);
             if (this.masterProtocol === p) { return false; }
             this.masterProtocol = p;
@@ -874,7 +881,7 @@ export module EDDTableImport {
             $('#fileDropInfoSending').addClass('off');
             $('#fileDropInfoName').empty();
             $('#fileDropInfoLog').empty();
-
+            
 
             // If we have a currently tracked dropped file, set its flags so we ignore any callbacks,
             // before we forget about it.
@@ -891,6 +898,7 @@ export module EDDTableImport {
             this.clearDropZone();
             this.rawText('');
             this.reprocessRawData();
+            $('.dz-details').hide();
         }
 
 
@@ -2323,11 +2331,6 @@ export module EDDTableImport {
             reDoStepOnChange = ['#masterAssay', '#masterLine', '#masterMComp', '#masterMType', '#masterMUnits'];
             $(reDoStepOnChange.join(',')).on('input', this.changedAnyMasterPulldown.bind(this));
 
-            //toggle matched assay section
-            $('#matchedAssaysSection .discloseLink').on('click', function(e) {
-                $(e.target).closest('.disclose').toggleClass('discloseHide');
-            });
-
             masterInputSelectors = ['#masterTimestamp'].concat(reDoStepOnChange);
             $('#masterTimestamp').on('input', this.queueReparseThisStep.bind(this));
             $('#resetstep4').on('click', this.resetDisambiguationFields.bind(this));
@@ -2504,6 +2507,7 @@ export module EDDTableImport {
             return $('<button type="button">')
                 .text('Select None')
                 .addClass(TypeDisambiguationStep.STEP_4_TOGGLE_SUBSECTION_CLASS)
+                .addClass('btn btn-default btn-xs')
                 .on('click', this.toggleAllSubsectionItems.bind(this))
         }
 
@@ -2522,7 +2526,7 @@ export module EDDTableImport {
                 }
                 return false;
             });
-
+                
             if (allSelected) {
                 $(event.target).text('Select All')
             } else {
@@ -2716,21 +2720,30 @@ export module EDDTableImport {
             });
 
             if (uniqueAssayNames.length - 1) {
-                let matched:number = $('#matchedAssaysSectionBody tr').length -1;
-                let matchedLines:number = $('#matchedAssaysSectionBody tr option:selected')
+                var matched:number = $('#matchedAssaysSectionBody tr').length -1;
+                var matchedLines:number = $('#matchedAssaysSectionBody tr option:selected')
                                             .text().split('Create New Assay').length -1;
-                let matchedAssays:number = matched - matchedLines;
+                var matchedAssays:number = matched - matchedLines;
                 if (matched === 0) {
                     $('#matchedAssaysSection').hide();
                 } else {
                     $('#matchedAssaysSection').show();
                     if (matchedLines === 0) {
-                        $('#matchedAssaysSection').find('.discloseLink').text(' Matched '+ matchedAssays + ' Assays')
+                        $('#matchedAssaysSection').find('.discloseLink').text(' Matched '
+                            + matchedAssays + ' Assays');
+                        //IMPORT 2
+                        $('#importingAssays').text(matchedAssays + ' assays will be merged');
                     } else if (matchedAssays === 0) {
-                        $('#matchedAssaysSection').find('.discloseLink').text(' Matched '+ matchedLines + ' Lines')
+                        $('#matchedAssaysSection').find('.discloseLink').text(' Matched '
+                            + matchedLines + ' Lines');
+                        //IMPORT 2
+                        $('#importingLines').text(matchedLines + ' new assays will be created');
                     } else {
-                        $('#matchedAssaysSection').find('.discloseLink').text(' Matched '+ matchedLines + ' Lines and ' +
-                                                                            matchedAssays + ' Assays')
+                        $('#matchedAssaysSection').find('.discloseLink').text(' Matched '
+                            + matchedLines + ' Lines and ' + matchedAssays + ' Assays');
+                        //IMPORT 2
+                        $('#importingLines').text(matchedLines + ' new assays will be created');
+                        $('#importingAssays').text(matchedAssays + ' assays will be merged');
                     }
                 }
             }
@@ -2738,7 +2751,8 @@ export module EDDTableImport {
 
 
         addRequiredInputLabel(parentDiv: JQuery, text: string): JQuery {
-            var adding = [TypeDisambiguationStep.STEP_4_SUBSECTION_REQUIRED_CLASS, 'off', 'missingSingleFormInput'];
+            var adding = [TypeDisambiguationStep.STEP_4_SUBSECTION_REQUIRED_CLASS, 'off',
+                'missingSingleFormInput'];
             return $('<div>').text(text)
                 .addClass(adding.join(' '))
                 .appendTo(parentDiv);

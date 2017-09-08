@@ -40,10 +40,8 @@
 {% block content %}
     <form method="post" id="assayTableForm" action="{% url 'main:table-import' slug=study.slug %}">
         {% csrf_token %}
-        <div id="app">
-        <div>
-            <form-wizard @on-complete="onComplete"
-                         @on-loading="setLoading"
+        <span id="app">
+            <form-wizard @on-loading="setLoading"
                          @on-validate="handleValidation"
                          shape="tab"
                          color="#23527c"
@@ -54,16 +52,18 @@
                            icon="ti-user">
                 <div class="border-box">
                     <div class="headers">What Category of Data do you have?</div>
-                    <button class="btn btn-default btn-step1"  v-for="category in importOptions.categories"
-                       v-on:click.prevent="selectCategory">
+                    <button class="btn btn-default btn-step1"  v-for="category in
+                            importOptions.categories" v-on:click.prevent="selectCategory">
                         ${ category.name }
                     </button>
                     <p>Don't see your category?<a href="mailto:jbei-help@lbl.gov?subject=EDD">
                      Contact support</a></p>
                 </div>
+
                 <div class="border-box off" id="protocols">
                     <div class="headers">What Protocol did you use?</div>
-                     <select  id="protocols2" v-on:change="selectProtocol" name="masterProtocol">
+                     <select  id="masterProtocol" v-on:change="selectProtocol"
+                              name="masterProtocol">
                        <option value="unspecified_protocol">---</option>
                       {% for protocol in protocols %}
                       <option
@@ -75,45 +75,164 @@
                 </div>
                     <div id="fileFormat" class="border-box off">
                       <span class="headers">File format</span>
-                      <ul v-for="format in formats">
-                          <p>
+                        <ul v-for="format in formats">
+                          <div class="fileFormat">
                             <input type="checkbox" v-if="formats.length === 1" checked
                                    v-on:change.prevent="selectFormats">
                             <input type="checkbox" v-else v-on:change.prevent="selectFormats"
                             v-bind:value="format.value">
-                          ${ format.name }
-                               <span class="exampleFile"  v-if="format.name == 'Generic Import File'
-                            || format.name == 'Cufflinks file'">
+                                ${ format.name }
+
+                            {#  General example file #}
+                            <span class="exampleFile"  v-if="format.name == 'General Import File'
+                                                            || format.name == 'Cufflinks file'">
                                 <a href="{% static 'GC-MS_example.xlsx' %}">Example File</a>
+
+                            {#  General dropdown #}
+                            <span class="disclose discloseHide exampleFile">
+                              <span><a class="discloseLink" href="#">Example Layout</a></span>
+                              <div v-if="format.name == 'General Import File'" class="discloseBody
+                               off">
+                                <p>Example 1:</p>
+                                <p>Here is a sequence of metabolites measured at different times.
+                                    To import this, you would paste it into the Step 2 box. The
+                                    EDD automatically flips the axes and detects the presence of
+                                    a time sequence and measurement names.</p>
+                                <img class="exampleImage" src="{% static 'main/images/data_examples/excel_example-a.png' %}" />
+                                  <p>Set the pulldowns in Step 3 like so: </p>
+                                <img src="{% static 'main/images/data_examples/excel_example-a-settings.png' %}"
+                                    style="border:none;padding:5px;"/>
+                                <p>Example 2:</p>
+                                <p>Here is a sequence of measurements for multiple metabolites
+                                    across different Lines. The EDD will recognize the
+                                    metabolites, but might not recognize the top row as Line
+                                    names</p>
+                                <img class="exampleImage"
+                                    src="{% static 'main/images/data_examples/excel_example-b.png' %}" />
+                                <p> If this is the case, the pulldowns will look like this:</p>
+                                <img src="{% static 'main/images/data_examples/excel_example-b-settings.png' %}"
+                                     style="border:none;padding:5px;">
+                                <p>If you set the first pulldown to "Assay/Line Names", you can
+                                    proceed to link the items with existing Lines or Assays in
+                                    Step 4 before submitting the data.</p>
+                              </div><!-- .discloseBody -->
+                            </span><!-- .disclose -->
                             </span>
-                          <span class="exampleFile" v-if="format.name == 'Biolector XML File'">
+
+                            {#  Gene Transcription file #}
+                            <span class="transcrip exampleFile"  v-if="format.name == 'Gene Transcription'">
+                                <a href="{% static 'main/images/data_examples/transcription_example.png' %}">Example File</a>
+
+                            {#  Gene Transcription dropown #}
+                            <span class="disclose discloseHide exampleFile">
+                              <span><a class="discloseLink" href="#">Example Layout</a></span>
+                              <div v-if="format.name == 'Gene Transcription'" class="discloseBody
+                               off"
+                                id="trlayoutexample">
+                                <p>In this typical example of gene transcription data, the only
+                                   two columns that the EDD actually cares about are the gene
+                                    name, and the RPKM value, highlighted in green.</p>
+                                <p>After you paste your document in, you'll need to tell the EDD
+                                    where to find these columns.</p>
+                                <img class="exampleImage"
+                                    src="{% static 'main/images/data_examples/transcription_example.png' %}" />
+                              </div><!-- .discloseBody -->
+                            </span><!-- .disclose -->
+                            </span>
+
+                            {#  Flux Analysis file #}
+                            <span class="exampleFile"  v-if="format.name == 'Flux Analysis file'">
+                                <a href="{% static 'Flux_Analysis.xlsx' %}">Example File</a>
+
+                            {#  Flux Analysis dropown #}
+                            <span class="disclose discloseHide exampleFile">
+                              <span><a class="discloseLink" href="#">Example Layout</a></span>
+                              <div v-if="format.name == 'Flux Analysis file'" class="discloseBody
+                               off">
+                                <p>In this typical example of gene transcription data, the only
+                                   two columns that the EDD actually cares about are the gene
+                                    name, and the RPKM value, highlighted in green.</p>
+                                <p>After you paste your document in, you'll need to tell the EDD
+                                    where to find these columns.</p>
+                                <img class="exampleImage"
+                                    src="{% static 'main/images/data_examples/transcription_example.png' %}" />
+                              </div><!-- .discloseBody -->
+                            </span><!-- .disclose -->
+                            </span>
+
+                            {#  HPLC Instrument File #}
+                            <span class="exampleFile"  v-if="format.name == 'HPLC Instrument File'">
+                                <a href="{% static 'HPLC_example.txt' %}">Example File</a>
+
+                            {#  HPLC Instrument dropown #}
+                            <span class="disclose discloseHide exampleFile">
+                              <span><a class="discloseLink" href="#">Example Layout</a></span>
+                              <div v-if="format.name == 'HPLC Instrument File'" class="discloseBody
+                               off">
+                                <p>Files generated by the HPLC look like this. There is also a
+                                    similar-looking 96-well variant. Drag them into the drop zone
+                                    .</p>
+                                <p>When setting up your HPLC run, follow a naming convention for the
+                                    wells to make your import easier: <code>Line
+                                        Name_HPLC@Time_Replicate Name</code>, where <code>Time
+                                    </code> is in hours, and <code>Replicate Name</code> is
+                                    optional. For example, <code>Ecol14a_HPLC@12.4</code>,
+                                    <code>30min spin_HPLC@10_a</code>.</p>
+                                  <img class="exampleImage"
+                                    src="{% static 'main/images/data_examples/hplc_example.png' %}"/>
+                              </div><!-- .discloseBody -->
+                            </span><!-- .disclose -->
+                            </span>
+
+                            {#  Biolector example file #}
+                            <span class="exampleFile"  v-if="format.name == 'Biolector XML File'">
                                 <a href="{% static 'Biolector.xml' %}">Example File</a>
+
+                            {#  Biolector dropown #}
+                            <span class="disclose discloseHide exampleFile">
+                              <span><a class="discloseLink" href="#">Example Layout</a></span>
+                              <div v-if="format.name == 'Biolector XML File'" class="discloseBody
+                               off" >
+                                <img class="exampleImage"
+                                    src="{% static 'main/images/data_examples/biolector_example.png' %}" />
+                              </div><!-- .discloseBody -->
+                            </span><!-- .disclose -->
                             </span>
+
+                            {#  Skyline Dropdown #}
                             <span class="exampleFile" v-if="format.name== 'Skyline'">
                                  <a href="{% static 'skyline_example.csv' %}">Example File</a>
-                                <span class="discloseFile discloseHide">
-                                  <span><a class="discloseLink" href="#">Example</a></span>
+                                <span class="disclose discloseHide exampleFile">
+                                  <span><a class="discloseLink" href="#">Example Layout</a></span>
                                   <div class="discloseBody off" id="skylinelayoutexample">
-                                        <p>Use this format for data coming out of Skyline analysis of mass spec data. This import
-                                            expects data to come in four columns, with a sample name in the first
-                                            column, a protein name in the second (represented by its accession ID found on
+                                        <p>Use this format for data coming out of Skyline analysis
+                                            of mass spec data. This import expects data to come
+                                            in four columns, with a sample name in the first
+                                            column, a protein name in the second (represented by
+                                            its accession ID found on
                                             <a href="http://www.uniprot.org/uniprot/">UniProt</a>
-                                            ), a peptide in the third column, and a numeric value for peak area in the fourth.
-                                            Here is an example of a <a href="{% static 'skyline_example.csv' %}">Skyline Data File </a>
-                                            that has been successfully imported.</p>
+                                            ), a peptide in the third column, and a numeric value
+                                            for peak area in the fourth. Here is an example of a
+                                            <a href="{% static 'skyline_example.csv' %}">Skyline
+                                                Data File </a> that has been successfully
+                                            imported.</p>
                                         <img class="exampleImage" src="{% static 'main/images/data_examples/skyline_example_a.png' %}" />
                                   </div><!-- .discloseBody -->
                                 </span><!-- .disclose -->
-                          </p>
+                            </span>
+                          </div>
                       </ul>
                     </div>
               </tab-content>
+
+              {#  Upload Step #}
               <tab-content title="Upload File"
                            icon="ti-settings">
                         {# Sucess Alert #}
                         <div id="fileUploaded" class="alert alert-success alert-dismissible"
                              role="alert" hidden>
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <button type="button" class="close" data-dismiss="alert"
+                                    aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
@@ -131,7 +250,7 @@
                           </select>
                         </span>
                         <div class="sectionContent" style="padding:2px;text-align:center;">
-                            <div class="resetButtonDiv" id="resetstep3" style="float:right;">Reset</div>
+                            <div class="resetButtonDiv" id="resetstep2" style="float:right;">Reset</div>
                            <div id="importDropZone2">
                                <textarea class="dataTextArea fd-zone" rows="16" id="step2textarea"
                                 name="step2textarea"></textarea>
@@ -140,214 +259,211 @@
                      <my-dropzone>
                      </my-dropzone>
               </tab-content>
+
+              {#  Resolve Step #}
               <tab-content title="Resolve"
                            icon="ti-check">
 
                   <div class="headers">Help EDD resolve inputs from your file</div>
-                  <div class="border-box">
-                      <div id="waitingForServerLabel" class="disabledStepLabel off">Waiting for server to respond with
-                        existing data for this study...</div>
-                      <div id="processingStep2ResultsLabel" class="disabledStepLabel wait off">Processing file input
-                        from Step 2...</div>
-                      <span class="transpose">
-                        <input type="checkbox" name="transpose" id="transpose" value="1" />
-                        <label for="transpose">Transpose</label>
-                      </span>
-                      <div id="step3UpperLegend" class="step3Legend off sectionContent">
-                        <div class="legendRow">
-                          <span class="legendCell">Row needs interpretation: </span>
-                          <span class="ignoredRowLegendBox legendCell"></span>
-                          <span class="legendCell legendColumn3">Ignored during import: </span>
-                          <span class="disabledRowLegendBox legendCell"></span>
-                        </div>
+              <div class="border-box">
+                  <div id="waitingForServerLabel" class="disabledStepLabel off">
+                      Waiting for server to respond with existing data for this study...</div>
+                  <div id="processingStep2ResultsLabel" class="disabledStepLabel wait off">
+                      Processing file input from Step 2...</div>
+                  <span class="transpose">
+                    <input type="checkbox" name="transpose" id="transpose" value="1" />
+                    <label for="transpose">Transpose</label>
+                  </span>
+                  <div id="step3UpperLegend" class="step3Legend off sectionContent">
+                    <div class="legendRow">
+                      <span class="legendCell">Row needs interpretation: </span>
+                      <span class="ignoredRowLegendBox legendCell"></span>
+                      <span class="legendCell legendColumn3">Ignored during import: </span>
+                      <span class="disabledRowLegendBox legendCell"></span>
+                    </div>
+              </div>
+
+              <div id="dataTableDiv" class="dataTableDiv off"></div>
+              <div id="missingStep3InputDiv" class="off sectionContent errorMessage">
+                  Missing required input(s) above</div>
+
+              <div class="pageSection stepBorder " id="typeDisambiguationStep"></div>
+
+              <div class="disabledStepLabel wait off" id="processingStep3Label">
+                  Processing input from Step 3</div>
+
+              <div class="disambiguationSections">
+
+                <div class="sectionContent off" id="masterTimestampDiv">
+                  <h3>Time for all measurements</h3>
+                  <table class="table">
+                    <tr>
+                      <td style="vertical-align:middle;">
+                        <input type="text" size="6" name="masterTimestamp" id="masterTimestamp"
+                               value="" />
+                        <span>hours</span>
+                      </td>
+                      <td>
+                        <span id="masterTimestampRequiredPrompt" class="off missingSingleFormInput">
+                          Required. No measurement has a time.
+                        </span>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div class="sectionContent off" id="masterLineDiv">
+                  <h3>Line for all data</h3>
+                  <table class="table">
+                    <tr>
+                      <td>
+                        <label for="masterLine">
+                          <select name="masterLine" id="masterLine">
+                            <option value="new">(Create New)</option>
+                            {% for line in study.line_set.all %}
+                            <option value="{{ line.pk }}">{{ line.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </label>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div class="sectionContent off" id="masterAssayLineDiv">
+                  <h3>Assay for all data</h3>
+                  <table class="table">
+                    <tr>
+                      <td>
+                        <label for="masterAssay">
+                          <select name="masterAssay" id="masterAssay">
+                            <option value="new">(Create New)</option>
+                          </select>
+                        </label>
+                        <label for="masterAssayLine" id="masterLineSpan">
+                          <span>for Line:</span>
+                          <select name="masterAssayLine" id="masterAssayLine">
+                            <option value="new">(Create New)</option>
+                            {% for line in study.line_set.all %}
+                            <option value="{{ line.pk }}">{{ line.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </label>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+
+                <div class="sectionContent off" id="masterMTypeDiv">
+
+                  <h3>Measurement Type for all data</h3>
+                  <table>
+                    <thead>
+                      <th>Compartment</th>
+                      <th>Type</th>
+                      <th>Units</th>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <input class="autocomp form-control" type="text"
+                                 size="20" name="masterMComp" id="masterMComp"
+                                 eddautocompletetype="MeasurementCompartment" value="" style="margin-right: 2px;">
+                          <input type="hidden" id="masterMCompValue" name="masterMCompValue">
+                        </td><td>
+                          <input class="autocomp form-control" type="text" size="45"
+                                 name="masterMType" id="masterMType"
+                                 eddautocompletetype="GenericOrMetabolite" value="" style="margin-right: 2px;">
+                          <input type="hidden" id="masterMTypeValue" name="masterMTypeValue">
+                        </td><td>
+                          <input class="autocomp form-control" type="text" size="15"
+                                 name="masterMUnits" id="masterMUnits"
+                                 eddautocompletetype="MeasurementUnit" value="">
+                          <input type="hidden" id="masterMUnitsValue" name="masterMUnitsValue">
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                </div>
+
+                <div class="sectionContent off" id="masterUnitDiv">
+                  <h3>Units for all data</h3>
+                  <table class="table">
+                    <tr>
+                      <td>
+                        <label for="masterUnits">
+                          <input class="autocomp" type="text" size="15"
+                                 name="masterUnits" id="masterUnits"
+                                 eddautocompletetype="MeasurementUnit" value="" />
+                          <input type="hidden" name="masterUnitsValue" />
+                        </label>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div class="sectionContent off" id="disambiguateLinesSection">
+                  <h3>Lines</h3>
+                  {# This section filled in via TypeScript if needed #}
+                </div>
+
+                <div class="disclose discloseHide off" id="matchedAssaysSection">
+                    <h3 class="discloseLink"> Matched Assays </h3>
+                    <div class="discloseBody" id="matchedAssaysSectionBody">
+                 </div>
+                </div>
+
+                <div class="sectionContent off" id="disambiguateAssaysSection">
+                    <div class="alert alert-warning alert-dismissible" role="alert">
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                        <div>Warning! The following inputs were not matched to an experiment
+                            description line and will not be imported. First add new lines <a
+                                    href="{% url 'main:lines' slug=study.slug %}" and then
+                                    upload data.>here</a>.</div>
+                    </div>
+                    <div class="disclose">
+                        <h3 class="discloseLink noMatch"> Unmatched Inputs </h3>
+                        <table id="disambiguateAssaysTable" class="discloseBody" cellspacing="0">
+                            <thead>
+                              <th></th>
+                              <th>Input Name</th>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                  <div class="sectionContent off" id="disambiguateMeasurementsSection">
+                      <h3>Measurement Types</h3>
+                      <div id="noCompartmentWarning" class="statusMessage neutral">
+                        Make sure you specify a cellular compartment (Intracellular/Extracellular)
+                          for your mass distribution measurements.
                       </div>
+                      <table id="disambiguateMeasurementsTable" cellspacing="0">
+                        <thead>
+                          <th colspan="2">{# Empty placeholder for checkbox and label columns #}</th>
+                          <th>Compartment</th>
+                          <th>Type</th>
+                          <th>Units</th>
+                        </thead>
+                            <tbody>
+                            </tbody>
+                      </table>
+                </div>
+                <div id="disambiguateMetadataSection" class="off">
+                  <h3>Metadata Types</h3>
+                  {# This section filled in via TypeScript if needed #}
+                </div>
 
-                      <div id="dataTableDiv" class="dataTableDiv off"></div>
-                      <div id="missingStep3InputDiv" class="off sectionContent errorMessage">Missing required input(s)
-                        above</div>
-
-                  <div class="pageSection stepBorder " id="typeDisambiguationStep">
-
-  </div>
-
-  <div class="disabledStepLabel wait off" id="processingStep3Label">Processing input from
-    Step 3</div>
-
-  <div class="disambiguationSections">
-
-    <div class="sectionContent off" id="masterTimestampDiv">
-
-      <h3>Time for all measurements</h3>
-      <table class="table">
-        <tr>
-          <td style="vertical-align:middle;">
-            <input type="text" size="6" name="masterTimestamp" id="masterTimestamp" value="" />
-            <span>hours</span>
-          </td>
-          <td>
-            <span id="masterTimestampRequiredPrompt" class="off missingSingleFormInput">
-              Required. No measurement has a time.
-            </span>
-          </td>
-        </tr>
-      </table>
-
-    </div>
-
-    <div class="sectionContent off" id="masterLineDiv">
-
-      <h3>Line for all data</h3>
-      <table class="table">
-        <tr>
-          <td>
-            <label for="masterLine">
-              <select name="masterLine" id="masterLine">
-                <option value="new">(Create New)</option>
-                {% for line in study.line_set.all %}
-                <option value="{{ line.pk }}">{{ line.name }}</option>
-                {% endfor %}
-              </select>
-            </label>
-          </td>
-        </tr>
-      </table>
-
-    </div>
-
-    <div class="sectionContent off" id="masterAssayLineDiv">
-
-      <h3>Assay for all data</h3>
-      <table class="table">
-        <tr>
-          <td>
-            <label for="masterAssay">
-              <select name="masterAssay" id="masterAssay">
-                <option value="new">(Create New)</option>
-              </select>
-            </label>
-            <label for="masterAssayLine" id="masterLineSpan">
-              <span>for Line:</span>
-              <select name="masterAssayLine" id="masterAssayLine">
-                <option value="new">(Create New)</option>
-                {% for line in study.line_set.all %}
-                <option value="{{ line.pk }}">{{ line.name }}</option>
-                {% endfor %}
-              </select>
-            </label>
-          </td>
-        </tr>
-      </table>
-
-    </div>
-
-    <div class="sectionContent off" id="masterMTypeDiv">
-
-      <h3>Measurement Type for all data</h3>
-      <table>
-        <thead>
-          <th>Compartment</th>
-          <th>Type</th>
-          <th>Units</th>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <input class="autocomp form-control" type="text" size="20" name="masterMComp" id="masterMComp"
-                  eddautocompletetype="MeasurementCompartment"
-                  value="" style="margin-right: 2px;">
-              <input type="hidden" id="masterMCompValue" name="masterMCompValue">
-            </td><td>
-              <input class="autocomp form-control" type="text" size="45" name="masterMType" id="masterMType"
-                  eddautocompletetype="GenericOrMetabolite"
-                  value="" style="margin-right: 2px;">
-              <input type="hidden" id="masterMTypeValue" name="masterMTypeValue">
-            </td><td>
-              <input class="autocomp form-control" type="text" size="15" name="masterMUnits" id="masterMUnits"
-                  eddautocompletetype="MeasurementUnit"
-                  value="">
-              <input type="hidden" id="masterMUnitsValue" name="masterMUnitsValue">
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-    </div>
-
-    <div class="sectionContent off" id="masterUnitDiv">
-      <h3>Units for all data</h3>
-      <table class="table">
-        <tr>
-          <td>
-            <label for="masterUnits">
-              <input class="autocomp" type="text" size="15" name="masterUnits" id="masterUnits"
-                  eddautocompletetype="MeasurementUnit"
-                  value="" />
-              <input type="hidden" name="masterUnitsValue" />
-            </label>
-          </td>
-        </tr>
-      </table>
-    </div>
-
-    <div class="sectionContent off" id="disambiguateLinesSection">
-      <h3>Lines</h3>
-      {# This section filled in via TypeScript if needed #}
-    </div>
-
-    <div class="sectionContent disclose discloseHide off" id="matchedAssaysSection">
-        <div class="pageDivider" for="matchedAssaysSection">
-            <span class="discloseLink"> Matched Assays </span>
-        </div>
-        <div class="discloseBody" id="matchedAssaysSectionBody">
-        </div>
-    </div>
-    <div class="sectionContent off" id="disambiguateAssaysSection">
-        <div class="alert alert-warning alert-dismissible" role="alert">
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-            </button>
-            <div>Warning! The following inputs were not matched to an experiment description line and will not be imported.
-                First add new lines <a href="{% url 'main:lines' slug=study.slug %}" and then upload data.>
-                here</a>.</div>
-        </div>
-        <div class="disclose">
-            <h3 class="discloseLink noMatch"> Unmatched Inputs </h3>
-            <table id="disambiguateAssaysTable" class="discloseBody" cellspacing="0">
-                <thead>
-                  <th></th>
-                  <th>Input Name</th>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-
-      <div class="sectionContent off" id="disambiguateMeasurementsSection">
-          <h3>Measurement Types</h3>
-          <div id="noCompartmentWarning" class="statusMessage neutral">
-            Make sure you specify a cellular compartment (Intracellular/Extracellular) for your mass
-              distribution measurements.
-          </div>
-          <table id="disambiguateMeasurementsTable" cellspacing="0">
-            <thead>
-              <th colspan="2">{# Empty placeholder for checkbox and label columns #}</th>
-              <th>Compartment</th>
-              <th>Type</th>
-              <th>Units</th>
-            </thead>
-                <tbody>
-                </tbody>
-          </table>
-      </div>
-    <div id="disambiguateMetadataSection" class="off">
-      <h3>Metadata Types</h3>
-      {# This section filled in via TypeScript if needed #}
-    </div>
-
-  </div>
-</div>
+              </div>
+            </div>
               </tab-content>
-                <tab-content title="Inspect"
+              {#  Inspect Step #}
+              <tab-content title="Inspect"
                            icon="ti-check">
                       <h3>Graph of data</h3>
                      <div id="graphDiv">
@@ -356,56 +472,22 @@
                         <div class="graphContainer"></div>
                       </div>
               </tab-content>
-                <tab-content title="Import"
-                           icon="ti-check">
+              <tab-content title="Import"
+                             icon="ti-check">
                     <div class="border-box">
-                      <h3>Ready to import</h3>
-                        <span id="step5">
-
-                        </span>
-                    </div>
-
-
-
-
-                    <div class="pageSection stepBorder " id="reviewImportStep">
-                      <div class="sectionHead">
-                        <span>Step 5 : Review your changes and submit.</span>
-                        <div class="helpBadgeDiv">Help
-                          <div class="helpContent">
-                            <p>In this section you should review summary information to make sure EDD has understood
-                              your data, and to double-check the results of your entries to help catch mistakes.</p>
-                            <p>You'll need to knowledge warnings regarding the content of your import, or else
-                              resolve them by changing entries in previous steps.</p>
-                            <p>EDD isn't familiar with your experiment, so please double-check the system and
-                              yourself!</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="sectionContent" id="reviewSummarySection">
-                        <div class="disabledStepLabel" id="completeAllStepsFirstLabel">Complete the preceding steps
-                          first!</div>
-                        <div id="summaryContentDiv"></div>
-                      </div>
-                      <div class="sectionContent step5Subsection off" id="reviewErrorsSection">
-                        <h1>Errors</h1>
-                        <p>Import is disabled until all errors have been resolved.</p>
-                        <div id="reviewErrorsContentDiv"></div>
-                      </div>
-                      <div class="sectionContent step5Subsection off" id="reviewWarningsSection">
-                        <h1>Warnings</h1>
-                        <p>You must resolve or acknowledge all warnings before import is allowed.</p>
-                        <div id="reviewWarningsContentDiv"></div>
-                      </div>
+                      <h3>Ready to import!</h3>
+                        <p id="importingLines">
+                        </p>
+                         <p id="importingAssays">
+                        </p>
                     </div>
 
                     <input type="hidden" id="jsonoutput" name="jsonoutput" />
                     <input type="hidden" name="studyID" value="{{ study.id }}"/>
 
 
-
               </tab-content>
-
+              {#  Next/Submit buttons #}
               <div class="loader" v-if="loadingWizard"></div>
                  <template slot="footer" scope="props">
                 <div class=wizard-footer-left>

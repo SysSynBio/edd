@@ -51,10 +51,8 @@ var dropzone = {
         prepareDropzone: function() {
             $(document).on('click', '.disclose .discloseLink', (e) => {
                 $(e.target).closest('.disclose').toggleClass('discloseHide');
+                $(e.target).parent().next().toggleClass('off')
             });
-            // $('#skylinelayoutexample').slideToggle('slow', function() {
-            //     $('#skylinelayoutexample').toggleClass('off');
-            // });
 
             //doing this b/c i can't figure out why 2 text areas exist
             if ($('.fd-zone').length > 1) {
@@ -92,8 +90,23 @@ window.addEventListener('load', function () {
             categories: '',
             yes: true,
             protocols: '',
-            formats: [
+            formats: '',
+            proteomicFormats: [
                 {id: 'f123', name: 'Skyline', value: 'std'},
+                {id: 'f789', name: 'General Import File', value: 'std'},
+                ],
+            metabolomicFormats: [
+                {id: 'f123', name: 'Skyline', value: 'std'},
+                {id: 'f542', name: 'HPLC Instrument File', value:'hplc'},
+                {id: 'f542', name: 'Flux Analysis file', value:'mdv'},
+                {id: 'f789', name: 'General Import File', value: 'std'},
+                ],
+            otherFormats: [
+                {id: 'f024', name: 'Biolector XML File', value: 'biolector'},
+                {id: 'f789', name: 'General Import File', value: 'std'},
+                ],
+            transcriptomicFormats: [
+                {id: 'f123', name: 'Gene Transcription', value: 'tr'},
                 {id: 'f789', name: 'General Import File', value: 'std'},
                 ],
             headers: [],
@@ -101,7 +114,6 @@ window.addEventListener('load', function () {
             importedData: [],
             matchedIds: [],
             importData: '',
-            // "std", "mdv", "tr", "hplc", "pr", and "biolector".
             importOptions: {
                 categories: [
                     {id: 'abcd', name: 'Proteomics'},
@@ -109,32 +121,9 @@ window.addEventListener('load', function () {
                     {id: 'badc', name: 'Transcriptomics'},
                     {id: 'cdab', name: 'Other'}
                 ],
-                protocols: [
-                    {id: 'a123', category: 'abcd', formats: ['f123', 'f789'], name: 'JBEI Targeted' +
-                    ' Proteomics'},
-                    {id: 'a456', category: 'abcd', formats: ['f123', 'f789'], name: 'PNNL Global ' +
-                    'Proteomics'},
-                    {id: 'b123', category: 'dcba', formats: ['f123', 'f789'], name: 'JBEI Targeted ' +
-                    'Metabolomics'},
-                    {id: 'b456', category: 'dcba', formats: ['f123', 'f789'], name: 'PNNL Global ' +
-                    'Metabolomics'},
-                    {id: 'c123', category: 'badc', formats: ['f456', 'f789'], name: 'JBEI ' +
-                    'Transcriptomics'},
-                    {id: 'd123', category: 'cdab', formats: ['f024', 'f789'], name: 'Biolector'}
-                ],
-                formats: [
-                    {id: 'f123', name: 'Skyline', value: 'std'},
-                    {id: 'f456', name: 'Cufflinks file', value: 'std'},
-                    {id: 'f789', name: 'General Import File', value: 'std'},
-                    {id: 'f024', name: 'Biolector XML File', value: 'biolector'},
-                ]
-            },
+            }
         },
         methods: {
-             onComplete: function () {
-                let studydata_url = "/study/" + EDDData.currentStudyID;
-                window.location.pathname = studydata_url;
-            },
             setLoading: function (value) {
                 this.loadingWizard = value
             },
@@ -142,97 +131,50 @@ window.addEventListener('load', function () {
                 console.log('Tab: ' + tabIndex + ' valid: ' + isValid);
             },
             validateAsync: function () {
-                return new Promise((resolve, reject) => {
+                return new Promise((resolve) => {
                     setTimeout(() => {
                         resolve(true)
                     })
                 })
             },
-            highlightOnClick: function (event, category) {
-                alert(event + " " + category);
-            },
             selectCategory: function(event) {
                 if (this.selectedCategory) {
-                    $('#protocols').find('button').removeClass('greyButton').removeClass('selectedButton');
-                    $('#protocols').addClass('off');
+                    $("#masterProtocol").val('unspecified_protocol');
                     $('#fileFormat').addClass('off');
+                    $('#fileFormat').find('input').prop('checked', false);
+                    $('.wizard-footer-right0').prop('disabled', true);
                 }
                 $('.btn').removeClass('selectedButton').addClass('greyButton');
                 $(event.target).removeClass('greyButton').addClass('selectedButton');
                 //get selected text and remove whitespace
                 this.selectedCategory = $(event.target).text().replace(/\s/g, '');
                 $(event.target).parent().find('p').remove();
-                // let id = this.importOptions.categories.filter(function(d) {
-                //     return d.name === $(event.target).text().replace(/\s/g, '');
-                // });
-                // id = id[0].id;
-                // this.protocols = this.importOptions.protocols.filter(function(d) {
-                //     return d.category === id
-                // });
+                if (this.selectedCategory === 'Proteomics') {
+                    this.formats = this.proteomicFormats
+                } else if (this.selectedCategory === 'Metabolomics') {
+                    this.formats = this.metabolomicFormats
+                } else if (this.selectedCategory === 'Transcriptomics') {
+                    this.formats = this.transcriptomicFormats
+                } else {
+                    this.formats = this.otherFormats
+                }
                 $('#protocols').removeClass('off');
             },
             selectProtocol: function(event) {
                 if ($(event.target).find('option:selected').text()) {
                     $('.wizard-footer-right0').prop('disabled', true);
                 }
-                //turn all buttons grey
-                // $('#protocols').find('button').addClass('greyButton');
-                //turn selected button blue
-                // $(event.target).addClass('selectedButton');
-                // if (this.formats.length === 1) {
-                //    $('.wizard-btn ').prop('disabled', false);
-                // } else {
-                //     $('.wizard-btn ').prop('disabled', true);
-                // }
-                $('#fileFormat').removeClass('off');
+                if ($("#masterProtocol").val() != 'unspecified_protocol') {
+                    $('#fileFormat').removeClass('off');
+                }
             },
             selectFormats: function(event) {
                 this.selectedFormat = $(event.target).text();
-                if ($('#fileFormat').find('input').eq(1).prop('checked') &&
-                !$('#fileFormat').find('input').eq(0).prop('checked')) {
-                    $('.wizard-footer-right0').prop('disabled', false);
-                } else if ($('#fileFormat').find('input').eq(0).prop('checked') &&
-                !$('#fileFormat').find('input').eq(1).prop('checked')) {
-                    $('.wizard-footer-right0 ').prop('disabled', false);
-                } else {
-                  $('.wizard-footer-right0').prop('disabled', true);
-                }
+
+                //uncheck other boxes if one is checked
+               $('#fileFormat').find('input').not($(event.target)).prop('checked', false);
+               $('.wizard-footer-right0').prop('disabled', false);
             },
         }
     })
 });
-
-
-// var test = {
-//     cache: {},
-//     cacheId: "GenericOrMetaboliteTypes",
-//     columns: '',
-//     container: '',
-//     delete_last: false,
-//     display_key: "name",
-//     hiddenInput: '',
-//     modelName: "GenericOrMetabolite",
-//     search_uri: "/search/",
-//     uid: 10,
-//     value_key: "id",
-//     visibleInput: ''
-// };
-            //resolved sets. how each input should be sent..
-// var test = {
-//     assay_id:"named_or_new",
-//     assay_name:"2X-Mh",
-//     compartment_id:"0",
-//     data: [[24, 345.5]],
-//     kind:"std",
-//     line_id:"8",
-//     line_name:null,
-//     measurement_id:"1",
-//     measurement_name:null,
-//     metadata_by_id:Object,
-//     metadata_by_name:Object,
-//     units_id:"1"
-// };
-//          parsing stuff
-
-//below returns input matched at B-Mm where var t =$('table input')
-// t.filter( function(d) {return ($(this).val().replace(/\s/g, '') === 'B-Mm')})
