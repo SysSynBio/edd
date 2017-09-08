@@ -78,19 +78,35 @@ var CreateLines;
         MultiValueInput.prototype.hasValidInput = function (rowIndex) {
             return this.rows[rowIndex].find('input').first().val().trim() != '';
         };
-        MultiValueInput.prototype.hasAnyValidInput = function () {
+        MultiValueInput.prototype.validInputCount = function () {
+            var count = 0;
             for (var i = 0; i < this.rows.length; i++) {
                 if (this.hasValidInput(i)) {
-                    return true;
+                    count++;
                 }
             }
-            return false;
+            return count;
         };
         MultiValueInput.prototype.highlightRowLabel = function (anyValidInput) {
             this.rows[0].find('label')
                 .first()
                 .toggleClass('in-use', anyValidInput)
                 .toggleClass('not-in-use', !anyValidInput);
+        };
+        MultiValueInput.prototype.autoUpdateCombinations = function () {
+            var radioButton, multipleRows, combosButton, noCombosButton;
+            multipleRows = this.rows.length > 1;
+            noCombosButton = this.rows[0].find('input:radio[value=No]');
+            console.log('no combo button matches: ' + noCombosButton.length);
+            if (this.rows.length > 1) {
+                // note: not all inputs will have a "make combos" button  -- need enclosing check
+                combosButton = this.rows[0].find('input:radio[value=Yes]');
+                console.log('yes combo button matches: ' + combosButton.length);
+                combosButton.click();
+            }
+            else {
+                noCombosButton.click();
+            }
         };
         MultiValueInput.prototype.getInput = function (rowIndex) {
             return this.rows[rowIndex].find('input').first().val().trim();
@@ -120,8 +136,10 @@ var CreateLines;
             _super.call(this, options);
         }
         LinePropertyInput.prototype.getNameElements = function () {
-            var hasInput = this.hasAnyValidInput();
+            var validInputCount = this.validInputCount(), hasInput;
+            hasInput = validInputCount > 0;
             this.highlightRowLabel(hasInput);
+            this.autoUpdateCombinations();
             // only allow naming inputs to be used if there's at least one valid value to insert into line names.
             // note that allowing non-unique values to be used in line names during bulk creation can be helpful since
             // they may differentiate new lines from those already in the study.
@@ -225,6 +243,7 @@ var CreateLines;
             if (hadInput) {
                 CreateLines.creationManager.updateNameElementChoices();
             }
+            this.autoUpdateCombinations();
             // re-enable the add button if appropriate / if it was disabled
             this.addButton.prop('disabled', !this.canAddRows());
         };
@@ -263,6 +282,9 @@ var CreateLines;
                 yesComboButton = this.buildYesComboButton()
                     .appendTo(makeComboCell);
                 noComboButton.prop('checked', true);
+            }
+            else {
+                this.autoUpdateCombinations();
             }
         };
         LinePropertyInput.prototype.fillInputControls = function (container) {
@@ -411,7 +433,6 @@ var CreateLines;
             this.indicatorColorIndex = 0;
             this.colors = ['red', 'blue', 'yellow', 'orange', 'purple'];
             this.colorIndex = 0;
-            console.log('In constructor!');
             this.lineProperties = [
                 new ControlInput({
                     'lineAttribute': new LineAttributeDescriptor('control', 'Control'),
@@ -436,7 +457,6 @@ var CreateLines;
         };
         CreationManager.prototype.insertInputRow = function (input) {
             var parentDiv, row;
-            console.log('insertInputRow');
             parentDiv = $('#select_line_properties_step_dynamic').find('.sectionContent');
             row = $('<div>')
                 .addClass('table-row')
@@ -445,7 +465,6 @@ var CreateLines;
         };
         CreationManager.prototype.buildInputs = function () {
             var _this = this;
-            console.log('In buildInputs().  lineProperties = ' + this.lineProperties);
             // style the replicates spinner
             $("#spinner").spinner({
                 min: 1,

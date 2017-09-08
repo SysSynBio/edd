@@ -102,13 +102,14 @@ module CreateLines {
             return this.rows[rowIndex].find('input').first().val().trim() != '';
         }
 
-        hasAnyValidInput(): boolean {
+        validInputCount(): number {
+            var count: number = 0;
             for(var i=0; i<this.rows.length; i++) {
                 if(this.hasValidInput(i)) {
-                    return true;
+                    count++;
                 }
             }
-            return false;
+            return count;
         }
 
         highlightRowLabel(anyValidInput:boolean): void {
@@ -116,6 +117,25 @@ module CreateLines {
                 .first()
                 .toggleClass('in-use', anyValidInput)
                 .toggleClass('not-in-use', !anyValidInput);
+        }
+
+        autoUpdateCombinations () {
+            var radioButton: JQuery, multipleRows: boolean, combosButton:JQuery,
+                noCombosButton:JQuery;
+            multipleRows = this.rows.length > 1;
+            noCombosButton = this.rows[0].find('input:radio[value=No]');
+            console.log('no combo button matches: ' + noCombosButton.length);
+
+
+            if(this.rows.length > 1) {
+                // note: not all inputs will have a "make combos" button  -- need enclosing check
+                combosButton = this.rows[0].find('input:radio[value=Yes]');
+                console.log('yes combo button matches: ' + combosButton.length);
+                combosButton.click();
+            }
+            else {
+                noCombosButton.click();
+            }
         }
 
         getInput(rowIndex: number): string {
@@ -140,8 +160,12 @@ module CreateLines {
          }
 
         getNameElements(): LineAttributeDescriptor[] {
-             var hasInput:boolean = this.hasAnyValidInput();
+             var validInputCount:number = this.validInputCount(), hasInput:boolean;
+             hasInput = validInputCount > 0;
+
              this.highlightRowLabel(hasInput);
+             this.autoUpdateCombinations();
+
 
             // only allow naming inputs to be used if there's at least one valid value to insert into line names.
             // note that allowing non-unique values to be used in line names during bulk creation can be helpful since
@@ -272,6 +296,8 @@ module CreateLines {
                 creationManager.updateNameElementChoices();
             }
 
+            this.autoUpdateCombinations();
+
             // re-enable the add button if appropriate / if it was disabled
             this.addButton.prop('disabled', !this.canAddRows());
         }
@@ -323,6 +349,9 @@ module CreateLines {
                 yesComboButton = this.buildYesComboButton()
                     .appendTo(makeComboCell);
                 noComboButton.prop('checked', true);
+            }
+            else {
+                this.autoUpdateCombinations();
             }
         }
 
@@ -489,7 +518,6 @@ module CreateLines {
         colorIndex = 0;
 
         constructor() {
-            console.log('In constructor!');
             this.lineProperties = [
                 new ControlInput({
                     'lineAttribute': new LineAttributeDescriptor('control', 'Control'),
@@ -519,7 +547,6 @@ module CreateLines {
 
         insertInputRow(input:LinePropertyInput): void {
             var parentDiv: JQuery, row:JQuery;
-            console.log('insertInputRow');
             parentDiv = $('#select_line_properties_step_dynamic').find('.sectionContent');
             row = $('<div>')
                     .addClass('table-row')
@@ -528,7 +555,6 @@ module CreateLines {
         }
 
         buildInputs(): void {
-            console.log('In buildInputs().  lineProperties = ' + this.lineProperties);
 
             // style the replicates spinner
             $("#spinner").spinner({
