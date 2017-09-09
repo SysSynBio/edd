@@ -21,10 +21,18 @@ var EddRest;
     EddRest.RECEIVED_SO_FAR_OPTION = 'received_so_far';
     EddRest.SUCCESS_OPTION = 'success';
     EddRest.ERROR_OPTION = 'error';
-    // Metadata types present in the database that should be omitted user-displayed lists in
+    /* Default metadata names that may have to be explicitly-referenced in the UI */
+    EddRest.LINE_NAME_META_NAME = 'Line Name';
+    EddRest.LINE_EXPERIMENTER_META_NAME = 'Line Experimenter';
+    EddRest.LINE_DESCRIPTION_META_NAME = 'Line Description';
+    EddRest.LINE_CONTACT_META_NAME = 'Line Contact';
+    EddRest.CARBON_SOURCE_META_NAME = 'Carbon Source(s)';
+    EddRest.STRAINS_META_NAME = 'Strain(s)';
+    EddRest.CONTROL_META_NAME = 'Control';
+    // Metadata types present in the database that should be omitted from user-displayed lists in
     // contexts where separate display is available for line attributes.
-    EddRest.LINE_ATTRIBUTE_META_TYPES = ['Line Name', 'Line Description', 'Line Contact',
-        'Line Experimenter', 'Strain(s)'];
+    EddRest.LINE_ATTRIBUTE_META_TYPES = [EddRest.LINE_NAME_META_NAME, EddRest.LINE_DESCRIPTION_META_NAME,
+        EddRest.LINE_CONTACT_META_NAME, EddRest.LINE_EXPERIMENTER_META_NAME, EddRest.STRAINS_META_NAME];
     /* MetadataType API query parameter values */
     EddRest.LINE_METADATA_CONTEXT = 'L';
     EddRest.ASSAY_METADATA_CONTEXT = 'A';

@@ -1,18 +1,26 @@
-/// <reference path="typescript-declarations.d.ts" />
-/// <reference path="EDDAutocomplete.ts" />
 /// <reference path="EDDRest.ts" />
+/// <reference path="EDDAutocomplete.ts" />
+
 
 module CreateLines {
-    'use strict';
     const DATA_FORMAT_STRING:string = 'string';
     const ROW_INDEX = 'rowIndex';
 
-    const LINE_EXPERIMENTER_META_NAME = 'Line Experimenter';
-    const LINE_CONTACT_META_NAME = 'Line Contact';
-    const CARBON_SOURCE_META_NAME = 'Carbon Source(s)';
-    const STRAINS_META_NAME = 'Strain(s)';
-    const autocompleteMetadataNames = [LINE_EXPERIMENTER_META_NAME, LINE_CONTACT_META_NAME,
-                                       CARBON_SOURCE_META_NAME, STRAINS_META_NAME];
+    //TODO: relocate, e.g. to EDDRest.ts.  Initial attempts compiled but failed to run in
+    // strange ways.
+    /* Default metadata names that may have to be explicitly-referenced in the UI */
+    export const LINE_NAME_META_NAME = 'Line Name';
+    export const LINE_EXPERIMENTER_META_NAME = 'Line Experimenter';
+    export const LINE_DESCRIPTION_META_NAME = 'Line Description';
+    export const LINE_CONTACT_META_NAME = 'Line Contact';
+    export const CARBON_SOURCE_META_NAME = 'Carbon Source(s)';
+    export const STRAINS_META_NAME = 'Strain(s)';
+    export const CONTROL_META_NAME = 'Control';
+
+    // Metadata types present in the database that should be omitted from user-displayed lists in
+    // contexts where separate display is available for line attributes.
+    export const LINE_ATTRIBUTE_META_TYPES = [LINE_NAME_META_NAME, LINE_DESCRIPTION_META_NAME,
+        LINE_CONTACT_META_NAME, LINE_EXPERIMENTER_META_NAME, STRAINS_META_NAME];
 
     function loadAllLineMetadataTypes():void {
         $('#addPropertyButton').prop('disabled', true);
@@ -55,7 +63,7 @@ module CreateLines {
     }
 
     class LineAttributeDescriptor {
-        jsonId: any;
+        jsonId: any; // string for special-cases, integer pk for metadata
         displayText: string;
 
         constructor(json_elt, displayText) {
@@ -119,26 +127,7 @@ module CreateLines {
                 .toggleClass('not-in-use', !anyValidInput);
         }
 
-        autoUpdateCombinations () {
-            var radioButton: JQuery, multipleRows: boolean, combosButton:JQuery,
-                noCombosButton:JQuery;
-            multipleRows = this.rows.length > 1;
-            noCombosButton = this.rows[0].find('input:radio[value=No]');
-            console.log('no combo button matches: ' + noCombosButton.length);
-
-
-            if(this.rows.length > 1) {
-                // note: not all inputs will have a "make combos" button  -- need enclosing check
-                combosButton = this.rows[0].find('input:radio[value=Yes]');
-                console.log('yes combo button matches: ' + combosButton.length);
-                combosButton.click();
-            }
-            else {
-                noCombosButton.click();
-            }
-        }
-
-        getInput(rowIndex: number): string {
+        getInput(rowIndex: number): any {
             return this.rows[rowIndex].find('input').first().val().trim();
         }
     }
@@ -151,25 +140,28 @@ module CreateLines {
     // 2. compute / test JSON generation from supported controls
     // 3. implement / test back end communication / review / line creation
     // 4. error handling!! / wizard
-    // 5. implement & test abbreviations & custom name elements...nice-to-have, but not necessary to extract value
-    //TODO: revisit meta / attribute subclasses after some integration testing / review of back-end code. May be able to
-    // combine some of these.
+    // 5. implement & test abbreviations & custom name elements...nice-to-have, but not necessary
+    //    to extract value
+    // TODO: revisit meta / attribute subclasses after some integration testing / review of
+    // back-end code. May be able to combine some of these.
     export class LinePropertyInput extends MultiValueInput {
          constructor(options: any) {
              super(options);
+         }
+
+         updateInputState() {
+             this.highlightRowLabel(this.validInputCount() > 0);
+             this.autoUpdateCombinations();
          }
 
         getNameElements(): LineAttributeDescriptor[] {
              var validInputCount:number = this.validInputCount(), hasInput:boolean;
              hasInput = validInputCount > 0;
 
-             this.highlightRowLabel(hasInput);
-             this.autoUpdateCombinations();
-
-
-            // only allow naming inputs to be used if there's at least one valid value to insert into line names.
-            // note that allowing non-unique values to be used in line names during bulk creation can be helpful since
-            // they may differentiate new lines from those already in the study.
+            // only allow naming inputs to be used if there's at least one valid value to insert
+            // into line names. note that allowing non-unique values to be used in line names
+            // during bulk creation can be helpful since they may differentiate new lines from
+            // those already in the study.
             if(!hasInput) {
                 return [];
             }
@@ -177,9 +169,30 @@ module CreateLines {
             return [this.lineAttribute];
         }
 
-        getValueJson(): string[] {
-            var values: string[];
-            values = [];
+        autoUpdateCombinations () {
+            var comboInputs: boolean, combosButton:JQuery, noCombosButton:JQuery;
+            comboInputs = this.hasComboInputs();
+            noCombosButton = this.rows[0].find('input:radio[value=No]');
+            console.log('no combo button matches: ' + noCombosButton.length);
+
+            if(this.supportsCombinations) {
+                // note: not all inputs will have a "make combos" button  -- need enclosing check
+                combosButton = this.rows[0].find('input:radio[value=Yes]');
+            }
+
+            if(comboInputs) {
+                //combosButton.click();
+                combosButton.attr('disabled', String(!comboInputs));
+            }
+            else {
+                //noCombosButton.click();
+            }
+
+            noCombosButton.attr('disabled', String(comboInputs || this.supportsCombinations));
+        }
+
+        getValueJson(): any {
+            var values: string[] = [];
             this.rows.forEach((currentValue, index, arr) => {
                 if( this.hasValidInput(index)) {
                     values.push(this.getInput(index));
@@ -190,6 +203,10 @@ module CreateLines {
 
         getLabel(): JQuery {
             return this.uiLabel;
+        }
+
+        hasComboInputs(): boolean {
+             return this.rows.length > 1;
         }
 
         buildYesComboButton(): JQuery {
@@ -204,10 +221,6 @@ module CreateLines {
                 .prop('checked', true)
                 .val('No')
                 .addClass('property_radio');
-        }
-
-        getRowCount(): number {
-            return this.rows.length;
         }
 
 
@@ -259,6 +272,10 @@ module CreateLines {
             return this.getRowCount() < this.maxRows;
         }
 
+        getRowCount(): number {
+             return this.rows.length;
+        }
+
         appendRow(): void {
             var newRow: JQuery, parent: JQuery, atMax: boolean, prevRow: JQuery;
             prevRow = this.rows[this.rows.length-1];
@@ -267,6 +284,8 @@ module CreateLines {
                 .addClass('table-row')
                 .insertAfter(prevRow);
             this.fillRow(newRow);
+
+            this.updateInputState();
 
             this.addButton.prop('disabled', !this.canAddRows());
         }
@@ -288,24 +307,24 @@ module CreateLines {
                 var removeBtn: JQuery;
                 row = this.rows[i];
                 removeBtn = row.find('.removeButton').first();
-                console.log('Updating ' + removeBtn.length + ' event handlers for index ' + rowIndex);
+                console.log('Updating ' + removeBtn.length + ' event handlers for index ' +
+                             rowIndex);
                 this.registerRemoveEvtHandler(removeBtn, i);
             }
 
-            if(hadInput) {
-                creationManager.updateNameElementChoices();
-            }
-
-            this.autoUpdateCombinations();
-
             // re-enable the add button if appropriate / if it was disabled
             this.addButton.prop('disabled', !this.canAddRows());
+
+            if(hadInput) {
+                this.updateInputState();
+                creationManager.updateNameElementChoices();
+            }
         }
 
         fillRow(row: JQuery):void {
-            var firstRow: boolean, row: JQuery, inputCell: JQuery, addCell: JQuery, applyAllCell: JQuery,
-                makeComboCell: JQuery, labelCell: JQuery, noComboButton: JQuery,
-                yesComboButton: JQuery;
+            var firstRow: boolean, row: JQuery, inputCell: JQuery, addCell: JQuery,
+                applyAllCell: JQuery, makeComboCell: JQuery, labelCell: JQuery,
+                noComboButton: JQuery, yesComboButton: JQuery;
 
             this.rows.push(row);
 
@@ -350,9 +369,7 @@ module CreateLines {
                     .appendTo(makeComboCell);
                 noComboButton.prop('checked', true);
             }
-            else {
-                this.autoUpdateCombinations();
-            }
+            this.updateInputState();
         }
 
         fillInputControls(container: JQuery) {
@@ -377,10 +394,12 @@ module CreateLines {
         }
 
         fillInputControls(rowContainer: JQuery): void {
+            var self: LineAttributeInput = this;
             $('<input type="text">')
                 .addClass('step2-text-input')
                 .addClass('step2-value-input')
                 .on('change', function() {
+                    this.updateInputState();
                     creationManager.updateNameElementChoices();
                 })
                 .appendTo(rowContainer);
@@ -399,7 +418,8 @@ module CreateLines {
         // build custom input controls whose type depends on the data type of the Line attribute
         // they configure
         fillInputControls(rowContainer: JQuery): void {
-            var visible: JQuery, hidden: JQuery;
+            var visible: JQuery, hidden: JQuery, self: LineAttributeAutoInput;
+            self = this;
 
             visible = $('<input type="text">')
                 .addClass('step2-text-input');
@@ -407,6 +427,7 @@ module CreateLines {
                 .addClass('step2-value-input');
 
             hidden.on('change', function() {
+                self.updateInputState();
                 creationManager.updateNameElementChoices();
             });
 
@@ -441,6 +462,12 @@ module CreateLines {
             }
             this.buildRemoveControl(rowContainer);
         }
+
+        getInput(rowIndex: number): any {
+            var stringVal: string;
+            stringVal = this.rows[rowIndex].find('input[type=hidden]').first().val();
+            return parseInt(stringVal);
+        }
     }
 
     export class ControlInput extends LinePropertyInput {
@@ -452,8 +479,10 @@ module CreateLines {
         }
 
         fillInputControls(rowContainer: JQuery): void {
+            var self: ControlInput = this;
             this.yesCheckbox = $('<input type="checkbox">')
                 .on('change', function() {
+                    self.updateInputState();
                     creationManager.updateNameElementChoices();
                 })
                 .appendTo(rowContainer);
@@ -462,6 +491,7 @@ module CreateLines {
                 .appendTo(rowContainer);
             this.noCheckbox = $('<input type="checkbox">')
                 .on('change', function() {
+                    self.updateInputState();
                     creationManager.updateNameElementChoices();
                 })
                 .appendTo(rowContainer);
@@ -470,8 +500,29 @@ module CreateLines {
                 .appendTo(rowContainer);
         }
 
+        hasComboInputs(): boolean {
+            return this.yesCheckbox.prop('checked') &&
+                   this.noCheckbox.prop('checked');
+        }
+
         hasValidInput(rowIndex: number) {
-            return this.yesCheckbox.prop('checked') || this.noCheckbox.prop('checked');
+            return this.yesCheckbox.prop('checked')
+                || this.noCheckbox.prop('checked');
+        }
+
+        getValueJson(): any {
+            return this.getInput(0);
+        }
+
+        getInput(rowIndex: number): any {
+            var values = [];
+            if(this.yesCheckbox.prop('checked')) {
+                values.push(true);
+            }
+            if(this.noCheckbox.prop('checked')) {
+                values.push(false);
+            }
+            return values;
         }
     }
 
@@ -517,25 +568,26 @@ module CreateLines {
         colors = ['red', 'blue', 'yellow', 'orange', 'purple'];
         colorIndex = 0;
 
+        static autocompleteMetadataNames = [LINE_EXPERIMENTER_META_NAME, LINE_CONTACT_META_NAME,
+                                     CARBON_SOURCE_META_NAME, STRAINS_META_NAME];
+
         constructor() {
             this.lineProperties = [
-                new ControlInput({
-                    'lineAttribute': new LineAttributeDescriptor('control', 'Control'),
-                    'maxRows': 1}),
-                new LineAttributeInput(
-                    {
-                        'lineAttribute': new LineAttributeDescriptor('description', 'Description')}),
                 new ReplicateInput({
-                    'lineAttribute': new LineAttributeDescriptor('replicates', 'Replicates')})
+                    'lineAttribute': new LineAttributeDescriptor('replicates',
+                                                                 'Replicates')})
             ];
         }
 
         addInput(lineAttr: LineAttributeDescriptor): void {
-            var newInput: LinePropertyInput, autocompleteMetaItem:any, cache:any;
+            var newInput: LinePropertyInput, autocompleteMetaItem:any;
 
             autocompleteMetaItem = this.autocompleteLineMetaTypes[lineAttr.jsonId];
             if(autocompleteMetaItem) {
                 newInput = new LineAttributeAutoInput({'lineAttribute': lineAttr});
+            }
+            else if(EddRest.CONTROL_META_NAME == lineAttr.displayText) {
+                newInput = new ControlInput({'lineAttribute': lineAttr, 'maxRows': 1})
             }
             else {
                 newInput = new LineAttributeInput({'lineAttribute': lineAttr});
@@ -567,8 +619,10 @@ module CreateLines {
             creationManager.buildAbbrevDialog();
 
             // add click behavior to the "add property" button
-            $('#addPropertyButton').on('click', creationManager.showAddProperty.bind(this));
-            $('#addAbbreviationButton').on('click', creationManager.showAddAbbreviation.bind(this));
+            $('#addPropertyButton')
+                .on('click', creationManager.showAddProperty.bind(this));
+            $('#addAbbreviationButton')
+                .on('click', creationManager.showAddAbbreviation.bind(this));
 
             // set up the autocomplete for line metadata type selection
             this.lineMetaAutocomplete = new EDDAuto.LineMetadataType({
@@ -706,7 +760,7 @@ module CreateLines {
             this.nonAutocompleteLineMetaTypes = [];
             this.autocompleteLineMetaTypes = {};
             metadataTypes.forEach(function(metaType) {
-                if(autocompleteMetadataNames.indexOf(metaType.type_name) < 0) {
+                if(CreationManager.autocompleteMetadataNames.indexOf(metaType.type_name) < 0) {
                     self.nonAutocompleteLineMetaTypes.push(metaType);
                 }
                 else {
@@ -727,7 +781,8 @@ module CreateLines {
                 autoOpen: false,
                 buttons: {
                     'Add Property': function() {
-                        var meta_name:string, meta_pk:number, textInput: JQuery, hiddenInput: JQuery;
+                        var meta_name:string, meta_pk:number, textInput: JQuery,
+                            hiddenInput: JQuery;
                         textInput = $('#add-line-metadata-text');
                         hiddenInput = $('#add-line-metadata-value');
                         meta_name = textInput.val();
@@ -834,19 +889,6 @@ module CreateLines {
         // responsively if there are many, and also to show them in the
         loadAllLineMetadataTypes();
     }
-
-    //TODO: remove if unused
-    // function loadAllLineMetadataTypes():void {
-    //     EddRest.loadMetadataTypes(
-    //         {
-    //             'success': lineMetaSuccessHandler,
-    //             'error': lineErrorHandler,
-    //             'request_all': true, // get all result pages
-    //             'wait': function() { showWaitMessage(LINE_DIV_SELECTOR); },
-    //             'context': EddRest.LINE_METADATA_CONTEXT,
-    //             'sort_order': EddRest.ASCENDING_SORT,
-    //         });
-    // }
 }
 
 $(CreateLines.onDocumentReady);

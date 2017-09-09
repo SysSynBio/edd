@@ -1,6 +1,5 @@
-/// <reference path="typescript-declarations.d.ts" />
-/// <reference path="EDDAutocomplete.ts" />
 /// <reference path="EDDRest.ts" />
+/// <reference path="EDDAutocomplete.ts" />
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -8,15 +7,22 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var CreateLines;
 (function (CreateLines) {
-    'use strict';
     var DATA_FORMAT_STRING = 'string';
     var ROW_INDEX = 'rowIndex';
-    var LINE_EXPERIMENTER_META_NAME = 'Line Experimenter';
-    var LINE_CONTACT_META_NAME = 'Line Contact';
-    var CARBON_SOURCE_META_NAME = 'Carbon Source(s)';
-    var STRAINS_META_NAME = 'Strain(s)';
-    var autocompleteMetadataNames = [LINE_EXPERIMENTER_META_NAME, LINE_CONTACT_META_NAME,
-        CARBON_SOURCE_META_NAME, STRAINS_META_NAME];
+    //TODO: relocate, e.g. to EDDRest.ts.  Initial attempts compiled but failed to run in
+    // strange ways.
+    /* Default metadata names that may have to be explicitly-referenced in the UI */
+    CreateLines.LINE_NAME_META_NAME = 'Line Name';
+    CreateLines.LINE_EXPERIMENTER_META_NAME = 'Line Experimenter';
+    CreateLines.LINE_DESCRIPTION_META_NAME = 'Line Description';
+    CreateLines.LINE_CONTACT_META_NAME = 'Line Contact';
+    CreateLines.CARBON_SOURCE_META_NAME = 'Carbon Source(s)';
+    CreateLines.STRAINS_META_NAME = 'Strain(s)';
+    CreateLines.CONTROL_META_NAME = 'Control';
+    // Metadata types present in the database that should be omitted from user-displayed lists in
+    // contexts where separate display is available for line attributes.
+    CreateLines.LINE_ATTRIBUTE_META_TYPES = [CreateLines.LINE_NAME_META_NAME, CreateLines.LINE_DESCRIPTION_META_NAME,
+        CreateLines.LINE_CONTACT_META_NAME, CreateLines.LINE_EXPERIMENTER_META_NAME, CreateLines.STRAINS_META_NAME];
     function loadAllLineMetadataTypes() {
         $('#addPropertyButton').prop('disabled', true);
         EddRest.loadMetadataTypes({
@@ -93,21 +99,6 @@ var CreateLines;
                 .toggleClass('in-use', anyValidInput)
                 .toggleClass('not-in-use', !anyValidInput);
         };
-        MultiValueInput.prototype.autoUpdateCombinations = function () {
-            var radioButton, multipleRows, combosButton, noCombosButton;
-            multipleRows = this.rows.length > 1;
-            noCombosButton = this.rows[0].find('input:radio[value=No]');
-            console.log('no combo button matches: ' + noCombosButton.length);
-            if (this.rows.length > 1) {
-                // note: not all inputs will have a "make combos" button  -- need enclosing check
-                combosButton = this.rows[0].find('input:radio[value=Yes]');
-                console.log('yes combo button matches: ' + combosButton.length);
-                combosButton.click();
-            }
-            else {
-                noCombosButton.click();
-            }
-        };
         MultiValueInput.prototype.getInput = function (rowIndex) {
             return this.rows[rowIndex].find('input').first().val().trim();
         };
@@ -127,31 +118,51 @@ var CreateLines;
     // 2. compute / test JSON generation from supported controls
     // 3. implement / test back end communication / review / line creation
     // 4. error handling!! / wizard
-    // 5. implement & test abbreviations & custom name elements...nice-to-have, but not necessary to extract value
-    //TODO: revisit meta / attribute subclasses after some integration testing / review of back-end code. May be able to
-    // combine some of these.
+    // 5. implement & test abbreviations & custom name elements...nice-to-have, but not necessary
+    //    to extract value
+    // TODO: revisit meta / attribute subclasses after some integration testing / review of
+    // back-end code. May be able to combine some of these.
     var LinePropertyInput = (function (_super) {
         __extends(LinePropertyInput, _super);
         function LinePropertyInput(options) {
             _super.call(this, options);
         }
+        LinePropertyInput.prototype.updateInputState = function () {
+            this.highlightRowLabel(this.validInputCount() > 0);
+            this.autoUpdateCombinations();
+        };
         LinePropertyInput.prototype.getNameElements = function () {
             var validInputCount = this.validInputCount(), hasInput;
             hasInput = validInputCount > 0;
-            this.highlightRowLabel(hasInput);
-            this.autoUpdateCombinations();
-            // only allow naming inputs to be used if there's at least one valid value to insert into line names.
-            // note that allowing non-unique values to be used in line names during bulk creation can be helpful since
-            // they may differentiate new lines from those already in the study.
+            // only allow naming inputs to be used if there's at least one valid value to insert
+            // into line names. note that allowing non-unique values to be used in line names
+            // during bulk creation can be helpful since they may differentiate new lines from
+            // those already in the study.
             if (!hasInput) {
                 return [];
             }
             return [this.lineAttribute];
         };
+        LinePropertyInput.prototype.autoUpdateCombinations = function () {
+            var comboInputs, combosButton, noCombosButton;
+            comboInputs = this.hasComboInputs();
+            noCombosButton = this.rows[0].find('input:radio[value=No]');
+            console.log('no combo button matches: ' + noCombosButton.length);
+            if (this.supportsCombinations) {
+                // note: not all inputs will have a "make combos" button  -- need enclosing check
+                combosButton = this.rows[0].find('input:radio[value=Yes]');
+            }
+            if (comboInputs) {
+                //combosButton.click();
+                combosButton.attr('disabled', String(!comboInputs));
+            }
+            else {
+            }
+            noCombosButton.attr('disabled', String(comboInputs || this.supportsCombinations));
+        };
         LinePropertyInput.prototype.getValueJson = function () {
             var _this = this;
-            var values;
-            values = [];
+            var values = [];
             this.rows.forEach(function (currentValue, index, arr) {
                 if (_this.hasValidInput(index)) {
                     values.push(_this.getInput(index));
@@ -161,6 +172,9 @@ var CreateLines;
         };
         LinePropertyInput.prototype.getLabel = function () {
             return this.uiLabel;
+        };
+        LinePropertyInput.prototype.hasComboInputs = function () {
+            return this.rows.length > 1;
         };
         LinePropertyInput.prototype.buildYesComboButton = function () {
             return $('<input type="radio">')
@@ -173,9 +187,6 @@ var CreateLines;
                 .prop('checked', true)
                 .val('No')
                 .addClass('property_radio');
-        };
-        LinePropertyInput.prototype.getRowCount = function () {
-            return this.rows.length;
         };
         LinePropertyInput.prototype.buildRemoveControl = function (container) {
             var btn, rowIndex, t;
@@ -214,6 +225,9 @@ var CreateLines;
         LinePropertyInput.prototype.canAddRows = function () {
             return this.getRowCount() < this.maxRows;
         };
+        LinePropertyInput.prototype.getRowCount = function () {
+            return this.rows.length;
+        };
         LinePropertyInput.prototype.appendRow = function () {
             var newRow, parent, atMax, prevRow;
             prevRow = this.rows[this.rows.length - 1];
@@ -221,6 +235,7 @@ var CreateLines;
                 .addClass('table-row')
                 .insertAfter(prevRow);
             this.fillRow(newRow);
+            this.updateInputState();
             this.addButton.prop('disabled', !this.canAddRows());
         };
         LinePropertyInput.prototype.removeRow = function (rowIndex) {
@@ -237,15 +252,16 @@ var CreateLines;
                 var removeBtn;
                 row = this.rows[i];
                 removeBtn = row.find('.removeButton').first();
-                console.log('Updating ' + removeBtn.length + ' event handlers for index ' + rowIndex);
+                console.log('Updating ' + removeBtn.length + ' event handlers for index ' +
+                    rowIndex);
                 this.registerRemoveEvtHandler(removeBtn, i);
             }
-            if (hadInput) {
-                CreateLines.creationManager.updateNameElementChoices();
-            }
-            this.autoUpdateCombinations();
             // re-enable the add button if appropriate / if it was disabled
             this.addButton.prop('disabled', !this.canAddRows());
+            if (hadInput) {
+                this.updateInputState();
+                CreateLines.creationManager.updateNameElementChoices();
+            }
         };
         LinePropertyInput.prototype.fillRow = function (row) {
             var firstRow, row, inputCell, addCell, applyAllCell, makeComboCell, labelCell, noComboButton, yesComboButton;
@@ -283,9 +299,7 @@ var CreateLines;
                     .appendTo(makeComboCell);
                 noComboButton.prop('checked', true);
             }
-            else {
-                this.autoUpdateCombinations();
-            }
+            this.updateInputState();
         };
         LinePropertyInput.prototype.fillInputControls = function (container) {
             //empty implementation for children to override
@@ -307,10 +321,12 @@ var CreateLines;
             return (temp != undefined) && temp.toString().trim();
         };
         LineAttributeInput.prototype.fillInputControls = function (rowContainer) {
+            var self = this;
             $('<input type="text">')
                 .addClass('step2-text-input')
                 .addClass('step2-value-input')
                 .on('change', function () {
+                this.updateInputState();
                 CreateLines.creationManager.updateNameElementChoices();
             })
                 .appendTo(rowContainer);
@@ -327,18 +343,20 @@ var CreateLines;
         // build custom input controls whose type depends on the data type of the Line attribute
         // they configure
         LineAttributeAutoInput.prototype.fillInputControls = function (rowContainer) {
-            var visible, hidden;
+            var visible, hidden, self;
+            self = this;
             visible = $('<input type="text">')
                 .addClass('step2-text-input');
             hidden = $('<input type="hidden">')
                 .addClass('step2-value-input');
             hidden.on('change', function () {
+                self.updateInputState();
                 CreateLines.creationManager.updateNameElementChoices();
             });
             rowContainer.append(visible).append(hidden);
             switch (this.lineAttribute.displayText) {
-                case LINE_EXPERIMENTER_META_NAME:
-                case LINE_CONTACT_META_NAME:
+                case CreateLines.LINE_EXPERIMENTER_META_NAME:
+                case CreateLines.LINE_CONTACT_META_NAME:
                     visible.attr('eddautocompletetype', "User");
                     this.autoInput = new EDDAuto.User({
                         'container': rowContainer,
@@ -346,7 +364,7 @@ var CreateLines;
                         'hiddenInput': hidden,
                     });
                     break;
-                case CARBON_SOURCE_META_NAME:
+                case CreateLines.CARBON_SOURCE_META_NAME:
                     visible.attr('eddautocompletetype', "CarbonSource");
                     this.autoInput = new EDDAuto.CarbonSource({
                         'container': rowContainer,
@@ -354,7 +372,7 @@ var CreateLines;
                         'hiddenInput': hidden,
                     });
                     break;
-                case STRAINS_META_NAME:
+                case CreateLines.STRAINS_META_NAME:
                     visible.attr('eddautocompletetype', "Registry");
                     this.autoInput = new EDDAuto.Registry({
                         'container': rowContainer,
@@ -365,6 +383,11 @@ var CreateLines;
             }
             this.buildRemoveControl(rowContainer);
         };
+        LineAttributeAutoInput.prototype.getInput = function (rowIndex) {
+            var stringVal;
+            stringVal = this.rows[rowIndex].find('input[type=hidden]').first().val();
+            return parseInt(stringVal);
+        };
         return LineAttributeAutoInput;
     }(LinePropertyInput));
     CreateLines.LineAttributeAutoInput = LineAttributeAutoInput;
@@ -374,8 +397,10 @@ var CreateLines;
             _super.call(this, options);
         }
         ControlInput.prototype.fillInputControls = function (rowContainer) {
+            var self = this;
             this.yesCheckbox = $('<input type="checkbox">')
                 .on('change', function () {
+                self.updateInputState();
                 CreateLines.creationManager.updateNameElementChoices();
             })
                 .appendTo(rowContainer);
@@ -384,6 +409,7 @@ var CreateLines;
                 .appendTo(rowContainer);
             this.noCheckbox = $('<input type="checkbox">')
                 .on('change', function () {
+                self.updateInputState();
                 CreateLines.creationManager.updateNameElementChoices();
             })
                 .appendTo(rowContainer);
@@ -391,8 +417,26 @@ var CreateLines;
                 .text('No')
                 .appendTo(rowContainer);
         };
+        ControlInput.prototype.hasComboInputs = function () {
+            return this.yesCheckbox.prop('checked') &&
+                this.noCheckbox.prop('checked');
+        };
         ControlInput.prototype.hasValidInput = function (rowIndex) {
-            return this.yesCheckbox.prop('checked') || this.noCheckbox.prop('checked');
+            return this.yesCheckbox.prop('checked')
+                || this.noCheckbox.prop('checked');
+        };
+        ControlInput.prototype.getValueJson = function () {
+            return this.getInput(0);
+        };
+        ControlInput.prototype.getInput = function (rowIndex) {
+            var values = [];
+            if (this.yesCheckbox.prop('checked')) {
+                values.push(true);
+            }
+            if (this.noCheckbox.prop('checked')) {
+                values.push(false);
+            }
+            return values;
         };
         return ControlInput;
     }(LinePropertyInput));
@@ -434,20 +478,18 @@ var CreateLines;
             this.colors = ['red', 'blue', 'yellow', 'orange', 'purple'];
             this.colorIndex = 0;
             this.lineProperties = [
-                new ControlInput({
-                    'lineAttribute': new LineAttributeDescriptor('control', 'Control'),
-                    'maxRows': 1 }),
-                new LineAttributeInput({
-                    'lineAttribute': new LineAttributeDescriptor('description', 'Description') }),
                 new ReplicateInput({
                     'lineAttribute': new LineAttributeDescriptor('replicates', 'Replicates') })
             ];
         }
         CreationManager.prototype.addInput = function (lineAttr) {
-            var newInput, autocompleteMetaItem, cache;
+            var newInput, autocompleteMetaItem;
             autocompleteMetaItem = this.autocompleteLineMetaTypes[lineAttr.jsonId];
             if (autocompleteMetaItem) {
                 newInput = new LineAttributeAutoInput({ 'lineAttribute': lineAttr });
+            }
+            else if (EddRest.CONTROL_META_NAME == lineAttr.displayText) {
+                newInput = new ControlInput({ 'lineAttribute': lineAttr, 'maxRows': 1 });
             }
             else {
                 newInput = new LineAttributeInput({ 'lineAttribute': lineAttr });
@@ -474,8 +516,10 @@ var CreateLines;
             CreateLines.creationManager.buildAddPropDialog();
             CreateLines.creationManager.buildAbbrevDialog();
             // add click behavior to the "add property" button
-            $('#addPropertyButton').on('click', CreateLines.creationManager.showAddProperty.bind(this));
-            $('#addAbbreviationButton').on('click', CreateLines.creationManager.showAddAbbreviation.bind(this));
+            $('#addPropertyButton')
+                .on('click', CreateLines.creationManager.showAddProperty.bind(this));
+            $('#addAbbreviationButton')
+                .on('click', CreateLines.creationManager.showAddAbbreviation.bind(this));
             // set up the autocomplete for line metadata type selection
             this.lineMetaAutocomplete = new EDDAuto.LineMetadataType({
                 'container': $('#add-prop-dialog'),
@@ -586,7 +630,7 @@ var CreateLines;
             this.nonAutocompleteLineMetaTypes = [];
             this.autocompleteLineMetaTypes = {};
             metadataTypes.forEach(function (metaType) {
-                if (autocompleteMetadataNames.indexOf(metaType.type_name) < 0) {
+                if (CreationManager.autocompleteMetadataNames.indexOf(metaType.type_name) < 0) {
                     self.nonAutocompleteLineMetaTypes.push(metaType);
                 }
                 else {
@@ -675,6 +719,8 @@ var CreateLines;
             $('#jsonTest').text(json);
             return json;
         };
+        CreationManager.autocompleteMetadataNames = [CreateLines.LINE_EXPERIMENTER_META_NAME, CreateLines.LINE_CONTACT_META_NAME,
+            CreateLines.CARBON_SOURCE_META_NAME, CreateLines.STRAINS_META_NAME];
         return CreationManager;
     }());
     CreateLines.CreationManager = CreationManager;

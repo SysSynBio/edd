@@ -32,7 +32,7 @@
     vertical-align: bottom;
 }
 
-.subsection {
+.subsection label{
     text-decoration: underline;
 }
 
@@ -135,6 +135,7 @@ input[type="radio"] {
 .inputCell {
     display: flex;
     width: 100%;
+    min-width: 210px;  /* prevents cells from resizing when new rows are added */
 }
 
 .inputCell input{

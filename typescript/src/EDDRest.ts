@@ -26,10 +26,19 @@ namespace EddRest {
     export const SUCCESS_OPTION = 'success';
     export const ERROR_OPTION = 'error';
 
-    // Metadata types present in the database that should be omitted user-displayed lists in
+    /* Default metadata names that may have to be explicitly-referenced in the UI */
+    export const LINE_NAME_META_NAME = 'Line Name';
+    export const LINE_EXPERIMENTER_META_NAME = 'Line Experimenter';
+    export const LINE_DESCRIPTION_META_NAME = 'Line Description';
+    export const LINE_CONTACT_META_NAME = 'Line Contact';
+    export const CARBON_SOURCE_META_NAME = 'Carbon Source(s)';
+    export const STRAINS_META_NAME = 'Strain(s)';
+    export const CONTROL_META_NAME = 'Control';
+
+    // Metadata types present in the database that should be omitted from user-displayed lists in
     // contexts where separate display is available for line attributes.
-    export const LINE_ATTRIBUTE_META_TYPES = ['Line Name', 'Line Description', 'Line Contact',
-        'Line Experimenter', 'Strain(s)'];
+    export const LINE_ATTRIBUTE_META_TYPES = [LINE_NAME_META_NAME, LINE_DESCRIPTION_META_NAME,
+        LINE_CONTACT_META_NAME, LINE_EXPERIMENTER_META_NAME, STRAINS_META_NAME];
 
     /* MetadataType API query parameter values */
     export const LINE_METADATA_CONTEXT = 'L';
