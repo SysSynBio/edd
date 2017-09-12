@@ -14,6 +14,32 @@ H3 {
     color: grey;
 }
 
+.transpose {
+    padding-left: 14px;
+}
+
+.fileFormat {
+    padding-top: 10px;
+}
+
+#submitForImport {
+    background-color: rgb(35, 82, 124);
+    border-color: rgb(35, 82, 124);
+    color: white;
+    margin: 8px 0px;
+    min-width: 140px;
+    padding: 6px 12px;
+    float: right;
+}
+
+#importingAssays {
+    font-weight: bold;
+    padding-top: 22px;
+}
+
+#writemoder {
+    margin-left: 50px;
+}
 
 .flex-container {
     display: -ms-flexbox;
@@ -60,7 +86,10 @@ H3 {
     align-self: auto;
     }
 
-
+.disable-btn {
+      pointer-events: none; /* Disables the button completely. Better than just cursor: default; */
+      opacity: 0.7;
+}
 /* Overriding bootstrap classes here  */
 .btn :focus {
   background-color: white;
@@ -72,7 +101,7 @@ H3 {
     margin-right: 10px;
 }
 
-.disclose {
+.discloseFile {
     padding-left: 50px;
 }
 

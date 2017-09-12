@@ -1,11 +1,10 @@
-import { Utl } from "../modules/Utl"
 import VueFormWizard from 'vue-form-wizard'
 import 'vue-form-wizard/dist/vue-form-wizard.min.css'
 import { EDDAuto } from "../modules/EDDAutocomplete"
 import {EDDTableImport} from "./Import"
 // import 'vue-form-wizard/dist/vue-form-wizard.min.css'
 var Vue = require('vue/dist/vue');
-
+declare var EDD_auto: any;
 
 Vue.use(VueFormWizard);
 
@@ -44,14 +43,24 @@ var dropzone = {
             }).fail(function(x, s, e) {
                 alert(s);
             });
-            $('.wizard-footer-right3').on('click', function() {
-                $('#submitForImport').removeClass('off')
-            })
         },
-        prepareDropzone: function() {
+        prepareImport2: function() {
             $(document).on('click', '.disclose .discloseLink', (e) => {
                 $(e.target).closest('.disclose').toggleClass('discloseHide');
+            });
+
+            $('#step1').on('click', '.disclose .discloseLink', (e) => {
                 $(e.target).parent().next().toggleClass('off')
+            });
+
+            $('#writemoder').on('click', function() {
+                var text = $('#writemoder').siblings('p').text().split('merged')[0]
+                $('#writemoder').siblings('p').text(text + 'replaced')
+            });
+
+            $('#writemodem').on('click', function() {
+                var text = $('#writemoder').siblings('p').text().split('replaced')[0]
+                $('#writemoder').siblings('p').text(text + 'merged')
             });
 
             //doing this b/c i can't figure out why 2 text areas exist
@@ -65,7 +74,7 @@ var dropzone = {
         }
     },
     mounted() {
-      this.prepareDropzone();
+      this.prepareImport2();
       this.getEDDData();
     }
 };
@@ -161,19 +170,26 @@ window.addEventListener('load', function () {
                 $('#protocols').removeClass('off');
             },
             selectProtocol: function(event) {
-                if ($(event.target).find('option:selected').text()) {
+                if (($("#fileFormat input:checkbox:checked").length > 0)) {
+                    $('.wizard-footer-right0').prop('disabled', false);
+                } else {
                     $('.wizard-footer-right0').prop('disabled', true);
                 }
                 if ($("#masterProtocol").val() != 'unspecified_protocol') {
                     $('#fileFormat').removeClass('off');
+                } else {
+                    $('.wizard-footer-right0').prop('disabled', true);
                 }
             },
             selectFormats: function(event) {
                 this.selectedFormat = $(event.target).text();
-
+                if (($("#fileFormat input:checkbox:checked").length === 0)) {
+                    $('.wizard-footer-right0').prop('disabled', true);
+                } else {
+                    $('.wizard-footer-right0').prop('disabled', false);
+                }
                 //uncheck other boxes if one is checked
                $('#fileFormat').find('input').not($(event.target)).prop('checked', false);
-               $('.wizard-footer-right0').prop('disabled', false);
             },
         }
     })

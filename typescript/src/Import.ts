@@ -273,7 +273,6 @@ export module EDDTableImport {
             // For example, a user should be free to change "merge" to "replace" without having
             // their edits in Step 2 erased.
             $("#masterProtocol").on('change', this.queueReconfigure.bind(this));
-            $("#protocols2").on('change', this.queueReconfigure.bind(this));
             // Using "change" for these because it's more efficient AND because it works around an
             // irritating Chrome inconsistency
             // For some of these, changing them shouldn't actually affect processing until we
@@ -281,6 +280,7 @@ export module EDDTableImport {
             $(':radio[name=datalayout]', '#selectMajorKindStep').on(
                 'change', this.queueReconfigure.bind(this)
             );
+            //IMPORT 2
             $('#fileFormat').on(
                 'change', this.queueReconfigure.bind(this)
             );
@@ -846,11 +846,11 @@ export module EDDTableImport {
             }).appendTo('#fileUploaded');
             // $('#fileUploaded').show();
             $("#fileUploaded").show();
-            $('.wizard-footer-right1').removeClass('disable-btn')
+            $('.wizard-footer-right1').removeClass('disable-btn');
             //remove alert
             setTimeout(function () {
                    $('#fileUploaded').hide();
-                   $('.wizard-btn').eq(1).click();
+                   $('.wizard-footer-right1').click();
                 }, 2000);
 
         }
@@ -2733,6 +2733,7 @@ export module EDDTableImport {
                             + matchedAssays + ' Assays');
                         //IMPORT 2
                         $('#importingAssays').text(matchedAssays + ' assays will be merged');
+                        $('.importingAssays').removeClass('off')
                     } else if (matchedAssays === 0) {
                         $('#matchedAssaysSection').find('.discloseLink').text(' Matched '
                             + matchedLines + ' Lines');
@@ -3663,8 +3664,8 @@ export module EDDTableImport {
                 $('<p>').text('No errors or warnings! Go ahead and import!').appendTo(summaryDiv);
             }
             $('#completeAllStepsFirstLabel').toggleClass('off', hasRequiredInitialInputs);
+             $('#submitForImport').toggleClass('off', !hasRequiredInitialInputs);
             $('.wizard-footer-right2').toggleClass('disable-btn', !hasRequiredInitialInputs);
-
             // remake error / warning subsections based on input from previous steps
             var errorsWrapperDiv = $('#reviewErrorsSection');
             var errorsDiv = $('#reviewErrorsContentDiv');
@@ -3700,6 +3701,7 @@ export module EDDTableImport {
 
             var disableSubmit = !(allPrevStepInputsProvided && (totalErrorsCount === 0) && allWarningsAcknowledged);
             submitButton.prop('disabled', disableSubmit);
+
 
             // TODO: re-enable me after upgrading to JQuery-UI 1.12+
             // briefly highlight the button if it was enabled/disabled

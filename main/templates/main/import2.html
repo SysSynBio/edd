@@ -3,24 +3,24 @@
 
 {% block js_css %}
   {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% static 'main/import2.css' %}" />
     <script type="text/javascript" src="{% static 'dist/Import2.js' %}"></script>
-      <link rel="stylesheet" type="text/css" href="{% static 'main/import.css' %}" />
-  <script type="text/javascript"
+    <link rel="stylesheet" type="text/css" href="{% static 'main/import.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'main/import2.css' %}" />
+    <script type="text/javascript"
       src="{% static 'main/js/lib/underscore/underscore.js' %}"></script>
-  <script type="text/javascript"
+    <script type="text/javascript"
       src="{% static 'main/js/lib/jquery/jquery.cookie.js' %}"></script>
-        <script type="text/javascript" src="{% static 'main/js/lib/d3/d3.v2.js' %}"></script>
+    <script type="text/javascript" src="{% static 'main/js/lib/d3/d3.v2.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/lib/d3/d3.tip.js' %}"></script>
-  <script type="text/javascript">
+    <script type="text/javascript">
 
-  //remove main flex layout. work around until main flex layout is resolved
-    $(document).ready(function() {
-      $('.mainFlex').removeClass();
-    });
-    var ATData = {}; // this needs to be declared before loading Import.js!
+        //remove main flex layout. work around until main flex layout is resolved
+        $(document).ready(function() {
+          $('.mainFlex').removeClass();
+        });
+        var ATData = {}; // this needs to be declared before loading Import.js!
 
-  </script>
+    </script>
 {% endblock js_css %}
 
 {% block head_title %}
@@ -50,6 +50,7 @@
               <tab-content title="Types of Data"
                            :before-change="validateAsync"
                            icon="ti-user">
+              <div id="step1">
                 <div class="border-box">
                     <div class="headers">What Category of Data do you have?</div>
                     <button class="btn btn-default btn-step1"  v-for="category in
@@ -223,6 +224,7 @@
                           </div>
                       </ul>
                     </div>
+              </div>
               </tab-content>
 
               {#  Upload Step #}
@@ -385,7 +387,7 @@
                       </tr>
                     </tbody>
                   </table>
-
+                  <div class="pageSection stepBorder " id="typeDisambiguationStep"></div>
                 </div>
 
                 <div class="sectionContent off" id="masterUnitDiv">
@@ -478,13 +480,19 @@
                       <h3>Ready to import!</h3>
                         <p id="importingLines">
                         </p>
-                         <p id="importingAssays">
-                        </p>
+                         <div class="importingAssays off">
+                            <input type="radio" name="writemode" value="m" id="writemodem" checked="checked" />
+                            <label for="writemodem">Merge with existing data</label>
+                            <input type="radio" name="writemode" value="r" id="writemoder" />
+                            <label for="writemoder">Replace existing data</label>
+                            <p id="importingAssays"></p>
+                        </div>
                     </div>
 
                     <input type="hidden" id="jsonoutput" name="jsonoutput" />
                     <input type="hidden" name="studyID" value="{{ study.id }}"/>
-
+                    <input type="submit" id="submitForImport" name="action" value="Submit Import"
+                           class="off wizard-btn btn-fill wizard-btn-wd">
 
               </tab-content>
               {#  Next/Submit buttons #}
@@ -509,11 +517,9 @@
                     <wizard-button v-if="props.activeTabIndex === 3" @click.native="props.nextTab()"
                                  class="wizard-footer-right3"
                                  :style="props.fillButtonStyle">Next</wizard-button>
-                    <wizard-button v-if="props.isLastStep" class="off" :style="props
-                    .fillButtonStyle">
-                                 Submit</wizard-button>
-                    <input class="off" type="submit" id="submitForImport"
-                           name="action" value="Submit Import" class="">
+                    <wizard-button v-if="props.isLastStep" class="off"
+                                   :style="props.fillButtonStyle">Submit</wizard-button>
+
                 </div>
                      </template>
             </form-wizard>
