@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 import django.contrib.postgres.fields
 from django.db import migrations
-from main.models import VarCharField
+import main.models
 
 
 class Migration(migrations.Migration):
@@ -17,21 +17,21 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='measurementtype',
             name='alt_names',
-            field=django.contrib.postgres.fields.ArrayField(base_field=VarCharField(), default=list, help_text='Alternate names for this Measurement Type.', size=None, verbose_name='Synonyms'),
+            field=django.contrib.postgres.fields.ArrayField(base_field=main.models.VarCharField(), default=list, help_text='Alternate names for this Measurement Type.', size=None, verbose_name='Synonyms'),
         ),
         migrations.AddField(
             model_name='metabolite',
             name='id_map',
-            field=django.contrib.postgres.fields.ArrayField(base_field=VarCharField(), default=list, help_text='List of identifiers mapping to external chemical datasets.', size=None, verbose_name='External IDs'),
+            field=django.contrib.postgres.fields.ArrayField(base_field=main.models.VarCharField(), default=list, help_text='List of identifiers mapping to external chemical datasets.', size=None, verbose_name='External IDs'),
         ),
         migrations.AddField(
             model_name='metabolite',
             name='smiles',
-            field=VarCharField(blank=True, help_text='SMILES string defining molecular structure.', null=True, verbose_name='SMILES'),
+            field=main.models.VarCharField(blank=True, help_text='SMILES string defining molecular structure.', null=True, verbose_name='SMILES'),
         ),
         migrations.AlterField(
             model_name='metabolite',
             name='tags',
-            field=django.contrib.postgres.fields.ArrayField(base_field=VarCharField(), default=list, help_text='List of tags for classifying this molecule.', size=None, verbose_name='Tags'),
+            field=django.contrib.postgres.fields.ArrayField(base_field=main.models.VarCharField(), default=list, help_text='List of tags for classifying this molecule.', size=None, verbose_name='Tags'),
         ),
     ]
