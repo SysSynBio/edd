@@ -128,6 +128,9 @@ var CreateLines;
             _super.call(this, options);
         }
         LinePropertyInput.prototype.updateInputState = function () {
+            if (this.addButton) {
+                this.addButton.prop('disabled', !this.canAddRows());
+            }
             this.highlightRowLabel(this.validInputCount() > 0);
             this.autoUpdateCombinations();
         };
@@ -239,7 +242,6 @@ var CreateLines;
                 .insertAfter(prevRow);
             this.fillRow(newRow);
             this.updateInputState();
-            this.addButton.prop('disabled', !this.canAddRows());
         };
         LinePropertyInput.prototype.removeRow = function (rowIndex) {
             var row, hadInput;
@@ -259,8 +261,6 @@ var CreateLines;
                     rowIndex);
                 this.registerRemoveEvtHandler(removeBtn, i);
             }
-            // re-enable the add button if appropriate / if it was disabled
-            this.addButton.prop('disabled', !this.canAddRows());
             if (hadInput) {
                 if (this.rows.length) {
                     this.updateInputState();
@@ -421,6 +421,7 @@ var CreateLines;
             $('<label>')
                 .text('No')
                 .appendTo(rowContainer);
+            this.buildRemoveControl(rowContainer);
         };
         ControlInput.prototype.hasComboInputs = function () {
             return this.yesCheckbox.prop('checked') &&

@@ -150,6 +150,9 @@ module CreateLines {
          }
 
          updateInputState() {
+             if(this.addButton) {
+                 this.addButton.prop('disabled', !this.canAddRows());
+             }
              this.highlightRowLabel(this.validInputCount() > 0);
              this.autoUpdateCombinations();
          }
@@ -288,8 +291,6 @@ module CreateLines {
             this.fillRow(newRow);
 
             this.updateInputState();
-
-            this.addButton.prop('disabled', !this.canAddRows());
         }
 
         removeRow(rowIndex: number): void {
@@ -313,9 +314,6 @@ module CreateLines {
                              rowIndex);
                 this.registerRemoveEvtHandler(removeBtn, i);
             }
-
-            // re-enable the add button if appropriate / if it was disabled
-            this.addButton.prop('disabled', !this.canAddRows());
 
             if(hadInput) {
 
@@ -503,6 +501,7 @@ module CreateLines {
             $('<label>')
                 .text('No')
                 .appendTo(rowContainer);
+            this.buildRemoveControl(rowContainer);
         }
 
         hasComboInputs(): boolean {
