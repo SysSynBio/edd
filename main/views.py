@@ -1806,10 +1806,15 @@ AUTOCOMPLETE_VIEW_LOOKUP = {
 # /search/<model_name>/
 def model_search(request, model_name):
     searcher = AUTOCOMPLETE_VIEW_LOOKUP.get(model_name, None)
-    if searcher:
-        return searcher(request)
-    elif meta_pattern.match(model_name):
-        match = meta_pattern.match(model_name)
-        return autocomplete.search_metadata(request, match.group(1))
-    else:
-        return autocomplete.search_generic(request, model_name)
+
+    try:
+        if searcher:
+            return searcher(request)
+        elif meta_pattern.match(model_name):
+            match = meta_pattern.match(model_name)
+            return autocomplete.search_metadata(request, match.group(1))
+        else:
+            return autocomplete.search_generic(request, model_name)
+
+    except ValidationError as v:
+        return JsonResponse(v.message, status=400)

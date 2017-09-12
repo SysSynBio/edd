@@ -99,7 +99,7 @@ module CreateLines {
                 .addClass('not-in-use');
 
             this.maxRows = options.maxRows === undefined ? 30 : options.maxRows;
-            this.minEntries = options['minEntries'] || 1;
+            this.minEntries = options['minEntries'] || 0;
             this.supportsCombinations = options.supportsCombinations === undefined ? true: options.supportsCombinations;
             this.supportsMultiValue = options.supportsMultiValue === undefined ? false: options.supportsMultiValue;
 
@@ -236,22 +236,24 @@ module CreateLines {
                 $('<span>').addClass('ui-icon')
                     .addClass('ui-icon-trash').appendTo(btn);
                 this.registerRemoveEvtHandler(btn, rowIndex);
-
             }
         }
 
         registerRemoveEvtHandler(removeButton, rowIndex) {
             removeButton.off('click');
 
-            removeButton.on('click', null, {'rowIndex': rowIndex, 'manager': this},
+            removeButton.on('click', null, {'rowIndex': rowIndex, 'propertyInput': this},
                         (ev: JQueryMouseEventObject) => {
-                        var rowIndex: number, manager:any;
+                        var rowIndex: number, propertyInput:any;
 
                         rowIndex = ev.data.rowIndex;
-                        manager = ev.data.manager;
+                        propertyInput = ev.data.propertyInput;
 
                         console.log('In handler. rowIndex = ' + rowIndex);
-                        manager.removeRow(rowIndex);
+                        propertyInput.removeRow(rowIndex);
+                        if(propertyInput.getRowCount() == 0) {
+                            creationManager.removeInput(propertyInput.lineAttribute);
+                        }
                     });
         }
 
@@ -316,7 +318,10 @@ module CreateLines {
             this.addButton.prop('disabled', !this.canAddRows());
 
             if(hadInput) {
-                this.updateInputState();
+
+                if(this.rows.length) {
+                    this.updateInputState();
+                }
                 creationManager.updateNameElementChoices();
             }
         }
@@ -597,11 +602,32 @@ module CreateLines {
             this.insertInputRow(newInput);
         }
 
+        removeInput(lineAttr: LineAttributeDescriptor): void {
+            var foundIndex = -1, lineProperty: LinePropertyInput;
+            this.lineProperties.forEach(function(property, index:number) {
+                if(property.lineAttribute.jsonId === lineAttr.jsonId) {
+                    foundIndex = index;
+                    lineProperty = property;
+                    return false;  //stop iterating
+                }
+            });
+
+            // remove the property from our tracking and from the DOM
+            this.lineProperties.slice(foundIndex, 1);
+            $('#select_line_properties_step_dynamic')
+                .children('.sectionContent')
+                .children('line_attr_' + lineAttr.jsonId)
+                .remove();
+
+            this.updateNameElementChoices();
+        }
+
         insertInputRow(input:LinePropertyInput): void {
             var parentDiv: JQuery, row:JQuery;
             parentDiv = $('#select_line_properties_step_dynamic').find('.sectionContent');
             row = $('<div>')
                     .addClass('table-row')
+                    .addClass('line_attr_' + input.lineAttribute.jsonId)
                     .appendTo(parentDiv);
             input.fillRow(row);
         }
@@ -629,7 +655,7 @@ module CreateLines {
                             'container': $('#add-prop-dialog'),
                             'visibleInput': $('#add-line-metadata-text'),
                             'hiddenInput': $('#add-line-metadata-value'),
-                            'search_extra': {'sort': 'ascending'}});  // TODO: sort not working!
+                            'search_extra': {'sort': 'type_name'}});
 
             this.lineProperties.forEach((input: LinePropertyInput, i: number): void => {
                 this.insertInputRow(input);
@@ -767,6 +793,7 @@ module CreateLines {
                     self.autocompleteLineMetaTypes[metaType.pk] = metaType;
                 }
             });
+            // TODO:
         }
 
         showAddProperty(): void {
@@ -864,7 +891,6 @@ module CreateLines {
             $('#jsonTest').text(json);
             return json;
         }
-
     }
 
     export const creationManager = new CreationManager();

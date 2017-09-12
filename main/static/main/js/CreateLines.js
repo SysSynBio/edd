@@ -77,7 +77,7 @@ var CreateLines;
                 .text(this.lineAttribute.displayText + ':')
                 .addClass('not-in-use');
             this.maxRows = options.maxRows === undefined ? 30 : options.maxRows;
-            this.minEntries = options['minEntries'] || 1;
+            this.minEntries = options['minEntries'] || 0;
             this.supportsCombinations = options.supportsCombinations === undefined ? true : options.supportsCombinations;
             this.supportsMultiValue = options.supportsMultiValue === undefined ? false : options.supportsMultiValue;
         }
@@ -203,12 +203,15 @@ var CreateLines;
         };
         LinePropertyInput.prototype.registerRemoveEvtHandler = function (removeButton, rowIndex) {
             removeButton.off('click');
-            removeButton.on('click', null, { 'rowIndex': rowIndex, 'manager': this }, function (ev) {
-                var rowIndex, manager;
+            removeButton.on('click', null, { 'rowIndex': rowIndex, 'propertyInput': this }, function (ev) {
+                var rowIndex, propertyInput;
                 rowIndex = ev.data.rowIndex;
-                manager = ev.data.manager;
+                propertyInput = ev.data.propertyInput;
                 console.log('In handler. rowIndex = ' + rowIndex);
-                manager.removeRow(rowIndex);
+                propertyInput.removeRow(rowIndex);
+                if (propertyInput.getRowCount() == 0) {
+                    CreateLines.creationManager.removeInput(propertyInput.lineAttribute);
+                }
             });
         };
         LinePropertyInput.prototype.buildAddControl = function (container) {
@@ -259,7 +262,9 @@ var CreateLines;
             // re-enable the add button if appropriate / if it was disabled
             this.addButton.prop('disabled', !this.canAddRows());
             if (hadInput) {
-                this.updateInputState();
+                if (this.rows.length) {
+                    this.updateInputState();
+                }
                 CreateLines.creationManager.updateNameElementChoices();
             }
         };
@@ -497,11 +502,29 @@ var CreateLines;
             this.lineProperties.push(newInput);
             this.insertInputRow(newInput);
         };
+        CreationManager.prototype.removeInput = function (lineAttr) {
+            var foundIndex = -1, lineProperty;
+            this.lineProperties.forEach(function (property, index) {
+                if (property.lineAttribute.jsonId === lineAttr.jsonId) {
+                    foundIndex = index;
+                    lineProperty = property;
+                    return false; //stop iterating
+                }
+            });
+            // remove the property from our tracking and from the DOM
+            this.lineProperties.slice(foundIndex, 1);
+            $('#select_line_properties_step_dynamic')
+                .children('.sectionContent')
+                .children('line_attr_' + lineAttr.jsonId)
+                .remove();
+            this.updateNameElementChoices();
+        };
         CreationManager.prototype.insertInputRow = function (input) {
             var parentDiv, row;
             parentDiv = $('#select_line_properties_step_dynamic').find('.sectionContent');
             row = $('<div>')
                 .addClass('table-row')
+                .addClass('line_attr_' + input.lineAttribute.jsonId)
                 .appendTo(parentDiv);
             input.fillRow(row);
         };
@@ -525,7 +548,7 @@ var CreateLines;
                 'container': $('#add-prop-dialog'),
                 'visibleInput': $('#add-line-metadata-text'),
                 'hiddenInput': $('#add-line-metadata-value'),
-                'search_extra': { 'sort': 'ascending' } }); // TODO: sort not working!
+                'search_extra': { 'sort': 'type_name' } });
             this.lineProperties.forEach(function (input, i) {
                 _this.insertInputRow(input);
             });
@@ -637,6 +660,7 @@ var CreateLines;
                     self.autocompleteLineMetaTypes[metaType.pk] = metaType;
                 }
             });
+            // TODO:
         };
         CreationManager.prototype.showAddProperty = function () {
             $('#add-prop-dialog').dialog('open');
