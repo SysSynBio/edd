@@ -146,11 +146,11 @@ input[type="radio"] {
     margin-left: 5px;
 }
 
-.step2-text-input {
+.columnar-text-input {
     flex-grow: 1;
 }
 
-.step2-text-input span {
+.columnar-text-input span {
     display: inline-block;
 }
 

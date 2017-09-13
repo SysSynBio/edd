@@ -78,8 +78,10 @@ var CreateLines;
                 .addClass('not-in-use');
             this.maxRows = options.maxRows === undefined ? 30 : options.maxRows;
             this.minEntries = options['minEntries'] || 0;
-            this.supportsCombinations = options.supportsCombinations === undefined ? true : options.supportsCombinations;
-            this.supportsMultiValue = options.supportsMultiValue === undefined ? false : options.supportsMultiValue;
+            this.supportsCombinations = options.supportsCombinations === undefined ?
+                true : options.supportsCombinations;
+            this.supportsMultiValue = options.supportsMultiValue === undefined ?
+                false : options.supportsMultiValue;
         }
         MultiValueInput.prototype.hasValidInput = function (rowIndex) {
             return this.rows[rowIndex].find('input').first().val().trim() != '';
@@ -102,6 +104,110 @@ var CreateLines;
         MultiValueInput.prototype.getInput = function (rowIndex) {
             return this.rows[rowIndex].find('input').first().val().trim();
         };
+        MultiValueInput.prototype.getLabel = function () {
+            return this.uiLabel;
+        };
+        MultiValueInput.prototype.hasComboInputs = function () {
+            return this.rows.length > 1;
+        };
+        MultiValueInput.prototype.buildYesComboButton = function () {
+            return $('<input type="radio">')
+                .prop('name', this.lineAttribute.jsonId)
+                .val('Yes');
+        };
+        MultiValueInput.prototype.buildNoComboButton = function () {
+            return $('<input type="radio">')
+                .prop('name', this.lineAttribute.jsonId)
+                .prop('checked', true)
+                .val('No')
+                .addClass('property_radio');
+        };
+        MultiValueInput.prototype.buildRemoveControl = function (container) {
+            var btn, rowIndex, t;
+            // add a delete button in the same cell as the input controls
+            if (this.getRowCount() > this.minEntries) {
+                rowIndex = this.getRowCount() - 1;
+                btn = $('<button>')
+                    .addClass('removeButton')
+                    .appendTo(container);
+                $('<span>').addClass('ui-icon')
+                    .addClass('ui-icon-trash').appendTo(btn);
+                this.registerRemoveEvtHandler(btn, rowIndex);
+            }
+        };
+        MultiValueInput.prototype.registerRemoveEvtHandler = function (removeButton, rowIndex) {
+            removeButton.off('click');
+            removeButton.on('click', null, { 'rowIndex': rowIndex, 'propertyInput': this }, function (ev) {
+                var rowIndex, propertyInput;
+                rowIndex = ev.data.rowIndex;
+                propertyInput = ev.data.propertyInput;
+                console.log('In handler. rowIndex = ' + rowIndex);
+                propertyInput.removeRow(rowIndex);
+                if (propertyInput.getRowCount() == 0) {
+                    CreateLines.creationManager.removeInput(propertyInput.lineAttribute);
+                }
+            });
+        };
+        MultiValueInput.prototype.buildAddControl = function (container) {
+            // only add the control to the first row
+            if ((this.getRowCount() == 1) && (this.getRowCount() < this.maxRows)) {
+                this.addButton = $('<button>')
+                    .addClass('addButton')
+                    .on('click', this.appendRow.bind(this))
+                    .appendTo(container);
+                $('<span>').addClass('ui-icon')
+                    .addClass('ui-icon-plusthick').appendTo(this.addButton);
+            }
+        };
+        MultiValueInput.prototype.canAddRows = function () {
+            return this.getRowCount() < this.maxRows;
+        };
+        MultiValueInput.prototype.getRowCount = function () {
+            return this.rows.length;
+        };
+        MultiValueInput.prototype.appendRow = function () {
+            var newRow, parent, atMax, prevRow;
+            prevRow = this.rows[this.rows.length - 1];
+            newRow = $('<div>')
+                .addClass('table-row')
+                .insertAfter(prevRow);
+            this.fillRow(newRow);
+            this.updateInputState();
+        };
+        MultiValueInput.prototype.removeRow = function (rowIndex) {
+            var row, hadValidInput;
+            hadValidInput = this.hasValidInput(rowIndex);
+            // remove this row from our tracking and from the DOM
+            row = this.rows[rowIndex];
+            row.remove();
+            this.rows.splice(rowIndex, 1);
+            // update event handlers for subsequent rows to get the correct index number following
+            // the removal of a preceding row
+            console.log('Updating event handlers starting @ index ' + rowIndex);
+            for (var i = rowIndex; i < this.rows.length; i++) {
+                var removeBtn;
+                row = this.rows[i];
+                removeBtn = row.find('.removeButton').first();
+                console.log('Updating ' + removeBtn.length + ' event handlers for index ' +
+                    rowIndex);
+                this.registerRemoveEvtHandler(removeBtn, i);
+            }
+            if (hadValidInput) {
+                if (this.rows.length) {
+                    this.updateInputState();
+                }
+                this.postRemoveCallback(rowIndex, hadValidInput);
+            }
+        };
+        MultiValueInput.prototype.postRemoveCallback = function (rowIndex, hadValidInput) {
+            // empty default implementation for children to override
+        };
+        MultiValueInput.prototype.updateInputState = function () {
+            // empty default implementation for children to override
+        };
+        MultiValueInput.prototype.fillRow = function (row) {
+            // empty default implementation for children to override
+        };
         return MultiValueInput;
     }());
     CreateLines.MultiValueInput = MultiValueInput;
@@ -110,6 +216,44 @@ var CreateLines;
         function NameElementAbbreviations() {
             _super.apply(this, arguments);
         }
+        NameElementAbbreviations.prototype.hasValidInput = function (rowIndex) {
+            var temp;
+            temp = this.rows[rowIndex].find('.columnar-text-input').val();
+            return (temp != undefined) && temp.toString().trim();
+        };
+        NameElementAbbreviations.prototype.fillRow = function (row) {
+            var firstRow, row, inputCell, addCell, applyAllCell, makeComboCell, labelCell, noComboButton, yesComboButton;
+            this.rows.push(row);
+            labelCell = $('<div>')
+                .addClass('step2_table_cell')
+                .appendTo(row);
+            firstRow = this.getRowCount() == 1;
+            if (firstRow) {
+                this.getLabel()
+                    .appendTo(labelCell);
+            }
+            inputCell = $('<div>')
+                .addClass('step2_table_cell')
+                .addClass('inputCell')
+                .appendTo(row);
+            this.fillInputControls(inputCell);
+            addCell = $('<div>')
+                .addClass('step2_table_cell')
+                .appendTo(row);
+            this.buildAddControl(addCell);
+            this.updateInputState();
+        };
+        NameElementAbbreviations.prototype.fillInputControls = function (rowContainer) {
+            var self = this;
+            $('<input type="text">')
+                .addClass('columnar-text-input')
+                .on('change', function () {
+                this.updateInputState();
+                CreateLines.creationManager.updateAbbreviations();
+            })
+                .appendTo(rowContainer);
+            this.buildRemoveControl(rowContainer);
+        };
         return NameElementAbbreviations;
     }(MultiValueInput));
     CreateLines.NameElementAbbreviations = NameElementAbbreviations;
@@ -173,101 +317,6 @@ var CreateLines;
             });
             return values;
         };
-        LinePropertyInput.prototype.getLabel = function () {
-            return this.uiLabel;
-        };
-        LinePropertyInput.prototype.hasComboInputs = function () {
-            return this.rows.length > 1;
-        };
-        LinePropertyInput.prototype.buildYesComboButton = function () {
-            return $('<input type="radio">')
-                .prop('name', this.lineAttribute.jsonId)
-                .val('Yes');
-        };
-        LinePropertyInput.prototype.buildNoComboButton = function () {
-            return $('<input type="radio">')
-                .prop('name', this.lineAttribute.jsonId)
-                .prop('checked', true)
-                .val('No')
-                .addClass('property_radio');
-        };
-        LinePropertyInput.prototype.buildRemoveControl = function (container) {
-            var btn, rowIndex, t;
-            // add a delete button in the same cell as the input controls
-            if (this.getRowCount() > this.minEntries) {
-                rowIndex = this.getRowCount() - 1;
-                btn = $('<button>')
-                    .addClass('removeButton')
-                    .appendTo(container);
-                $('<span>').addClass('ui-icon')
-                    .addClass('ui-icon-trash').appendTo(btn);
-                this.registerRemoveEvtHandler(btn, rowIndex);
-            }
-        };
-        LinePropertyInput.prototype.registerRemoveEvtHandler = function (removeButton, rowIndex) {
-            removeButton.off('click');
-            removeButton.on('click', null, { 'rowIndex': rowIndex, 'propertyInput': this }, function (ev) {
-                var rowIndex, propertyInput;
-                rowIndex = ev.data.rowIndex;
-                propertyInput = ev.data.propertyInput;
-                console.log('In handler. rowIndex = ' + rowIndex);
-                propertyInput.removeRow(rowIndex);
-                if (propertyInput.getRowCount() == 0) {
-                    CreateLines.creationManager.removeInput(propertyInput.lineAttribute);
-                }
-            });
-        };
-        LinePropertyInput.prototype.buildAddControl = function (container) {
-            // only add the control to the first row
-            if ((this.getRowCount() == 1) && (this.getRowCount() < this.maxRows)) {
-                this.addButton = $('<button>')
-                    .addClass('addButton')
-                    .on('click', this.appendRow.bind(this))
-                    .appendTo(container);
-                $('<span>').addClass('ui-icon')
-                    .addClass('ui-icon-plusthick').appendTo(this.addButton);
-            }
-        };
-        LinePropertyInput.prototype.canAddRows = function () {
-            return this.getRowCount() < this.maxRows;
-        };
-        LinePropertyInput.prototype.getRowCount = function () {
-            return this.rows.length;
-        };
-        LinePropertyInput.prototype.appendRow = function () {
-            var newRow, parent, atMax, prevRow;
-            prevRow = this.rows[this.rows.length - 1];
-            newRow = $('<div>')
-                .addClass('table-row')
-                .insertAfter(prevRow);
-            this.fillRow(newRow);
-            this.updateInputState();
-        };
-        LinePropertyInput.prototype.removeRow = function (rowIndex) {
-            var row, hadInput;
-            hadInput = this.hasValidInput(rowIndex);
-            // remove this row from our tracking and from the DOM
-            row = this.rows[rowIndex];
-            row.remove();
-            this.rows.splice(rowIndex, 1);
-            // update event handlers for subsequent rows to get the correct index number following
-            // the removal of a preceding row
-            console.log('Updating event handlers starting @ index ' + rowIndex);
-            for (var i = rowIndex; i < this.rows.length; i++) {
-                var removeBtn;
-                row = this.rows[i];
-                removeBtn = row.find('.removeButton').first();
-                console.log('Updating ' + removeBtn.length + ' event handlers for index ' +
-                    rowIndex);
-                this.registerRemoveEvtHandler(removeBtn, i);
-            }
-            if (hadInput) {
-                if (this.rows.length) {
-                    this.updateInputState();
-                }
-                CreateLines.creationManager.updateNameElementChoices();
-            }
-        };
         LinePropertyInput.prototype.fillRow = function (row) {
             var firstRow, row, inputCell, addCell, applyAllCell, makeComboCell, labelCell, noComboButton, yesComboButton;
             this.rows.push(row);
@@ -306,6 +355,11 @@ var CreateLines;
             }
             this.updateInputState();
         };
+        LinePropertyInput.prototype.postRemoveCallback = function (rowIndex, hadValidInput) {
+            if (hadValidInput) {
+                CreateLines.creationManager.updateNameElementChoices();
+            }
+        };
         LinePropertyInput.prototype.fillInputControls = function (container) {
             //empty implementation for children to override
         };
@@ -328,7 +382,7 @@ var CreateLines;
         LineAttributeInput.prototype.fillInputControls = function (rowContainer) {
             var self = this;
             $('<input type="text">')
-                .addClass('step2-text-input')
+                .addClass('columnar-text-input')
                 .addClass('step2-value-input')
                 .on('change', function () {
                 this.updateInputState();
@@ -351,7 +405,7 @@ var CreateLines;
             var visible, hidden, self;
             self = this;
             visible = $('<input type="text">')
-                .addClass('step2-text-input');
+                .addClass('columnar-text-input');
             hidden = $('<input type="hidden">')
                 .addClass('step2-value-input');
             hidden.on('change', function () {
@@ -396,12 +450,12 @@ var CreateLines;
         return LineAttributeAutoInput;
     }(LinePropertyInput));
     CreateLines.LineAttributeAutoInput = LineAttributeAutoInput;
-    var ControlInput = (function (_super) {
-        __extends(ControlInput, _super);
-        function ControlInput(options) {
+    var BooleanInput = (function (_super) {
+        __extends(BooleanInput, _super);
+        function BooleanInput(options) {
             _super.call(this, options);
         }
-        ControlInput.prototype.fillInputControls = function (rowContainer) {
+        BooleanInput.prototype.fillInputControls = function (rowContainer) {
             var self = this;
             this.yesCheckbox = $('<input type="checkbox">')
                 .on('change', function () {
@@ -423,18 +477,18 @@ var CreateLines;
                 .appendTo(rowContainer);
             this.buildRemoveControl(rowContainer);
         };
-        ControlInput.prototype.hasComboInputs = function () {
+        BooleanInput.prototype.hasComboInputs = function () {
             return this.yesCheckbox.prop('checked') &&
                 this.noCheckbox.prop('checked');
         };
-        ControlInput.prototype.hasValidInput = function (rowIndex) {
+        BooleanInput.prototype.hasValidInput = function (rowIndex) {
             return this.yesCheckbox.prop('checked')
                 || this.noCheckbox.prop('checked');
         };
-        ControlInput.prototype.getValueJson = function () {
+        BooleanInput.prototype.getValueJson = function () {
             return this.getInput(0);
         };
-        ControlInput.prototype.getInput = function (rowIndex) {
+        BooleanInput.prototype.getInput = function (rowIndex) {
             var values = [];
             if (this.yesCheckbox.prop('checked')) {
                 values.push(true);
@@ -444,47 +498,48 @@ var CreateLines;
             }
             return values;
         };
-        return ControlInput;
+        return BooleanInput;
     }(LinePropertyInput));
-    CreateLines.ControlInput = ControlInput;
-    var ReplicateInput = (function (_super) {
-        __extends(ReplicateInput, _super);
-        function ReplicateInput(options) {
+    CreateLines.BooleanInput = BooleanInput;
+    var NumberInput = (function (_super) {
+        __extends(NumberInput, _super);
+        function NumberInput(options) {
             options.maxRows = 1;
             options.minRows = 1;
             options.supportsCombinations = false;
             _super.call(this, options);
         }
-        ReplicateInput.prototype.hasValidInput = function (rowIndex) {
+        NumberInput.prototype.hasValidInput = function (rowIndex) {
             return $('#spinner').val() > 1;
         };
-        ReplicateInput.prototype.fillInputControls = function (rowContainer) {
+        NumberInput.prototype.fillInputControls = function (rowContainer) {
             $('<input id="spinner">')
                 .val(1)
-                .addClass('step2-text-input')
+                .addClass('columnar-text-input')
                 .addClass('step2-value-input')
                 .appendTo(rowContainer);
         };
-        return ReplicateInput;
+        NumberInput.prototype.getInput = function (rowIndex) {
+            var textInput = _super.prototype.getInput.call(this, rowIndex);
+            return +textInput;
+        };
+        return NumberInput;
     }(LinePropertyInput));
-    CreateLines.ReplicateInput = ReplicateInput;
+    CreateLines.NumberInput = NumberInput;
     var CreationManager = (function () {
         function CreationManager() {
             // line properties configured in step 2
             this.lineProperties = [];
             // name elements in use in step 3
             this.nameElements = [];
-            // name elements not in use in step 3
-            this.unusedNameElements = [];
-            this.usedMetadataNames = [];
-            this.lineMetaAutocomplete = null;
+            this.lineMetaAutocomplete = null; //TODO
             this.nonAutocompleteLineMetaTypes = [];
             this.autocompleteLineMetaTypes = {};
             this.indicatorColorIndex = 0;
             this.colors = ['red', 'blue', 'yellow', 'orange', 'purple'];
             this.colorIndex = 0;
             this.lineProperties = [
-                new ReplicateInput({
+                new NumberInput({
                     'lineAttribute': new LineAttributeDescriptor('replicates', 'Replicates') })
             ];
         }
@@ -495,7 +550,7 @@ var CreateLines;
                 newInput = new LineAttributeAutoInput({ 'lineAttribute': lineAttr });
             }
             else if (EddRest.CONTROL_META_NAME == lineAttr.displayText) {
-                newInput = new ControlInput({ 'lineAttribute': lineAttr, 'maxRows': 1 });
+                newInput = new BooleanInput({ 'lineAttribute': lineAttr, 'maxRows': 1 });
             }
             else {
                 newInput = new LineAttributeInput({ 'lineAttribute': lineAttr });
@@ -529,32 +584,35 @@ var CreateLines;
                 .appendTo(parentDiv);
             input.fillRow(row);
         };
-        CreationManager.prototype.buildInputs = function () {
+        CreationManager.prototype.buildStep3Inputs = function () {
+            // set up connected lists for naming elements
+            $("#line_name_elts, #unused_line_name_elts").sortable({
+                connectWith: ".connectedSortable",
+                update: function (event, ui) {
+                    CreateLines.creationManager.updateResults();
+                },
+            }).disableSelection();
+            // set up selectable list for abbreviations
+            $('#line-name-abbrev-list').selectable();
+        };
+        CreationManager.prototype.buildStep2Inputs = function () {
             var _this = this;
+            CreateLines.creationManager.buildAddPropDialog();
+            CreateLines.creationManager.buildAbbrevDialog();
+            // add options for any naming elements that should be available by default
+            this.lineProperties.forEach(function (input, i) {
+                _this.insertInputRow(input);
+            });
             // style the replicates spinner
             $("#spinner").spinner({
                 min: 1,
                 change: function (event, ui) {
                     CreateLines.creationManager.updateNameElementChoices();
                 } });
-            CreateLines.creationManager.buildAddPropDialog();
-            CreateLines.creationManager.buildAbbrevDialog();
-            // add click behavior to the "add property" button
-            $('#addPropertyButton')
-                .on('click', CreateLines.creationManager.showAddProperty.bind(this));
-            $('#addAbbreviationButton')
-                .on('click', CreateLines.creationManager.showAddAbbreviation.bind(this));
-            // set up the autocomplete for line metadata type selection
-            this.lineMetaAutocomplete = new EDDAuto.LineMetadataType({
-                'container': $('#add-prop-dialog'),
-                'visibleInput': $('#add-line-metadata-text'),
-                'hiddenInput': $('#add-line-metadata-value'),
-                'search_extra': { 'sort': 'type_name' } });
-            this.lineProperties.forEach(function (input, i) {
-                _this.insertInputRow(input);
-            });
-            // add options for any naming elements that should be available by default
+            // update step 3 choices based on step 2 defaults
             this.updateNameElementChoices();
+        };
+        CreationManager.prototype.updateAbbreviations = function () {
         };
         CreationManager.prototype.updateNameElementChoices = function () {
             var availableElts, prevNameElts, newElts, unusedList, unusedChildren, namingUnchanged, self;
@@ -694,6 +752,15 @@ var CreateLines;
                     }
                 }
             });
+            // set up the autocomplete for line metadata type selection
+            this.lineMetaAutocomplete = new EDDAuto.LineMetadataType({
+                'container': $('#add-prop-dialog'),
+                'visibleInput': $('#add-line-metadata-text'),
+                'hiddenInput': $('#add-line-metadata-value'),
+                'search_extra': { 'sort': 'type_name' } });
+            // add click behavior to the "add property" button
+            $('#addPropertyButton')
+                .on('click', CreateLines.creationManager.showAddProperty.bind(this));
         };
         CreationManager.prototype.showAddAbbreviation = function () {
             var list = $('#line-name-abbrev-list').empty();
@@ -714,9 +781,9 @@ var CreateLines;
                 autoOpen: false,
                 buttons: {
                     'Add Abbreviation(s)': function () {
-                        // var meta_name:string, meta_pk:number, textInput: JQuery, hiddenInput: JQuery;
-                        // self.lineMetaAutocomplete.omitKey(String(meta_pk));
-                        //creationManager.addAbbreviation();
+                        // TODO: ADD ABBREV
+                        // $('#line-name-abbrev-list').
+                        // creationManager.addAbbreviation();
                     },
                     'Close': function () {
                         var textInput, hiddenInput;
@@ -724,11 +791,14 @@ var CreateLines;
                     }
                 }
             });
+            $('#addAbbreviationButton')
+                .on('click', CreateLines.creationManager.showAddAbbreviation.bind(this));
         };
         CreationManager.prototype.addAbbreviation = function (nameElement) {
         };
         CreationManager.prototype.buildJson = function () {
             var result, json, jsonNameElements, combinatorialValues, commonValues;
+            // build json for values included as part of generated line names
             jsonNameElements = [];
             this.nameElements.forEach(function (nameElement) {
                 jsonNameElements.push(nameElement.jsonId);
@@ -736,10 +806,23 @@ var CreateLines;
             result = { name_elements: { elements: jsonNameElements } };
             //TODO: abbreviations / custom additions...see the mockup
             result.replicate_count = $('#spinner').val();
-            commonValues = [];
+            // include all inputs in the JSON, separating them by "combinatorial" status as
+            // required
+            commonValues = {};
+            combinatorialValues = {};
             this.lineProperties.forEach(function (input) {
-                result[input.lineAttribute.jsonId] = input.getValueJson();
+                if (!input.validInputCount()) {
+                    return true; // keep looping
+                }
+                if (input.hasComboInputs()) {
+                    combinatorialValues[input.lineAttribute.jsonId] = input.getValueJson();
+                }
+                else {
+                    commonValues[input.lineAttribute.jsonId] = input.getValueJson();
+                }
             });
+            result['combinatorial_line_metadata'] = combinatorialValues;
+            result['common_line_metadata'] = commonValues;
             json = JSON.stringify(result);
             $('#jsonTest').text(json);
             return json;
@@ -753,16 +836,8 @@ var CreateLines;
     // As soon as the window load signal is sent, call back to the server for the set of reference
     // records that will be used to disambiguate labels in imported data.
     function onDocumentReady() {
-        CreateLines.creationManager.buildInputs();
-        // set up connected lists for naming elements
-        $("#line_name_elts, #unused_line_name_elts").sortable({
-            connectWith: ".connectedSortable",
-            update: function (event, ui) {
-                CreateLines.creationManager.updateResults();
-            },
-        }).disableSelection();
-        // set up selectable list for abbreviations
-        $('#line-name-abbrev-list').selectable();
+        CreateLines.creationManager.buildStep2Inputs();
+        CreateLines.creationManager.buildStep3Inputs();
         // load line metadata types from the REST API. This allows us to display them more
         // responsively if there are many, and also to show them in the
         loadAllLineMetadataTypes();
