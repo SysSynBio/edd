@@ -187,7 +187,7 @@ var CreateLines;
                 });
                 // remove the now-empty second row whose inputs were moved up to first
                 nextRow.remove();
-                this.rows.splice(rowIndex + 1);
+                this.rows.splice(rowIndex + 1, 1);
             }
             else {
                 row.remove();
@@ -576,7 +576,7 @@ var CreateLines;
             var row;
             row = $('<div>')
                 .addClass('table-row')
-                .addClass('line_attr_' + input.lineAttribute.jsonId)
+                .attr('id', 'line_attr_' + input.lineAttribute.jsonId)
                 .appendTo(parentDiv);
             input.fillRow(row);
         };

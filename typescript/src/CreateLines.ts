@@ -236,7 +236,7 @@ module CreateLines {
 
                 // remove the now-empty second row whose inputs were moved up to first
                 nextRow.remove();
-                this.rows.splice(rowIndex+1);
+                this.rows.splice(rowIndex+1, 1);
 
             }
             // if removing a row other than the first / title row, just remove everything
