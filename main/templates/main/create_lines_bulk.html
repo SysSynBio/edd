@@ -31,6 +31,7 @@
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>
         Choose line name elements to add abbreviations for:</p>
     <ul id="line-name-abbrev-list"></ul>
+    <div id="no-abbrev-options-div" class="hidden">No more items available</div>
 </div>
 <h1>Create lines for <a href="/study/{{ study.id }}">{{ study.name }}</a></h1>
     <!-- Step 1 -->
@@ -108,32 +109,40 @@
                     </div>
                 </div>
             </div>
-            <div class="step2-table" id="name_customization_table">
-                <div class="step2_table_heading">
-                    <div class="step2_table_cell"><label>Custom Name Elements:</label></div>
-                    <div class="step2_table_cell"><button name="add_custom_label"><span class="ui-icon ui-icon-plusthick"></span></button></div>
-                    <div class="step2_table_cell"><label>Abbreviations:</label></div>
-                    <div class="step2_table_cell"><button id="addAbbreviationButton"><span class="ui-icon ui-icon-plusthick"></span></button></div>
+            <div class="step2-table">
+                <div class="step2-table-row">
+                    <div class="step2-table step2_table_cell" id="name_customization_table">
+                        <div class="step2_table_heading">
+                            <div class="step2_table_cell"><label>Custom Name Elements:</label></div>
+                            <div class="step2_table_cell"><button name="add_custom_label"><span class="ui-icon ui-icon-plusthick"></span></button></div>
+                        </div>
+                        <div class="table-row">
+                            <div class="step2_table_cell subsection"><label>Label</label></div>
+                            <div class="step2_table_cell subsection"><label>Value</label></div>
+                        </div>
+                        <div class="step2_table_cell"><input type="text" name="lbl_descriptor_1"
+                                                             value="Experimental Platform"/></div>
+                        <div class="step2_table_cell">
+                            <input type="text" name="lbl_value_1" value="BioHector">
+                            <button name="delete_lbl_1">-</button></div>
+                    </div>
+                    <div class="step2-table step2_table_cell" id="abbreviations-table">
+                        <div class="step2_table_heading">
+                            <div class="step2_table_cell"><label>Abbreviations:</label></div>
+                            <div class="step2_table_cell"><button id="addAbbreviationButton">
+                                <span class="ui-icon ui-icon-plusthick"></span></button></div>
+                        </div>
+                        <div class="table-row">
+                            <div
+                                    class="step2_table_cell subsection"><label>Name Element
+                            </label></div>
+                            <div class="step2_table_cell subsection"><label>Value</label></div>
+                            <div
+                                    class="step2_table_cell subsection"><label>Abbreviation
+                            </label></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="table-row">
-                    <div class="step2_table_cell"><label>Label</label></div>
-                    <div class="step2_table_cell"><label>Value</label></div>
-                    <div class="step2_table_cell"><label>Element</label></div>
-                    <div class="step2_table_cell"><label>Value</label></div>
-                    <div class="step2_table_cell"><label>Abbreviation</label></div>
-                </div>
-                <div class="step2_table_cell"><input type="text" name="lbl_descriptor_1"
-                                                     value="Experimental
-                                                Platform"/></div>
-                <div class="step2_table_cell">
-                    <input type="text" name="lbl_value_1" value="BioHector">
-                    <button name="delete_lbl_1">-</button></div>
-                <div class="step2_table_cell"><input type="text" name="abbrev_elt_1" value="Strain Name"/></div>
-                <div class="step2_table_cell"><input type="text" name="abbrev_value_1"
-                                                     value="JW1058"/></div>
-                <div class="step2_table_cell"><input type="text" name="abbrev_text_1"
-                                                     value="58"/><button
-                        name="remove_abbreviation">-</button></div>
             </div>
         </div>
     </div>

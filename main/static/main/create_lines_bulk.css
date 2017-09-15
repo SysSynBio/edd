@@ -98,7 +98,7 @@ input[type="radio"] {
     margin: auto;
 }
 
-#name_ordering_table,#name_customization_table {
+#name_ordering_table, #name_customization_table, #abbreviations-table {
     /* margin-left: 10px; */
     margin-top: 25px;
     min-width: 50px;
@@ -107,13 +107,6 @@ input[type="radio"] {
 
 #dialog-confirm {
     display: none;
-}
-
-#name_ordering_table {
-}
-
-#name_customization_table {
-
 }
 
 .in-use {

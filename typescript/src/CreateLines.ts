@@ -82,9 +82,6 @@ module CreateLines {
         maxRows: number;
         minEntries: number;
 
-        supportsMultiValue: boolean;
-        supportsCombinations: boolean;
-
         rows: JQuery[] = [];
         addButton: JQuery;
 
@@ -100,10 +97,6 @@ module CreateLines {
 
             this.maxRows = options.maxRows === undefined ? 30 : options.maxRows;
             this.minEntries = options['minEntries'] || 0;
-            this.supportsCombinations = options.supportsCombinations === undefined ?
-                true: options.supportsCombinations;
-            this.supportsMultiValue = options.supportsMultiValue === undefined ?
-                false: options.supportsMultiValue;
         }
 
         hasValidInput(rowIndex: number ): boolean {
@@ -221,27 +214,47 @@ module CreateLines {
         }
 
         removeRow(rowIndex: number): void {
-            var row: JQuery, hadValidInput: boolean;
+            var row: JQuery, hadValidInput: boolean, nextRow: JQuery, inputCell:JQuery;
 
             hadValidInput = this.hasValidInput(rowIndex);
-
-            // remove this row from our tracking and from the DOM
             row = this.rows[rowIndex];
-            row.remove();
-            this.rows.splice(rowIndex, 1);
+
+            // if removing the title row, relocate inputs from the second row to the first, then
+            // remove the second row
+            if(rowIndex == 0 && this.rows.length > 1) {
+                // remove only the input cell content from this row, leaving labeling and controls
+                // in place
+                inputCell = row.children('.inputCell').empty();
+
+                // detach and relocate input cell content from the following row, moving it up
+                nextRow = this.rows[rowIndex+1];
+                nextRow.children('.inputCell').each(function(index:number,
+                                                             element: Element)
+                {
+                    $(element).detach().appendTo(inputCell);
+                });
+
+                // remove the now-empty second row whose inputs were moved up to first
+                nextRow.remove();
+                this.rows.splice(rowIndex+1);
+
+            }
+            // if removing a row other than the first / title row, just remove everything
+            else {
+                row.remove();
+                this.rows.splice(rowIndex, 1);
+            }
 
             // update event handlers for subsequent rows to get the correct index number following
             // the removal of a preceding row
-            console.log('Updating event handlers starting @ index ' + rowIndex);
             for(var i=rowIndex; i < this.rows.length; i++) {
                 var removeBtn: JQuery;
                 row = this.rows[i];
                 removeBtn = row.find('.removeButton').first();
-                console.log('Updating ' + removeBtn.length + ' event handlers for index ' +
-                             rowIndex);
                 this.registerRemoveEvtHandler(removeBtn, i);
             }
 
+            // if the removed row had valid user input, recompute results
             if(hadValidInput) {
                 if(this.rows.length) {
                     this.updateInputState();
@@ -273,8 +286,7 @@ module CreateLines {
 
         fillRow(row: JQuery):void {
             var firstRow: boolean, row: JQuery, inputCell: JQuery, addCell: JQuery,
-                applyAllCell: JQuery, makeComboCell: JQuery, labelCell: JQuery,
-                noComboButton: JQuery, yesComboButton: JQuery;
+                abbrevCell: JQuery, labelCell: JQuery;
 
             this.rows.push(row);
 
@@ -293,7 +305,7 @@ module CreateLines {
                 .addClass('inputCell')
                 .appendTo(row);
 
-            this.fillInputControls(inputCell);
+            this.fillInputControls(inputCell); // TODO: abbrev cell
 
             addCell = $('<div>')
                 .addClass('step2_table_cell')
@@ -325,9 +337,13 @@ module CreateLines {
     //    to extract value
     // TODO: revisit meta / attribute subclasses after some integration testing / review of
     // back-end code. May be able to combine some of these.
-    export class LinePropertyInput extends MultiValueInput {
+    export class LineAttributeInput extends MultiValueInput {
+         supportsCombinations: boolean;
+
          constructor(options: any) {
              super(options);
+             this.supportsCombinations = options.supportsCombinations === undefined ?
+                true: options.supportsCombinations;
          }
 
          updateInputState() {
@@ -447,37 +463,7 @@ module CreateLines {
         }
     }
 
-    export class LineAttributeInput extends LinePropertyInput {
-
-        constructor(options: any) {
-            super(options);
-            if (options.minRows === undefined) {
-                options.minRows = 1;
-            }
-
-        }
-
-        hasValidInput(rowIndex: number): boolean {
-            var temp:any;
-            temp = this.rows[rowIndex].find('.step2-value-input').val();
-            return (temp != undefined) && temp.toString().trim();
-        }
-
-        fillInputControls(rowContainer: JQuery): void {
-            var self: LineAttributeInput = this;
-            $('<input type="text">')
-                .addClass('columnar-text-input')
-                .addClass('step2-value-input')
-                .on('change', function() {
-                    this.updateInputState();
-                    creationManager.updateNameElementChoices();
-                })
-                .appendTo(rowContainer);
-            this.buildRemoveControl(rowContainer);
-        }
-    }
-
-    export class LineAttributeAutoInput extends LinePropertyInput {
+    export class LineAttributeAutoInput extends LineAttributeInput {
 
         autoInput: EDDAuto.BaseAuto;
 
@@ -487,7 +473,7 @@ module CreateLines {
 
         // build custom input controls whose type depends on the data type of the Line attribute
         // they configure
-        fillInputControls(rowContainer: JQuery): void {
+        fillInputControls(inputCell: JQuery): void {
             var visible: JQuery, hidden: JQuery, self: LineAttributeAutoInput;
             self = this;
 
@@ -501,14 +487,15 @@ module CreateLines {
                 creationManager.updateNameElementChoices();
             });
 
-            rowContainer.append(visible).append(hidden);
+            inputCell.append(visible)
+                .append(hidden);
 
             switch (this.lineAttribute.displayText) {
                 case LINE_EXPERIMENTER_META_NAME:
                 case LINE_CONTACT_META_NAME:
                     visible.attr('eddautocompletetype', "User");
                     this.autoInput = new EDDAuto.User({
-                        'container': rowContainer,
+                        'container': inputCell,
                         'visibleInput': visible,
                         'hiddenInput': hidden,
                     });
@@ -516,7 +503,7 @@ module CreateLines {
                 case CARBON_SOURCE_META_NAME:
                     visible.attr('eddautocompletetype', "CarbonSource");
                     this.autoInput = new EDDAuto.CarbonSource({
-                        'container': rowContainer,
+                        'container': inputCell,
                         'visibleInput': visible,
                         'hiddenInput': hidden,
                     });
@@ -524,13 +511,13 @@ module CreateLines {
                 case STRAINS_META_NAME:
                     visible.attr('eddautocompletetype', "Registry");
                     this.autoInput = new EDDAuto.Registry({
-                        'container': rowContainer,
+                        'container': inputCell,
                         'visibleInput': visible,
                         'hiddenInput': hidden,
                     });
                     break;
             }
-            this.buildRemoveControl(rowContainer);
+            this.buildRemoveControl(inputCell);
         }
 
         getInput(rowIndex: number): any {
@@ -540,7 +527,7 @@ module CreateLines {
         }
     }
 
-    export class BooleanInput extends LinePropertyInput {
+    export class BooleanInput extends LineAttributeInput {
         yesCheckbox: JQuery;
         noCheckbox: JQuery;
 
@@ -597,7 +584,7 @@ module CreateLines {
         }
     }
 
-    export class NumberInput extends LinePropertyInput {
+    export class NumberInput extends LineAttributeInput {
         constructor(options:any) {
             options.maxRows = 1;
             options.minRows = 1;
@@ -625,11 +612,14 @@ module CreateLines {
 
     export class CreationManager {
         // line properties configured in step 2
-        lineProperties:LinePropertyInput[] = [];
+        lineProperties:LineAttributeInput[] = [];
 
         // name elements in use in step 3
-        nameElements:LineAttributeDescriptor[] = [];
+        lineNameElements:LineAttributeDescriptor[] = [];
 
+        abbreviations: NameElementAbbreviations[] = [];
+
+        replicateInput: LineAttributeInput;
         lineMetaAutocomplete:EDDAuto.LineMetadataType = null;  //TODO
 
         nonAutocompleteLineMetaTypes: any[] = [];
@@ -643,15 +633,14 @@ module CreateLines {
                                      CARBON_SOURCE_META_NAME, STRAINS_META_NAME];
 
         constructor() {
-            this.lineProperties = [
-                new NumberInput({
+            this.replicateInput = new NumberInput({
                     'lineAttribute': new LineAttributeDescriptor('replicates',
-                                                                 'Replicates')})
-            ];
+                                                                 'Replicates')});
+            this.lineProperties = [this.replicateInput];
         }
 
         addInput(lineAttr: LineAttributeDescriptor): void {
-            var newInput: LinePropertyInput, autocompleteMetaItem:any;
+            var newInput: LineAttributeInput, autocompleteMetaItem:any;
 
             autocompleteMetaItem = this.autocompleteLineMetaTypes[lineAttr.jsonId];
             if(autocompleteMetaItem) {
@@ -665,11 +654,11 @@ module CreateLines {
             }
 
             this.lineProperties.push(newInput);
-            this.insertInputRow(newInput);
+            this.insertLineAttribute(newInput);
         }
 
         removeInput(lineAttr: LineAttributeDescriptor): void {
-            var foundIndex = -1, lineProperty: LinePropertyInput;
+            var foundIndex = -1, lineProperty: LineAttributeInput;
             this.lineProperties.forEach(function(property, index:number) {
                 if(property.lineAttribute.jsonId === lineAttr.jsonId) {
                     foundIndex = index;
@@ -688,12 +677,25 @@ module CreateLines {
             this.updateNameElementChoices();
         }
 
-        insertInputRow(input:LinePropertyInput): void {
-            var parentDiv: JQuery, row:JQuery;
+        insertLineAttribute(input:LineAttributeInput): void {
+            var parentDiv: JQuery;
             parentDiv = $('#select_line_properties_step_dynamic').find('.sectionContent');
+            this.insertInputRow(input, parentDiv);
+        }
+
+        insertAbbreviation(lineAttr:LineAttributeDescriptor): void {
+            var parentDiv: JQuery, input: NameElementAbbreviations;
+            parentDiv = $('#abbreviations-table');
+            input = new NameElementAbbreviations({'lineAttribute': lineAttr});
+            this.abbreviations.push(input);
+            this.insertInputRow(input, parentDiv);
+        }
+
+        insertInputRow(input:MultiValueInput, parentDiv:JQuery): void {
+            var row: JQuery;
             row = $('<div>')
                     .addClass('table-row')
-                    .addClass('line_attr_' + input.lineAttribute.jsonId)
+                    .attr('id', 'line_attr_' + input.lineAttribute.jsonId)
                     .appendTo(parentDiv);
             input.fillRow(row);
         }
@@ -707,8 +709,12 @@ module CreateLines {
                 },
             }).disableSelection();
 
-            // set up selectable list for abbreviations
+            // set up selectable list for abbreviations dialog
             $('#line-name-abbrev-list').selectable();
+
+            // step 3 column headers until there are rows to labels
+            $('#abbreviations-table').find('subsection').toggleClass('hidden',  true);
+            $('#name_customization_table').find('subsection').toggleClass('hidden', true);
         }
 
         buildStep2Inputs(): void {
@@ -717,14 +723,15 @@ module CreateLines {
             creationManager.buildAbbrevDialog();
 
             // add options for any naming elements that should be available by default
-            this.lineProperties.forEach((input: LinePropertyInput, i: number): void => {
-                this.insertInputRow(input);
+            this.lineProperties.forEach((input: LineAttributeInput, i: number): void => {
+                this.insertLineAttribute(input);
             });
 
             // style the replicates spinner
             $("#spinner").spinner({
                 min: 1,
                 change: function(event, ui) {
+                        creationManager.replicateInput.updateInputState();
                         creationManager.updateNameElementChoices();
                     }});
 
@@ -743,7 +750,7 @@ module CreateLines {
 
             //build an updated list of available naming elements based on user entries in step 1
             availableElts = [];
-            this.lineProperties.forEach((input: LinePropertyInput): void => {
+            this.lineProperties.forEach((input: LineAttributeInput): void => {
                 var elts: LineAttributeDescriptor[] = input.getNameElements();
                 availableElts = availableElts.concat(elts);
             });
@@ -764,7 +771,7 @@ module CreateLines {
                     element = newElts[index];
 
                     if(element.jsonId == nameElement.jsonId) {
-                        self.nameElements.push(nameElement);
+                        self.lineNameElements.push(nameElement);
                         newElts.splice(index, 1);
                         return true;  // continue outer loop
                     }
@@ -820,7 +827,7 @@ module CreateLines {
             // skip JSON reconstruction / resulting server request if naming elements are the same
             // as before. Note that since the form will never add a naming element
             // automatically, comparing array dimensions is enough
-            namingUnchanged = this.nameElements.length === $('#line_name_elts').children().length;
+            namingUnchanged = this.lineNameElements.length === $('#line_name_elts').children().length;
 
             if(namingUnchanged) {
                 return;
@@ -831,10 +838,10 @@ module CreateLines {
         updateResults(): void {
             var self: CreationManager = this;
             //build an updated list of naming elements based on user entries in steps 1 & 2
-            this.nameElements = [];
+            this.lineNameElements = [];
             $('#line_name_elts').children().each(function() {
                 var nameElement: any = $(this).data();
-                self.nameElements.push(nameElement);
+                self.lineNameElements.push(nameElement);
             });
 
             //TODO: remove the color-based indicator and auto-JSON creation here following testing
@@ -914,8 +921,24 @@ module CreateLines {
         }
 
         showAddAbbreviation(): void {
-            var list:JQuery = $('#line-name-abbrev-list').empty();
-            this.nameElements.forEach(function(namingElement: LineAttributeDescriptor) {
+            var list: JQuery, self: CreationManager;
+            self = this;
+            list = $('#line-name-abbrev-list').empty();
+            this.lineNameElements.forEach(function(namingElement: LineAttributeDescriptor) {
+                var existingAbbreviation = false;
+                self.abbreviations.forEach(function(abbreviation: NameElementAbbreviations){
+                    if(abbreviation.lineAttribute.jsonId == namingElement.jsonId) {
+                        existingAbbreviation = true;
+                        return false;  // stop inner loop
+                    }
+                });
+
+                // skip list item creation for any line property that we already have an
+                // abbreviation for
+                if(existingAbbreviation) {
+                    return true;  // continue looping
+                }
+
                 $('<li>')
                     .text(namingElement.displayText)
                     .addClass('ui-widget-content')
@@ -927,7 +950,6 @@ module CreateLines {
         }
 
         buildAbbrevDialog(): void {
-            var self: CreationManager = this;
 
             $('#add-abbrev-dialog').dialog({
                 resizable: false,
@@ -935,9 +957,7 @@ module CreateLines {
                 autoOpen: false,
                 buttons: {
                     'Add Abbreviation(s)': function() {
-                        // TODO: ADD ABBREV
-                        // $('#line-name-abbrev-list').
-                        // creationManager.addAbbreviation();
+                        creationManager.addSelectedAbbreviations();
                     },
                     'Close': function() {
                         var textInput: JQuery, hiddenInput: JQuery;
@@ -950,7 +970,33 @@ module CreateLines {
                 .on('click', creationManager.showAddAbbreviation.bind(this));
         }
 
-        addAbbreviation(nameElement:LineAttributeDescriptor): void {
+        addSelectedAbbreviations() {
+            var abbreviationsList: JQuery, selectedAttrs: LineAttributeDescriptor[],
+                selectedItems: JQuery, self:CreationManager;
+            self = this;
+
+            // build the list of line attributes selected in the dialog
+            abbreviationsList = $('#line-name-abbrev-list');
+            selectedItems = abbreviationsList.children('.ui-selected');
+            selectedAttrs = [];
+            selectedItems.each(
+                function (index: number, elt: Element) {
+                selectedAttrs.push($(elt).data());
+            });
+
+            // remove selected items from the list
+            selectedItems.remove();
+            $('#no-abbrev-options-div').toggleClass('hidden',
+                abbreviationsList.children('li').length == 0);
+
+            console.log('selected abbreviations: ' + selectedAttrs);
+
+            $('#abbreviations-table subsection').toggleClass('hidden', false);
+
+            selectedAttrs.forEach(function(nameElement) {
+                self.insertAbbreviation(nameElement);
+            });
+
         }
 
         buildJson(): string {
@@ -959,7 +1005,7 @@ module CreateLines {
 
             // build json for values included as part of generated line names
             jsonNameElements = [];
-            this.nameElements.forEach(function(nameElement:LineAttributeDescriptor) {
+            this.lineNameElements.forEach(function(nameElement:LineAttributeDescriptor) {
                 jsonNameElements.push(nameElement.jsonId);
             });
             result = {name_elements: {elements: jsonNameElements}};
@@ -972,7 +1018,7 @@ module CreateLines {
             // required
             commonValues = {};
             combinatorialValues = {};
-            this.lineProperties.forEach((input: LinePropertyInput): boolean => {
+            this.lineProperties.forEach((input: LineAttributeInput): boolean => {
                 if(!input.validInputCount()) {
                     return true; // keep looping
                 }
