@@ -452,14 +452,28 @@ module CreateLines {
             this.updateInputState();
         }
 
+        fillInputControls(inputCell: JQuery): void {
+             // by default, just fill in a single text box.  child classes may override with
+            // alternate user inputs
+            var text: JQuery, hidden: JQuery, self: LineAttributeInput;
+            self = this;
+
+            text = $('<input type="text">')
+                .addClass('columnar-text-input');
+            text.on('change', function () {
+                self.updateInputState();
+                creationManager.updateNameElementChoices();
+            });
+
+            inputCell.append(text)
+                .append(hidden);
+            this.buildRemoveControl(inputCell);
+        }
+
         postRemoveCallback(rowIndex: number, hadValidInput:boolean):void {
             if(hadValidInput) {
                 creationManager.updateNameElementChoices();
             }
-        }
-
-        fillInputControls(container: JQuery) {
-            //empty implementation for children to override
         }
     }
 

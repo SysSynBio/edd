@@ -367,13 +367,25 @@ var CreateLines;
             }
             this.updateInputState();
         };
+        LineAttributeInput.prototype.fillInputControls = function (inputCell) {
+            // by default, just fill in a single text box.  child classes may override with
+            // alternate controls
+            var text, hidden, self;
+            self = this;
+            text = $('<input type="text">')
+                .addClass('columnar-text-input');
+            text.on('change', function () {
+                self.updateInputState();
+                CreateLines.creationManager.updateNameElementChoices();
+            });
+            inputCell.append(text)
+                .append(hidden);
+            this.buildRemoveControl(inputCell);
+        };
         LineAttributeInput.prototype.postRemoveCallback = function (rowIndex, hadValidInput) {
             if (hadValidInput) {
                 CreateLines.creationManager.updateNameElementChoices();
             }
-        };
-        LineAttributeInput.prototype.fillInputControls = function (container) {
-            //empty implementation for children to override
         };
         return LineAttributeInput;
     }(MultiValueInput));
