@@ -181,6 +181,14 @@ input[type="radio"] {
 
 .addButton {
     margin-left: 5px;
+    width: 20px;
+    padding: 0;
+}
+
+.addCell {
+    width: 41px;  /* prevent table from jumping when combinatorial property is added */
+}
+
 }
 
 div.sectionContent {

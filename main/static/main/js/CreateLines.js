@@ -221,24 +221,29 @@ var CreateLines;
         return MultiValueInput;
     }());
     CreateLines.MultiValueInput = MultiValueInput;
-    var NameElementAbbreviations = (function (_super) {
-        __extends(NameElementAbbreviations, _super);
-        function NameElementAbbreviations() {
+    var AbbreviationInput = (function (_super) {
+        __extends(AbbreviationInput, _super);
+        function AbbreviationInput() {
             _super.apply(this, arguments);
         }
-        NameElementAbbreviations.prototype.hasValidInput = function (rowIndex) {
+        AbbreviationInput.prototype.hasValidInput = function (rowIndex) {
             var temp;
             temp = this.rows[rowIndex].find('.columnar-text-input').val();
             return (temp != undefined) && temp.toString().trim();
         };
-        NameElementAbbreviations.prototype.fillRow = function (row) {
+        AbbreviationInput.prototype.fillRow = function (row) {
             var firstRow, row, inputCell, addCell, abbrevCell, labelCell;
             this.rows.push(row);
+            addCell = $('<div>')
+                .addClass('step2_table_cell')
+                .addClass('addCell')
+                .appendTo(row);
             labelCell = $('<div>')
                 .addClass('step2_table_cell')
                 .appendTo(row);
             firstRow = this.getRowCount() == 1;
             if (firstRow) {
+                this.buildAddControl(addCell);
                 this.getLabel()
                     .appendTo(labelCell);
             }
@@ -247,13 +252,9 @@ var CreateLines;
                 .addClass('inputCell')
                 .appendTo(row);
             this.fillInputControls(inputCell); // TODO: abbrev cell
-            addCell = $('<div>')
-                .addClass('step2_table_cell')
-                .appendTo(row);
-            this.buildAddControl(addCell);
             this.updateInputState();
         };
-        NameElementAbbreviations.prototype.fillInputControls = function (rowContainer) {
+        AbbreviationInput.prototype.fillInputControls = function (rowContainer) {
             var self = this;
             $('<input type="text">')
                 .addClass('columnar-text-input')
@@ -264,9 +265,9 @@ var CreateLines;
                 .appendTo(rowContainer);
             this.buildRemoveControl(rowContainer);
         };
-        return NameElementAbbreviations;
+        return AbbreviationInput;
     }(MultiValueInput));
-    CreateLines.NameElementAbbreviations = NameElementAbbreviations;
+    CreateLines.AbbreviationInput = AbbreviationInput;
     //TODO: for immediate development
     // 1. differentiate naming / json output from un-implemented controls (e.g. strain)
     // 2. compute / test JSON generation from supported controls
@@ -332,11 +333,16 @@ var CreateLines;
         LineAttributeInput.prototype.fillRow = function (row) {
             var firstRow, row, inputCell, addCell, applyAllCell, makeComboCell, labelCell, noComboButton, yesComboButton;
             this.rows.push(row);
+            addCell = $('<div>')
+                .addClass('step2_table_cell')
+                .addClass('addCell')
+                .appendTo(row);
             labelCell = $('<div>')
                 .addClass('step2_table_cell')
                 .appendTo(row);
             firstRow = this.getRowCount() == 1;
             if (firstRow) {
+                this.buildAddControl(addCell);
                 this.getLabel()
                     .appendTo(labelCell);
             }
@@ -345,10 +351,6 @@ var CreateLines;
                 .addClass('inputCell')
                 .appendTo(row);
             this.fillInputControls(inputCell);
-            addCell = $('<div>')
-                .addClass('step2_table_cell')
-                .appendTo(row);
-            this.buildAddControl(addCell);
             applyAllCell = $('<div>')
                 .addClass('step2_table_cell')
                 .addClass('centered_radio_btn_parent')
@@ -369,7 +371,7 @@ var CreateLines;
         };
         LineAttributeInput.prototype.fillInputControls = function (inputCell) {
             // by default, just fill in a single text box.  child classes may override with
-            // alternate controls
+            // alternate user inputs
             var text, hidden, self;
             self = this;
             text = $('<input type="text">')
@@ -580,7 +582,7 @@ var CreateLines;
         CreationManager.prototype.insertAbbreviation = function (lineAttr) {
             var parentDiv, input;
             parentDiv = $('#abbreviations-table');
-            input = new NameElementAbbreviations({ 'lineAttribute': lineAttr });
+            input = new AbbreviationInput({ 'lineAttribute': lineAttr });
             this.abbreviations.push(input);
             this.insertInputRow(input, parentDiv);
         };

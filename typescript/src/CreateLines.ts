@@ -276,7 +276,7 @@ module CreateLines {
         }
     }
 
-    export class NameElementAbbreviations extends MultiValueInput {
+    export class AbbreviationInput extends MultiValueInput {
 
         hasValidInput(rowIndex: number): boolean {
             var temp:any;
@@ -290,12 +290,18 @@ module CreateLines {
 
             this.rows.push(row);
 
+            addCell = $('<div>')
+                .addClass('step2_table_cell')
+                .addClass('addCell')
+                .appendTo(row);
+
             labelCell = $('<div>')
                 .addClass('step2_table_cell')
                 .appendTo(row);
 
             firstRow = this.getRowCount() == 1;
             if(firstRow) {
+                this.buildAddControl(addCell);
                 this.getLabel()
                     .appendTo(labelCell);
             }
@@ -307,16 +313,11 @@ module CreateLines {
 
             this.fillInputControls(inputCell); // TODO: abbrev cell
 
-            addCell = $('<div>')
-                .addClass('step2_table_cell')
-                .appendTo(row);
-            this.buildAddControl(addCell);
-
             this.updateInputState();
         }
 
         fillInputControls(rowContainer: JQuery): void {
-            var self: NameElementAbbreviations = this;
+            var self: AbbreviationInput = this;
             $('<input type="text">')
                 .addClass('columnar-text-input')
                 .on('change', function() {
@@ -408,12 +409,18 @@ module CreateLines {
 
             this.rows.push(row);
 
+            addCell = $('<div>')
+                .addClass('step2_table_cell')
+                .addClass('addCell')
+                .appendTo(row);
+
             labelCell = $('<div>')
                 .addClass('step2_table_cell')
                 .appendTo(row);
 
             firstRow = this.getRowCount() == 1;
             if(firstRow) {
+                this.buildAddControl(addCell);
                 this.getLabel()
                     .appendTo(labelCell);
             }
@@ -424,11 +431,6 @@ module CreateLines {
                 .appendTo(row);
 
             this.fillInputControls(inputCell);
-
-            addCell = $('<div>')
-                .addClass('step2_table_cell')
-                .appendTo(row);
-            this.buildAddControl(addCell);
 
             applyAllCell = $('<div>')
                 .addClass('step2_table_cell')
@@ -631,7 +633,7 @@ module CreateLines {
         // name elements in use in step 3
         lineNameElements:LineAttributeDescriptor[] = [];
 
-        abbreviations: NameElementAbbreviations[] = [];
+        abbreviations: AbbreviationInput[] = [];
 
         replicateInput: LineAttributeInput;
         lineMetaAutocomplete:EDDAuto.LineMetadataType = null;  //TODO
@@ -698,9 +700,9 @@ module CreateLines {
         }
 
         insertAbbreviation(lineAttr:LineAttributeDescriptor): void {
-            var parentDiv: JQuery, input: NameElementAbbreviations;
+            var parentDiv: JQuery, input: AbbreviationInput;
             parentDiv = $('#abbreviations-table');
-            input = new NameElementAbbreviations({'lineAttribute': lineAttr});
+            input = new AbbreviationInput({'lineAttribute': lineAttr});
             this.abbreviations.push(input);
             this.insertInputRow(input, parentDiv);
         }
@@ -940,7 +942,7 @@ module CreateLines {
             list = $('#line-name-abbrev-list').empty();
             this.lineNameElements.forEach(function(namingElement: LineAttributeDescriptor) {
                 var existingAbbreviation = false;
-                self.abbreviations.forEach(function(abbreviation: NameElementAbbreviations){
+                self.abbreviations.forEach(function(abbreviation: AbbreviationInput){
                     if(abbreviation.lineAttribute.jsonId == namingElement.jsonId) {
                         existingAbbreviation = true;
                         return false;  // stop inner loop
