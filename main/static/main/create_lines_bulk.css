@@ -9,9 +9,11 @@
        sub-sections of step 2 that apple to different meta-data types. Don't make it too complex!
     4. Center the radio buttons in their columns
 */
-.step2-table
+.bulk-line-table
 {
     display: table;
+    width: auto;
+    margin-right: auto;
 }
 .title
 {
@@ -22,17 +24,34 @@
 }
 .step2_table_heading {
     display: table-row;
-    /* font-weight: bold; */
-    text-decoration: underline;  /* TODO: doesn't work */
+}
+
+.step2_table_heading, .step2_table_heading label {
     font-weight: bold;
+    text-decoration: underline;
     text-align: left;
 }
 
-.step2_table_heading div {
+.step3_table_heading {
+    display: table-row;
+}
+
+.step3_table_heading, .step3_table_heading label{
+    text-decoration: underline;
+    text-align: left;
+}
+
+.step2_table_heading div, .step3_table_heading div {
     vertical-align: bottom;
 }
 
-.subsection label{
+.step3_subsection {
+    margin-top: 25px;
+}
+
+.step3_subsection, .step3_subsection label {
+    font-size: 110%;
+    font-weight: bold;
     text-decoration: underline;
 }
 
@@ -49,17 +68,13 @@
     background: brown;
 }
 
-.step2_table_cell {
+.bulk_lines_table_cell {
     display: table-cell;
     /*border: solid;
     border-width: thin; */
     padding-left: 8px;
     padding-right: 8px;
     padding-top: 8px;
-}
-
-.step2_table_heading label {
-    text-decoration: underline; /* TODO: doesn't work */
 }
 
 /* TODO: unused! fix and use! */
@@ -126,17 +141,19 @@ input[type="radio"] {
 }
 
 .inputCell {
-    display: flex;
-    width: 100%;
+    display: table-cell;
+    width: auto;
     min-width: 210px;  /* prevents cells from resizing when new rows are added */
 }
 
-.inputCell input{
+.inputCell input, .inputCell button{
     margin-left: 5px;
 }
 
-.inputCell button {
-    margin-left: 5px;
+.inputContent {
+    display: flex;
+    margin: 0;
+    padding: 0;
 }
 
 .columnar-text-input {
@@ -147,21 +164,13 @@ input[type="radio"] {
     display: inline-block;
 }
 
-
-.meta_type_input {
-    flex-grow: 1;
-}
-
-.meta_value_input {
-    flex-grow: 1;
-}
-
 #line_name_elts, #unused_line_name_elts, #line-name-abbrev-list {
     vertical-align: text-top;
     min-height: 100px;
+    min-width: 124px;
     list-style-type: none;
     border: 1px solid #eee;
-  }
+}
 
 #line_name_elts li, #unused_line_name_elts li, #line-name-abbrev-list li {
     height: 100%;
@@ -186,11 +195,18 @@ input[type="radio"] {
 }
 
 .addCell {
-    width: 41px;  /* prevent table from jumping when combinatorial property is added */
+    padding: 0px;
+    width: 25px;  /* prevent table from jumping when a combinatorial property with this button is added */
 }
+
+.removeButton {
+    /*float: right;*/
+}
+
+.controlRemoveBtn {
 
 }
 
 div.sectionContent {
-    margin-bottom: 30px;
+    padding-bottom: 30px;
 }

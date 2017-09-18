@@ -147,7 +147,7 @@ module CreateLines {
         }
 
 
-        buildRemoveControl(container: JQuery): void {
+        buildRemoveBtn(container: JQuery): JQuery {
             var btn: JQuery, rowIndex:number, t:any;
             // add a delete button in the same cell as the input controls
 
@@ -159,7 +159,9 @@ module CreateLines {
                 $('<span>').addClass('ui-icon')
                     .addClass('ui-icon-trash').appendTo(btn);
                 this.registerRemoveEvtHandler(btn, rowIndex);
+                return btn;
             }
+            return null;
         }
 
         registerRemoveEvtHandler(removeButton, rowIndex) {
@@ -254,6 +256,10 @@ module CreateLines {
                 this.registerRemoveEvtHandler(removeBtn, i);
             }
 
+            if(this.getRowCount() == 0) {
+                creationManager.removeInput(this.lineAttribute);
+            }
+
             // if the removed row had valid user input, recompute results
             if(hadValidInput) {
                 if(this.rows.length) {
@@ -285,18 +291,19 @@ module CreateLines {
         }
 
         fillRow(row: JQuery):void {
-            var firstRow: boolean, row: JQuery, inputCell: JQuery, addCell: JQuery,
-                abbrevCell: JQuery, labelCell: JQuery;
+            var firstRow: boolean, row: JQuery, valCell: JQuery, addCell: JQuery,
+                abbrevCell: JQuery, labelCell: JQuery, self: AbbreviationInput;
+            self = this;
 
             this.rows.push(row);
 
             addCell = $('<div>')
-                .addClass('step2_table_cell')
+                .addClass('bulk_lines_table_cell')
                 .addClass('addCell')
                 .appendTo(row);
 
             labelCell = $('<div>')
-                .addClass('step2_table_cell')
+                .addClass('bulk_lines_table_cell')
                 .appendTo(row);
 
             firstRow = this.getRowCount() == 1;
@@ -306,26 +313,50 @@ module CreateLines {
                     .appendTo(labelCell);
             }
 
-            inputCell = $('<div>')
-                .addClass('step2_table_cell')
+            valCell = $('<div>')
+                .addClass('inputCell')
+                .addClass('bulk_lines_table_cell')
+                .appendTo(row);
+
+            $('<input type="text">')
+                .addClass('abbrev-val')
+                .addClass('columnar-text-input')
+                .on('change', function() {
+                    self.updateInputState();
+                    creationManager.updateAbbreviations();
+                })
+                .appendTo(valCell);
+
+            abbrevCell = $('<div>')
+                .addClass('bulk_lines_table_cell')
                 .addClass('inputCell')
                 .appendTo(row);
 
-            this.fillInputControls(inputCell); // TODO: abbrev cell
+            $('<input type="text">')
+                .addClass('abbrev-match')
+                .addClass('columnar-text-input')
+                .on('change', function() {
+                    self.updateInputState();
+                    creationManager.updateAbbreviations();
+                })
+                .appendTo(abbrevCell);
 
+            this.buildRemoveBtn(abbrevCell);
             this.updateInputState();
         }
 
-        fillInputControls(rowContainer: JQuery): void {
-            var self: AbbreviationInput = this;
-            $('<input type="text">')
-                .addClass('columnar-text-input')
-                .on('change', function() {
-                    this.updateInputState();
-                    creationManager.updateAbbreviations();
-                })
-                .appendTo(rowContainer);
-            this.buildRemoveControl(rowContainer);
+        registerRemoveEvtHandler(removeButton, rowIndex) {
+            removeButton.off('click');
+
+            removeButton.on('click', null, {'rowIndex': rowIndex, 'abbrevInput': this},
+                        (ev: JQueryMouseEventObject) => {
+                var rowIndex: number, abbrevInput:any;
+
+                rowIndex = ev.data.rowIndex;
+                abbrevInput = ev.data.abbrevInput;
+
+                abbrevInput.removeRow(rowIndex);
+            });
         }
     }
 
@@ -405,17 +436,17 @@ module CreateLines {
         fillRow(row: JQuery):void {
             var firstRow: boolean, row: JQuery, inputCell: JQuery, addCell: JQuery,
                 applyAllCell: JQuery, makeComboCell: JQuery, labelCell: JQuery,
-                noComboButton: JQuery, yesComboButton: JQuery;
+                noComboButton: JQuery, yesComboButton: JQuery, flewGrowWrapper: JQuery;
 
             this.rows.push(row);
 
             addCell = $('<div>')
-                .addClass('step2_table_cell')
+                .addClass('bulk_lines_table_cell')
                 .addClass('addCell')
                 .appendTo(row);
 
             labelCell = $('<div>')
-                .addClass('step2_table_cell')
+                .addClass('bulk_lines_table_cell')
                 .appendTo(row);
 
             firstRow = this.getRowCount() == 1;
@@ -426,14 +457,16 @@ module CreateLines {
             }
 
             inputCell = $('<div>')
-                .addClass('step2_table_cell')
+                .addClass('bulk_lines_table_cell')
                 .addClass('inputCell')
                 .appendTo(row);
 
-            this.fillInputControls(inputCell);
+            flewGrowWrapper = $('<div>').addClass('inputContent').appendTo(inputCell);
+
+            this.fillInputControls(flewGrowWrapper);
 
             applyAllCell = $('<div>')
-                .addClass('step2_table_cell')
+                .addClass('bulk_lines_table_cell')
                 .addClass('centered_radio_btn_parent')
                 .appendTo(row);
 
@@ -442,7 +475,7 @@ module CreateLines {
             }
 
             makeComboCell = $('<div>')
-                .addClass('step2_table_cell')
+                .addClass('bulk_lines_table_cell')
                 .addClass('centered_radio_btn_parent')
                 .appendTo(row);
 
@@ -469,7 +502,7 @@ module CreateLines {
 
             inputCell.append(text)
                 .append(hidden);
-            this.buildRemoveControl(inputCell);
+            this.buildRemoveBtn(inputCell);
         }
 
         postRemoveCallback(rowIndex: number, hadValidInput:boolean):void {
@@ -533,7 +566,7 @@ module CreateLines {
                     });
                     break;
             }
-            this.buildRemoveControl(inputCell);
+            this.buildRemoveBtn(inputCell);
         }
 
         getInput(rowIndex: number): any {
@@ -552,26 +585,31 @@ module CreateLines {
         }
 
         fillInputControls(rowContainer: JQuery): void {
-            var self: BooleanInput = this;
+            var self: BooleanInput = this, removeBtn: JQuery, buttonsDiv: JQuery;
+            buttonsDiv = $('<div>')
+                .addClass('columnar-text-input')  //TODO: rename class for this new use
+                .appendTo(rowContainer);
+
             this.yesCheckbox = $('<input type="checkbox">')
                 .on('change', function() {
                     self.updateInputState();
                     creationManager.updateNameElementChoices();
                 })
-                .appendTo(rowContainer);
+                .appendTo(buttonsDiv);
             $('<label>')
                 .text('Yes')
-                .appendTo(rowContainer);
+                .appendTo(buttonsDiv);
             this.noCheckbox = $('<input type="checkbox">')
                 .on('change', function() {
                     self.updateInputState();
                     creationManager.updateNameElementChoices();
                 })
-                .appendTo(rowContainer);
+                .appendTo(buttonsDiv);
             $('<label>')
                 .text('No')
-                .appendTo(rowContainer);
-            this.buildRemoveControl(rowContainer);
+                .appendTo(buttonsDiv);
+            removeBtn = this.buildRemoveBtn(rowContainer);
+            removeBtn.addClass('controlRemoveBtn');
         }
 
         hasComboInputs(): boolean {
@@ -645,6 +683,10 @@ module CreateLines {
         colors = ['red', 'blue', 'yellow', 'orange', 'purple'];
         colorIndex = 0;
 
+        previewUpdateTimerID:number = null;
+
+        namingInputsChanged = false;
+
         static autocompleteMetadataNames = [LINE_EXPERIMENTER_META_NAME, LINE_CONTACT_META_NAME,
                                      CARBON_SOURCE_META_NAME, STRAINS_META_NAME];
 
@@ -653,6 +695,17 @@ module CreateLines {
                     'lineAttribute': new LineAttributeDescriptor('replicates',
                                                                  'Replicates')});
             this.lineProperties = [this.replicateInput];
+        }
+
+        // Start a timer to wait before calling updating the line name preview, which requires
+        // an AJAX call to the back end
+        queuePreviewUpdate(): void {
+            $('#step4Label').addClass('wait');
+            if (this.previewUpdateTimerID) {
+                clearTimeout(this.previewUpdateTimerID);
+            }
+            this.previewUpdateTimerID = setTimeout(this.updatePreview.bind(this), 500);  //TODO:
+            // 250 in import
         }
 
         addInput(lineAttr: LineAttributeDescriptor): void {
@@ -695,8 +748,8 @@ module CreateLines {
 
         insertLineAttribute(input:LineAttributeInput): void {
             var parentDiv: JQuery;
-            parentDiv = $('#select_line_properties_step_dynamic').find('.sectionContent');
-            this.insertInputRow(input, parentDiv);
+            parentDiv = $('#line-properties-table');
+            this.insertRow(input, parentDiv);
         }
 
         insertAbbreviation(lineAttr:LineAttributeDescriptor): void {
@@ -704,10 +757,10 @@ module CreateLines {
             parentDiv = $('#abbreviations-table');
             input = new AbbreviationInput({'lineAttribute': lineAttr});
             this.abbreviations.push(input);
-            this.insertInputRow(input, parentDiv);
+            this.insertRow(input, parentDiv);
         }
 
-        insertInputRow(input:MultiValueInput, parentDiv:JQuery): void {
+        insertRow(input:MultiValueInput, parentDiv:JQuery): void {
             var row: JQuery;
             row = $('<div>')
                     .addClass('table-row')
@@ -721,16 +774,12 @@ module CreateLines {
             $( "#line_name_elts, #unused_line_name_elts" ).sortable({
               connectWith: ".connectedSortable",
                 update: function(event, ui) {
-                      creationManager.updateResults();
+                      creationManager.queuePreviewUpdate();
                 },
             }).disableSelection();
 
             // set up selectable list for abbreviations dialog
             $('#line-name-abbrev-list').selectable();
-
-            // step 3 column headers until there are rows to labels
-            $('#abbreviations-table').find('subsection').toggleClass('hidden',  true);
-            $('#name_customization_table').find('subsection').toggleClass('hidden', true);
         }
 
         buildStep2Inputs(): void {
@@ -756,12 +805,17 @@ module CreateLines {
         }
 
         updateAbbreviations(): void {
+
+            //TODO: similar to line properties, detect whether abbreviation matches / values
+            // have changed, then trigger a preview update
+
+            this.queuePreviewUpdate();
         }
 
         updateNameElementChoices(): void {
             var availableElts: LineAttributeDescriptor[], prevNameElts: LineAttributeDescriptor[],
                 newElts: LineAttributeDescriptor[], unusedList: JQuery, unusedChildren: JQuery,
-                namingUnchanged:boolean, self:CreationManager;
+                nameEltsChanged:boolean, self:CreationManager;
             console.log('updating available naming elements');
 
             //build an updated list of available naming elements based on user entries in step 1
@@ -843,15 +897,15 @@ module CreateLines {
             // skip JSON reconstruction / resulting server request if naming elements are the same
             // as before. Note that since the form will never add a naming element
             // automatically, comparing array dimensions is enough
-            namingUnchanged = this.lineNameElements.length === $('#line_name_elts').children().length;
+            nameEltsChanged = this.lineNameElements.length != $('#line_name_elts').children().length;
 
-            if(namingUnchanged) {
-                return;
+            if(nameEltsChanged) {
+                this.namingInputsChanged = true;
             }
-            this.updateResults();
+            this.updateAbbreviations();
         }
 
-        updateResults(): void {
+        updatePreview(): void {
             var self: CreationManager = this;
             //build an updated list of naming elements based on user entries in steps 1 & 2
             this.lineNameElements = [];
@@ -869,6 +923,8 @@ module CreateLines {
             console.log('Color index = ' + this.colorIndex);
 
             this.buildJson();
+
+            $('#step4Label').removeClass('wait');
         }
 
         setLineMetaTypes(metadataTypes:any[]) {
@@ -1002,12 +1058,14 @@ module CreateLines {
 
             // remove selected items from the list
             selectedItems.remove();
-            $('#no-abbrev-options-div').toggleClass('hidden',
+            $('#no-abbrev-options-div').toggleClass('off',
                 abbreviationsList.children('li').length == 0);
+            $('#line-name-abbrev-list').toggleClass('off', true);
 
             console.log('selected abbreviations: ' + selectedAttrs);
 
-            $('#abbreviations-table subsection').toggleClass('hidden', false);
+            // show table header, since there's at least one abbreviation row
+            $('#abbreviations-table').children('.step3_table_heading').removeClass('off');
 
             selectedAttrs.forEach(function(nameElement) {
                 self.insertAbbreviation(nameElement);
