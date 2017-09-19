@@ -1,25 +1,29 @@
-/// <reference path="typescript-declarations.d.ts" />
-/// <reference path="Utl.ts" />
-/// <reference path="Dragboxes.ts" />
-/// <reference path="DataGrid.ts" />
-/// <reference path="EDDGraphingTools.ts" />
-/// <reference path="../typings/d3/d3.d.ts"/>
+import { DataGrid, DataGridSpecBase, DataGridDataCell, DataGridColumnSpec,
+        DataGridTableSpec, DataGridHeaderWidget, DataGridColumnGroupSpec,
+        DataGridHeaderSpec, DataGridOptionWidget, DataGridLoadingCell, DGSelectAllWidget
+        } from "../modules/DataGrid"
+import { Utl } from "../modules/Utl"
+import { Dragboxes } from "../modules/Dragboxes"
+import { EDDGraphingTools } from "../modules/EDDGraphingTools"
+import { StudyBase } from "../modules/Study"
+import * as $ from "jquery"
+import * as d3 from "d3"
+import * as _ from "underscore"
+import "bootstrap-loader"
 
 
-declare var EDDData:EDDData;
-
-namespace StudyDataPage {
+export namespace StudyDataPage {
     'use strict';
 
-    var viewingMode;    // An enum: 'linegraph', 'bargraph', or 'table'
+    var viewingMode: 'linegraph'|'bargraph'|'table';
     var viewingModeIsStale:{[id:string]: boolean};
-    var barGraphMode;    // an enum: 'time', 'line', 'measurement'
+    var barGraphMode: 'time'|'line'|'measurement';
     var barGraphTypeButtonsJQ:JQuery;
 
     export var progressiveFilteringWidget: ProgressiveFilteringWidget;
     var postFilteringAssays:any[];
     var postFilteringMeasurements:any[];
-
+    var eddGraphing: EDDGraphingTools;
     var actionPanelRefreshTimer:any;
     var actionPanelIsInBottomBar:boolean;
     var refresDataDisplayIfStaleTimer:any;
@@ -563,7 +567,7 @@ namespace StudyDataPage {
 
             this.clearIcons.on('click', (ev) => {
                 // Changing the checked status will automatically trigger a refresh event
-                $.each(this.checkboxes || {}, (id: number, checkbox: JQuery) => {
+                $.each(this.checkboxes || {}, (id: string, checkbox: JQuery) => {
                     checkbox.prop('checked', false);
                 });
                 return false;
@@ -720,7 +724,7 @@ namespace StudyDataPage {
         anyFilterSettingsChangedSinceLastInquiry():boolean {
             var changed:boolean = false,
                 currentCheckboxState: ValueToString = {},
-                v: string = $(this.searchBox).val();
+                v: any = $(this.searchBox).val();
             this.anyCheckboxesChecked = false;
 
             this.uniqueValuesOrder.forEach((uniqueId: number): void => {
@@ -1210,9 +1214,57 @@ namespace StudyDataPage {
     }
 
 
+    function _displayLineGraph(): void {
+        $('.exportButton, #tableControlsArea, .tableActionButtons').addClass('off');
+        $('#filterControlsArea').removeClass('off');
+        $('#displayModeButtons .active').removeClass('active');
+        $('#lineGraphButton').addClass('active');
+        queueActionPanelRefresh();
+        viewingMode = 'linegraph';
+        barGraphTypeButtonsJQ.addClass('off');
+        $('#lineGraph').removeClass('off');
+        $('#barGraphByTime, #barGraphByLine, #barGraphByMeasurement, #studyAssaysTable').addClass('off');
+        $('#mainFilterSection').appendTo('#content');
+        queueRefreshDataDisplayIfStale();
+    }
+
+
+    function _displayBarGraph(mode: 'time'|'line'|'measurement'): void {
+        $('.exportButton, #tableControlsArea, .tableActionButtons').addClass('off');
+        $('#filterControlsArea').removeClass('off');
+        $('#displayModeButtons .active').removeClass('active');
+        $('#barGraphButton').add('#' + mode + 'BarGraphButton').addClass('active');
+        queueActionPanelRefresh();
+        viewingMode = 'bargraph';
+        barGraphTypeButtonsJQ.removeClass('off');
+        $('#lineGraph, #studyAssaysTable').addClass('off');
+        $('#barGraphByTime').toggleClass('off', 'time' !== mode);
+        $('#barGraphByLine').toggleClass('off', 'line' !== mode);
+        $('#barGraphByMeasurement').toggleClass('off', 'measurement' !== mode);
+        $('#mainFilterSection').appendTo('#content');
+        queueRefreshDataDisplayIfStale();
+    }
+
+
+    function _displayTable(): void {
+        $(".exportButton, #tableControlsArea, .tableActionButtons").removeClass('off');
+        $("#filterControlsArea").addClass('off');
+        $('#displayModeButtons .active').removeClass('active');
+        $('#dataTableButton').addClass('active');
+        queueActionPanelRefresh();
+        viewingMode = 'table';
+        barGraphTypeButtonsJQ.addClass('off');
+        $('#studyAssaysTable').removeClass('off');
+        $('#lineGraph, #barGraphByTime, #barGraphByLine, #barGraphByMeasurement').addClass('off');
+        makeLabelsBlack(eddGraphing.labels);
+        queueRefreshDataDisplayIfStale();
+        //TODO: enable users to export filtered data from graph
+    }
+
+
     // Called when the page loads.
     export function prepareIt() {
-
+        eddGraphing = new EDDGraphingTools();
         progressiveFilteringWidget = new ProgressiveFilteringWidget();
         postFilteringAssays = [];
         postFilteringMeasurements = [];
@@ -1255,6 +1307,9 @@ namespace StudyDataPage {
                 });
             }
         });
+
+        //set up editable study name
+        new StudyBase.EditableStudyName($('#editable-study-name').get()[0]);
         // This only adds code that turns the other buttons off when a button is made active,
         // and does the same to elements named in the 'for' attributes of each button.
         // We still need to add our own responders to actually do stuff.
@@ -1268,7 +1323,7 @@ namespace StudyDataPage {
             // show assay table by default if there are assays but no assay measurements
             if (_.keys(EDDData.Assays).length > 0 && _.keys(EDDData.AssayMeasurements).length === 0) {
                 //TODO: create prepare it for no data?
-                $('#dataTableButton').click();
+                _displayTable();
                 $('.exportButton').prop('disabled', true);
             } else {
                 $('.exportButton').prop('disabled', false);
@@ -1276,18 +1331,12 @@ namespace StudyDataPage {
         });
 
         $("#dataTableButton").click(function() {
-            viewingMode = 'table';
-            queueActionPanelRefresh();
-            makeLabelsBlack(EDDGraphingTools.labels);
-            updateGraphViewFlag({'buttonElem': "#dataTableButton", 'type': viewingMode,
-                                'study_id': EDDData.currentStudyID});
-            $("#tableControlsArea").removeClass('off');
-            $("#filterControlsArea").addClass('off');
-            $(".tableActionButtons").removeClass('off');
-            barGraphTypeButtonsJQ.addClass('off');
-            queueRefreshDataDisplayIfStale();
-            //TODO: enable users to export filtered data from graph
-            $('.exportButton').removeClass('off');
+            _displayTable();
+            updateGraphViewFlag({
+                'buttonElem': "#dataTableButton",
+                'type': 'table',
+                'study_id': EDDData.currentStudyID
+            });
         });
 
         //click handler for edit assay measurements
@@ -1335,19 +1384,12 @@ namespace StudyDataPage {
 
         // This one is active by default
         $("#lineGraphButton").click(function() {
-            $('.exportButton, #tableControlsArea, .tableActionButtons').addClass('off');
-            $('#filterControlsArea').removeClass('off');
-            queueActionPanelRefresh();
-            viewingMode = 'linegraph';
-            updateGraphViewFlag({'buttonElem': "#lineGraphButton", 'type': viewingMode,
-                                'study_id': EDDData.currentStudyID});
-            barGraphTypeButtonsJQ.addClass('off');
-            $('#lineGraph').removeClass('off');
-            $('#barGraphByTime').addClass('off');
-            $('#barGraphByLine').addClass('off');
-            $('#barGraphByMeasurement').addClass('off');
-            $('#mainFilterSection').appendTo('#content');
-            queueRefreshDataDisplayIfStale();
+            _displayLineGraph();
+            updateGraphViewFlag({
+                'buttonElem': "#lineGraphButton",
+                'type': viewingMode,
+                'study_id': EDDData.currentStudyID
+            });
         });
 
         //one time click event handler for loading spinner
@@ -1364,40 +1406,36 @@ namespace StudyDataPage {
             $('#graphLoading').removeClass('off');
         });
         $("#barGraphButton").click(function() {
-            $('.exportButton, #tableControlsArea, .tableActionButtons').addClass('off');
-            $('#filterControlsArea').removeClass('off');
-            queueActionPanelRefresh();
-            viewingMode = 'bargraph';
-            barGraphTypeButtonsJQ.removeClass('off');
-            $('#lineGraph').addClass('off');
-            $('#barGraphByTime').toggleClass('off', 'time' !== barGraphMode);
-            $('#barGraphByLine').toggleClass('off', 'line' !== barGraphMode);
-            $('#barGraphByMeasurement').toggleClass('off', 'measurement' !== barGraphMode);
-            queueRefreshDataDisplayIfStale();
-            if (barGraphMode === 'measurement') {
-                 updateGraphViewFlag({'buttonElem': '#measurementBarGraphButton', 'type': barGraphMode,
-                                'study_id': EDDData.currentStudyID});
-            }
-            $('#mainFilterSection').appendTo('#content');
+            _displayBarGraph(barGraphMode);
+            updateGraphViewFlag({
+                'buttonElem': '#measurementBarGraphButton',
+                'type': barGraphMode,
+                'study_id': EDDData.currentStudyID
+            });
         });
         $("#timeBarGraphButton").click(function() {
-            barGraphMode = 'time';
-            updateGraphViewFlag({'buttonElem': "#timeBarGraphButton", 'type': barGraphMode,
-                                 'study_id': EDDData.currentStudyID});
-            queueRefreshDataDisplayIfStale();
+            _displayBarGraph(barGraphMode = 'time');
+            updateGraphViewFlag({
+                'buttonElem': "#timeBarGraphButton",
+                'type': barGraphMode,
+                'study_id': EDDData.currentStudyID
+            });
         });
         $("#lineBarGraphButton").click(function() {
-            barGraphMode = 'line';
-            updateGraphViewFlag({'buttonElem':'#lineBarGraphButton', 'type': barGraphMode,
-                                'study_id': EDDData.currentStudyID});
-            queueRefreshDataDisplayIfStale();
+            _displayBarGraph(barGraphMode = 'line');
+            updateGraphViewFlag({
+                'buttonElem':'#lineBarGraphButton',
+                'type': barGraphMode,
+                'study_id': EDDData.currentStudyID
+            });
         });
         $("#measurementBarGraphButton").click(function() {
-            barGraphMode = 'measurement';
-            updateGraphViewFlag({'buttonElem': '#measurementBarGraphButton', 'type': barGraphMode,
-                                'study_id': EDDData.currentStudyID});
-            queueRefreshDataDisplayIfStale();
-            $('#graphLoading').addClass('off');
+            _displayBarGraph(barGraphMode = 'measurement');
+            updateGraphViewFlag({
+                'buttonElem': '#measurementBarGraphButton',
+                'type': barGraphMode,
+                'study_id': EDDData.currentStudyID
+            });
         });
 
         //hides/shows filter section.
@@ -1442,18 +1480,17 @@ namespace StudyDataPage {
         fetchEDDData(onSuccess);
 
         fetchSettings('measurement-' + EDDData.currentStudyID, (data) => {
-            if (data.type === 'linegraph' || data.type === 'table') {
-                $(data.buttonElem).click();
-            } else if (typeof(data.type) === 'undefined')  {
-                return
-            } else if (data.type === 'measurement') {
-                $("#barGraphButton").click();
+            if (typeof(data) !== 'object' || typeof(data.type) === 'undefined') {
+                // do nothing if the parameter is not an object
+                return;
+            } else if (data.type === 'linegraph') {
+                _displayLineGraph();
+            } else if (data.type === 'table') {
+                _displayTable();
             } else {
-                barGraphMode = data.type;
-                $("#barGraphButton").click();
-                $(data.buttonElem).click();
+                _displayBarGraph(data.type);
             }
-            }, []);
+        }, []);
 
         // Set up the Add Measurement to Assay modal
         $("#addMeasurement").dialog({
@@ -1478,9 +1515,9 @@ namespace StudyDataPage {
 
     function updateGraphViewFlag(type) {
         $.ajax('/profile/settings/measurement-' + type.study_id, {
-                'data': $.extend({}, basePayload(), { 'data': JSON.stringify(type) }),
-                'type': 'POST'
-            });
+            'data': $.extend({}, basePayload(), { 'data': JSON.stringify(type) }),
+            'type': 'POST'
+        });
     }
 
     function copyActionButtons() {
@@ -1524,8 +1561,7 @@ namespace StudyDataPage {
 
     function onSuccess(data) {
         EDDData = $.extend(EDDData || {}, data);
-
-        colorObj = EDDGraphingTools.renderColor(EDDData.Lines);
+        colorObj = eddGraphing.renderColor(EDDData.Lines);
 
         progressiveFilteringWidget.prepareFilteringSection();
 
@@ -1691,12 +1727,12 @@ namespace StudyDataPage {
         // Any switch between viewing modes, or change in filtering, is also cause to check the UI
         // in the action panel and make sure it's current.
         queueActionPanelRefresh();
+        $('#graphLoading').addClass('off');
 
         // If the filtering widget claims a change since the last inquiry,
         // then all the viewing modes are stale, no matter what.
         // So we mark them all.
         if (progressiveFilteringWidget.checkRedrawRequired(force)) {
-
             viewingModeIsStale['linegraph'] = true;
             viewingModeIsStale['bargraph-time'] = true;
             viewingModeIsStale['bargraph-line'] = true;
@@ -1705,8 +1741,7 @@ namespace StudyDataPage {
             // Pull out a fresh set of filtered measurements and assays
             var filterResults = progressiveFilteringWidget.buildFilteredMeasurements();
             postFilteringMeasurements = filterResults['filteredMeasurements'];
-            postFilteringAssays = filterResults['filteredAssays'];
-
+            postFilteringAssays = filterResults['filteredAssays']
         // If the filtering widget hasn't changed and the current mode doesn't claim to be stale, we're done.
         } else if (viewingMode == 'bargraph') {
             // Special case to handle the extra sub-modes of the bar graph
@@ -1726,7 +1761,7 @@ namespace StudyDataPage {
                 assaysDataGrid.triggerDataReset();
             }
             viewingModeIsStale['table'] = false;
-            makeLabelsBlack(EDDGraphingTools.labels);
+            makeLabelsBlack(eddGraphing.labels);
         } else {
             remakeMainGraphArea();
             if (viewingMode == 'bargraph') {
@@ -1860,23 +1895,23 @@ namespace StudyDataPage {
             }
 
             if (remakeMainGraphAreaCalls < 1) {
-                EDDGraphingTools.labels.push(label);
+                eddGraphing.labels.push(label);
                 color = colorObj[assay.lid];
                 // update label color to line color
                 $(label).css('color', color);
             } else if ($('#' + line['identifier']).prop('checked')) {
                 // unchecked labels black
-                makeLabelsBlack(EDDGraphingTools.labels);
+                makeLabelsBlack(eddGraphing.labels);
                 // update label color to line color
                 if (color === null || color === undefined) {
                     color = colorObj[assay.lid]
                 }
                 $(label).css('color', color);
             } else {
-                var count = noCheckedBoxes(EDDGraphingTools.labels);
+                var count = noCheckedBoxes(eddGraphing.labels);
                 if (count === 0) {
-                    EDDGraphingTools.nextColor = null;
-                    addColor(EDDGraphingTools.labels, assay.lid)
+                    eddGraphing.nextColor = null;
+                    addColor(eddGraphing.labels, assay.lid)
                 } else {
                     //update label color to black
                     $(label).css('color', 'black');
@@ -1893,7 +1928,7 @@ namespace StudyDataPage {
                 'color': color,
                 'lineName': lineName
             };
-            singleAssayObj = EDDGraphingTools.transformSingleLineItem(dataObj);
+            singleAssayObj = eddGraphing.transformSingleLineItem(dataObj);
             dataSets.push(singleAssayObj);
         });
 
@@ -1902,18 +1937,18 @@ namespace StudyDataPage {
         $('#noData').addClass('off');
 
         remakeMainGraphAreaCalls++;
-        uncheckEventHandler(EDDGraphingTools.labels);
+        uncheckEventHandler(eddGraphing.labels);
 
-        var barAssayObj  = EDDGraphingTools.concatAssays(dataSets);
+        var barAssayObj  = eddGraphing.concatAssays(dataSets);
 
         //data for graphs
         var graphSet = {
-            barAssayObj: EDDGraphingTools.concatAssays(dataSets),
-            create_x_axis: EDDGraphingTools.createXAxis,
-            create_right_y_axis: EDDGraphingTools.createRightYAxis,
-            create_y_axis: EDDGraphingTools.createLeftYAxis,
-            x_axis: EDDGraphingTools.make_x_axis,
-            y_axis: EDDGraphingTools.make_right_y_axis,
+            barAssayObj: eddGraphing.concatAssays(dataSets),
+            create_x_axis: eddGraphing.createXAxis,
+            create_right_y_axis: eddGraphing.createRightYAxis,
+            create_y_axis: eddGraphing.createLeftYAxis,
+            x_axis: eddGraphing.make_x_axis,
+            y_axis: eddGraphing.make_right_y_axis,
             individualData: dataSets,
             assayMeasurements: barAssayObj,
             width: 750,
@@ -1922,19 +1957,19 @@ namespace StudyDataPage {
 
         if (viewingMode == 'linegraph') {
             $('#lineGraph').empty().removeClass('off');
-            var s = EDDGraphingTools.createSvg($('#lineGraph').get(0));
-            EDDGraphingTools.createMultiLineGraph(graphSet, s);
+            var s = eddGraphing.createSvg($('#lineGraph').get(0));
+            eddGraphing.createMultiLineGraph(graphSet, s);
         } else if (barGraphMode == 'time') {
             $('#barGraphByTime').empty().removeClass('off');
-            var s = EDDGraphingTools.createSvg($('#barGraphByTime').get(0));
+            var s = eddGraphing.createSvg($('#barGraphByTime').get(0));
             createGroupedBarGraph(graphSet, s);
         } else if (barGraphMode == 'line') {
             $('#barGraphByLine').empty().removeClass('off');
-            var s = EDDGraphingTools.createSvg($('#barGraphByLine').get(0));
+            var s = eddGraphing.createSvg($('#barGraphByLine').get(0));
             createGroupedBarGraph(graphSet, s);
         } else if (barGraphMode == 'measurement') {
             $('#barGraphByMeasurement').empty().removeClass('off');
-            var s = EDDGraphingTools.createSvg($('#barGraphByMeasurement').get(0));
+            var s = eddGraphing.createSvg($('#barGraphByMeasurement').get(0));
             createGroupedBarGraph(graphSet, s);
         }
     }
@@ -2017,7 +2052,7 @@ namespace StudyDataPage {
             }
         });
         if (sum === 0) {
-             $('#graphLoading').addClass('off');
+            $('#graphLoading').addClass('off');
             $(selector).prepend("<p class=' tooMuchData'>Too many data points to display" +
                 "</p><p  class=' tooMuchData'>Recommend filtering by protocol</p>");
         }
@@ -2064,7 +2099,7 @@ namespace StudyDataPage {
                 'time': 'x',
                 'measurement': 'measurement'
             },
-            numUnits = EDDGraphingTools.howManyUnits(assayMeasurements),
+            numUnits = eddGraphing.howManyUnits(assayMeasurements),
             yRange = [],
             unitMeasurementData = [],
             yMin = [],
@@ -2081,8 +2116,8 @@ namespace StudyDataPage {
                 .entries(assayMeasurements);
 
             var timeMeasurements = _.clone(assayMeasurements);
-            var nestedByTime = EDDGraphingTools.findAllTime(entries);
-            var howManyToInsertObj = EDDGraphingTools.findMaxTimeDifference(nestedByTime);
+            var nestedByTime = eddGraphing.findAllTime(entries);
+            var howManyToInsertObj = eddGraphing.findMaxTimeDifference(nestedByTime);
             var max = Math.max.apply(null, _.values(howManyToInsertObj));
             if (max > 400) {
                 $(typeID[type]).prepend("<p class='noData'>Too many missing data fields. Please filter</p>");
@@ -2090,20 +2125,19 @@ namespace StudyDataPage {
             } else {
                 $('.noData').remove();
             }
-            EDDGraphingTools.insertFakeValues(entries, howManyToInsertObj, timeMeasurements);
+            eddGraphing.insertFakeValues(entries, howManyToInsertObj, timeMeasurements);
         }
         //x axis scale for type
-        x_name = d3.scale.ordinal()
-            .rangeRoundBands([0, graphSet.width], 0.1);
+        x_name = d3.scaleBand().rangeRound([0, graphSet.width]).padding(0.1);
 
         //x axis scale for x values
-        x_xValue = d3.scale.ordinal();
+        x_xValue = d3.scaleBand();
 
         //x axis scale for line id to differentiate multiple lines associated with the same name/type
-        lineID = d3.scale.ordinal();
+        lineID = d3.scaleBand();
 
         // y axis range scale
-        y = d3.scale.linear()
+        y = d3.scaleLinear()
             .range([graphSet.height, 0]);
 
         div = d3.select("body").append("div")
@@ -2128,7 +2162,7 @@ namespace StudyDataPage {
         }
 
         for (var i = 0; i < numUnits; i++) {
-            yRange.push(d3.scale.linear().rangeRound([graphSet.height, 0]));
+            yRange.push(d3.scaleLinear().rangeRound([graphSet.height, 0]));
             unitMeasurementData.push(d3.nest()
                 .key(function (d:any) {
                     return d.y;
@@ -2143,29 +2177,21 @@ namespace StudyDataPage {
 
         if (type === 'x') {
             // nest data by type (ie measurement) and by x value
-            nested = (<any>d3).nest(type)
-                .key(function (d:any) {
-                    return d[type];
-                })
-                .key(function (d:any) {
-                    return parseFloat(d.x);
-                })
+            nested = d3.nest()
+                .key((d: any): string => d[type])
+                .key((d: any): string => d.x)
                 .entries(timeMeasurements);
         } else {
             // nest data by type (ie measurement) and by x value
-            nested = (<any>d3).nest(type)
-                    .key(function (d:any) {
-                        return d[type];
-                    })
-                    .key(function (d:any) {
-                        return parseFloat(d.x);
-                    })
-                    .entries(assayMeasurements);
+            nested = d3.nest()
+                .key((d: any): string => d[type])
+                .key((d: any): string => d.x)
+                .entries(assayMeasurements);
         }
 
 
         //insert y value to distinguish between lines
-        data = EDDGraphingTools.getXYValues(nested);
+        data = eddGraphing.getXYValues(nested);
 
         if (data.length === 0) {
             return svg
@@ -2189,9 +2215,9 @@ namespace StudyDataPage {
 
         x_name.domain(typeNames);
 
-        x_xValue.domain(sortedXvalues).rangeRoundBands([0, x_name.rangeBand()]);
+        x_xValue.domain(sortedXvalues).range([0, x_name.bandwidth()]);
 
-        lineID.domain(yvalueIds).rangeRoundBands([0, x_xValue.rangeBand()]);
+        lineID.domain(yvalueIds).range([0, x_xValue.bandwidth()]);
 
         // create x axis
         graphSet.create_x_axis(graphSet, x_name, svg, type);
@@ -2222,8 +2248,8 @@ namespace StudyDataPage {
 
             // //hide values if there are different time points
             if (type != 'x') {
-                var nestedByTime = EDDGraphingTools.findAllTime(data);
-                var howManyToInsertObj = EDDGraphingTools.findMaxTimeDifference(nestedByTime);
+                var nestedByTime = eddGraphing.findAllTime(data);
+                var howManyToInsertObj = eddGraphing.findMaxTimeDifference(nestedByTime);
                 var max = Math.max.apply(null, _.values(howManyToInsertObj));
                 var graphSvg = $(typeID[type])[0];
 
@@ -2232,7 +2258,7 @@ namespace StudyDataPage {
                     var arects = d3.selectAll(typeID[type] +  ' rect')[0];
                     svgWidth(graphSvg, arects);
                      //get word length
-                    wordLength = EDDGraphingTools.getSum(typeNames);
+                    wordLength = eddGraphing.getSum(typeNames);
                     d3.selectAll(typeID[type] + ' .x.axis text').remove();
                     return svg;
                 } else {
@@ -2277,7 +2303,7 @@ namespace StudyDataPage {
                 .enter()
                 .append("text")
                 .attr("x", function () {
-                    return x_xValue.rangeBand() / 2;
+                    return x_xValue.bandwidth() / 2;
                 })
                 .attr('y', function () {
                     return graphSet.height + 27;
@@ -2311,7 +2337,7 @@ namespace StudyDataPage {
                 })
                 .enter().append("rect")
                 .attr("class", "rect")
-                .attr("width", lineID.rangeBand())
+                .attr("width", lineID.bandwidth())
                 .attr("y", function (d:any) {
                     return y(d.y);
                 })
@@ -2342,7 +2368,7 @@ namespace StudyDataPage {
                         .style("opacity", 0);
                 });
             //get word length
-            wordLength = EDDGraphingTools.getSum(typeNames);
+            wordLength = eddGraphing.getSum(typeNames);
 
             if (wordLength > 90 && type != 'x') {
                d3.selectAll(typeID[type] + ' .x.axis text').remove()
@@ -2390,20 +2416,20 @@ namespace StudyDataPage {
         if($('#' + line['identifier']).prop('checked') && remakeMainGraphAreaCalls === 1) {
             color = line['color'];
             line['doNotChange'] = true;
-            EDDGraphingTools.colorQueue(color);
+            eddGraphing.colorQueue(color);
         }
         if ($('#' + line['identifier']).prop('checked') && remakeMainGraphAreaCalls >= 1) {
             if (line['doNotChange']) {
                color = line['color'];
             } else {
-                color = EDDGraphingTools.nextColor;
+                color = eddGraphing.nextColor;
                 line['doNotChange'] = true;
                 line['color'] = color;
                 //text label next to checkbox
                 var label = $('#' + line['identifier']).next();
                 //update label color to line color
                 $(label).css('color', color);
-                EDDGraphingTools.colorQueue(color);
+                eddGraphing.colorQueue(color);
             }
         } else if ($('#' + line['identifier']).prop('checked') === false && remakeMainGraphAreaCalls > 1 ){
             color = colorObj[assay];
@@ -2703,8 +2729,12 @@ class DataGridSpecAssays extends DataGridSpecBase {
 
     generateAssayNameCells(gridSpec:DataGridSpecAssays, index:string):DataGridDataCell[] {
         var record = EDDData.Assays[index], line = EDDData.Lines[record.lid];
+        $(document).on('click', '.assay-edit-link', function(e) {
+            let index:number = parseInt($(this).attr('dataIndex'), 10);
+            StudyDataPage.editAssay(index);
+        });
         var sideMenuItems = [
-            '<a class="assay-edit-link" onclick="StudyDataPage.editAssay([' + index + '])">Edit Assay</a>',
+            '<a class="assay-edit-link" dataIndex="' + index + '">Edit Assay</a>',
             '<a href="/export?assayId=' + index + '">Export Data as CSV</a>'
         ];
 
@@ -3186,7 +3216,7 @@ class DGDisabledAssaysWidget extends DataGridOptionWidget {
     initialFormatRowElementsForID(dataRowObjects:any, rowID:string):any {
         var assay = EDDData.Assays[rowID];
         if (!assay.active) {
-            $.each(dataRowObjects, (x, row) => $(row.getElement()).addClass('disabledRecord'));
+            $.each(dataRowObjects, (x, row) => { $(row.getElement()).addClass('disabledRecord') });
         }
     }
 }
@@ -3241,7 +3271,7 @@ class DGEmptyAssaysWidget extends DataGridOptionWidget {
     initialFormatRowElementsForID(dataRowObjects:any, rowID:string):any {
         var assay = EDDData.Assays[rowID];
         if (!assay.count) {
-            $.each(dataRowObjects, (x, row) => $(row.getElement()).addClass('emptyRecord'));
+            $.each(dataRowObjects, (x, row) => { $(row.getElement()).addClass('emptyRecord') });
         }
     }
 }
