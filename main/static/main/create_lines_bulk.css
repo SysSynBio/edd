@@ -1,19 +1,11 @@
 /* <!-- http://www.dummies.com/how-to/content/using-the-div-tag-to-create-tables.html */
 
-/**
-
-    General stylistic TODO's:
-    1. Test tweaked insets in common.css in other forms once master is fixed
-    2. Improve styling for step 2 form -- see some initial attempts below
-    3. Experiment with nested table / alternate row coloring type styles to help differentiate
-       sub-sections of step 2 that apple to different meta-data types. Don't make it too complex!
-    4. Center the radio buttons in their columns
-*/
 .bulk-line-table
 {
     display: table;
     width: auto;
     margin-right: auto;
+    margin-bottom: 25px;
 }
 .title
 {
@@ -77,6 +69,11 @@
     padding-top: 8px;
 }
 
+#no-abbrevs-div, #no-custom-elts-div {
+    margin-top: 10px;
+    margin-left: 20px;
+}
+
 /* TODO: unused! fix and use! */
 .odd_row {
     background: linear-gradient(top, rgba(183,253,25,0.5) 100%, rgba(200,200,200,0.1) 100%);
@@ -125,7 +122,7 @@ input[type="radio"] {
 }
 
 .in-use {
-    font-weight: bold;
+    text-decoration: underline;
 }
 
 .not-in-use {
