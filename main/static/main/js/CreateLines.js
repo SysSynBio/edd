@@ -192,10 +192,10 @@ var CreateLines;
                 this.removeFromForm();
             }
             // if the removed row had valid user input, recompute results
+            if (this.rows.length) {
+                this.updateInputState();
+            }
             if (hadValidInput) {
-                if (this.rows.length) {
-                    this.updateInputState();
-                }
                 this.postRemoveCallback(rowIndex, hadValidInput);
             }
         };
@@ -359,7 +359,8 @@ var CreateLines;
         LineAttributeInput.prototype.buildYesComboButton = function () {
             return $('<input type="radio">')
                 .prop('name', this.lineAttribute.jsonId)
-                .val('Yes');
+                .val('Yes')
+                .addClass('property_radio');
         };
         LineAttributeInput.prototype.buildNoComboButton = function () {
             return $('<input type="radio">')
@@ -381,10 +382,11 @@ var CreateLines;
                 combosButton = this.rows[0].find('input:radio[value=Yes]');
             }
             if (comboInputs) {
-                //combosButton.click();
+                combosButton.attr('checked', 'checked');
                 combosButton.attr('disabled', String(!comboInputs));
             }
             else {
+                noCombosButton.attr('checked', 'checked');
             }
             noCombosButton.attr('disabled', String(comboInputs || this.supportsCombinations));
         };

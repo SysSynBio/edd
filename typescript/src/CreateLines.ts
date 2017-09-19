@@ -240,10 +240,10 @@ module CreateLines {
             }
 
             // if the removed row had valid user input, recompute results
+            if(this.rows.length) {
+                this.updateInputState();
+            }
             if(hadValidInput) {
-                if(this.rows.length) {
-                    this.updateInputState();
-                }
                 this.postRemoveCallback(rowIndex, hadValidInput);
             }
         }
@@ -440,7 +440,8 @@ module CreateLines {
         buildYesComboButton(): JQuery {
             return $('<input type="radio">')
                 .prop('name', this.lineAttribute.jsonId)
-                .val('Yes');
+                .val('Yes')
+                .addClass('property_radio');
         }
 
         buildNoComboButton(): JQuery {
@@ -455,7 +456,7 @@ module CreateLines {
              return this.rows.length > 1;
         }
 
-        autoUpdateCombinations () {
+        autoUpdateCombinations() {
             var comboInputs: boolean, combosButton:JQuery, noCombosButton:JQuery;
             comboInputs = this.hasComboInputs();
             noCombosButton = this.rows[0].find('input:radio[value=No]');
@@ -467,11 +468,11 @@ module CreateLines {
             }
 
             if(comboInputs) {
-                //combosButton.click();
+                combosButton.attr('checked', 'checked');
                 combosButton.attr('disabled', String(!comboInputs));
             }
             else {
-                //noCombosButton.click();
+                noCombosButton.attr('checked', 'checked');
             }
 
             noCombosButton.attr('disabled', String(comboInputs || this.supportsCombinations));

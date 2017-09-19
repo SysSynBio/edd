@@ -2,15 +2,13 @@
 {% load staticfiles %}
 
 {% block js_css %}
-<link rel="stylesheet" type="text/css" href="{% static 'main/create_lines_bulk.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'main/create_lines_bulk.css' %}" />
     <link rel="stylesheet" type="text/css" href="{% static 'main/js/lib/jquery-ui/jquery-ui.min.css' %}"/>
-    {{ block.super }}
-    <!-- TODO: template-ize script / stylesheet references -->
-
     <script type="text/javascript" src="{% static 'main/js/lib/jquery-ui/jquery-ui.min.js' %}"></script>
     <script src="{% static 'main/js/EDDAutocomplete.js' %}"></script>
     <script src="{% static 'main/js/CreateLines.js' %}"></script>
     <script type="text/javascript" src="{% static 'main/js/EDDRest.js' %}"></script>
+    {{ block.super }}
 {% endblock js_css %}
 
 {% block body_title %}
@@ -78,7 +76,7 @@
     </div>
     <!-- Step 3 -->
     <div class="pageSection" id="choose_line_names_step">
-        <div class="sectionHead">Step 3: Choose the order of identifying data in line
+        <div class="sectionHead">Step 3: Choose the order of identifying data in generated line
             names:</div>
         <div class="sectionContent">
 
@@ -96,7 +94,8 @@
             </div>
             <div
                     class="step3_subsection">
-                <label for="name_ordering_table">Name Element Order:</label></div>
+                <label for="name_ordering_table">Name Element Order:</label>
+            </div>
             <div class="bulk-line-table" id="name_ordering_table">
                 <div class="step3_table_heading">
                     <div class="bulk_lines_table_cell"><label>Order:</label></div>
@@ -139,6 +138,7 @@
     <div class="pageSection" id="review_step">
             <div id="step4Label" class="sectionHead">Step 4: Review line creation summary</div>
             <div class="sectionContent">
+                <div id="step4-status-div"></div>
                 <div id="indicator"></div>
                 <textarea id="jsonTest"/>
                 <div class="bulk-line-table">
