@@ -11,8 +11,6 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 
 import environ
 
-from psycopg2.extensions import ISOLATION_LEVEL_SERIALIZABLE
-
 
 root = environ.Path(__file__) - 3  # root is two parents up of directory containing base.py
 BASE_DIR = root()
@@ -121,7 +119,6 @@ INSTALLED_APPS = (
     'django_extensions',  # django-extensions in pip
     'rest_framework',  # djangorestframework in pip
     'rest_framework_swagger',
-    'form_utils',  # django-form-utils in pip
     'messages_extends',  # django-messages-extends in pip
     # django-allauth in pip; separate apps for each provider
     'allauth',
@@ -192,15 +189,6 @@ TEMPLATES = [
 DATABASES = {
     'default': env.db(),
 }
-# Prevent non-repeatable and phantom reads, which are possible with default 'read committed'
-# level. The serializable level matches typical developer expectations for how the DB works, and
-# keeps code relatively simple (though at a computational cost, and with a small chance of
-# requiring repeated client requests if unlikely serialization errors occur).
-# Seems unlikely that the costs of greater consistency will be significant issues unless EDD gets
-# very high load, at which point we can consider additional resulting code complexity and
-# development time as justified. Ideally, Django will eventually support READ_ONLY transactions,
-# which we should use by default to help mitigate the computational burden.
-DATABASES['default'].update(OPTIONS={'isolation_level': ISOLATION_LEVEL_SERIALIZABLE})
 
 
 ###################################################################################################

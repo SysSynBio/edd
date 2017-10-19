@@ -6,6 +6,7 @@ import { StudyMetabolicMapChooser } from "../modules/BiomassCalculationUI"
 import { MetabolicMapChooserResult } from "../modules/BiomassCalculationUI"
 import { StudyBase } from "../modules/Study"
 import { EDDAuto } from "../modules/EDDAutocomplete"
+import "bootstrap-loader"
 
 module StudyOverview {
     'use strict';
@@ -194,23 +195,13 @@ module StudyOverview {
 
         $('#helpExperimentDescription').tooltip({
             content: function () {
-                return $(this).prop('title');
+                return $(this).data('popupmenu');
             },
-            position: {my: "left-10 center", at: "right center"},
-            show: null,
-            close: function (event, ui: any) {
-                ui.tooltip.hover(
-                    function () {
-                        $(this).stop(true).fadeTo(400, 1);
-                    },
-                    function () {
-                        $(this).fadeOut("400", function () {
-                            $(this).remove();
-                        })
-                    });
-            }
+            items: '.has-popupmenu',
+            track: true,
+            show: true,
         });
-        
+
         var fileDropZoneHelper = new FileDropZone.FileDropZoneHelpers({
            pageRedirect: 'experiment-description',
            haveInputData: false,

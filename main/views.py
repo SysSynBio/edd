@@ -13,9 +13,8 @@ from django.core.exceptions import PermissionDenied, SuspiciousOperation, Valida
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Count, Prefetch, Q
-from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse, QueryDict
 from django.shortcuts import render, get_object_or_404, redirect
-from django.template import RequestContext
 from django.template.defaulttags import register
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
@@ -49,7 +48,6 @@ from .importer.parser import find_parser
 from .models import (Assay, Attachment, Line, Measurement, MeasurementType, MeasurementValue,
                      Metabolite, MetaboliteSpecies, MetadataType, Protocol, SBMLTemplate, Study,
                      StudyPermission, Update, )
-from .signals import study_modified
 from .solr import StudySearch
 from .tasks import import_table_task
 from .utilities import (
@@ -208,13 +206,14 @@ class StudyDetailBaseView(StudyObjectMixin, generic.DetailView):
     template_name = 'main/study-overview.html'
 
     def get_actions(self, can_write=False):
-        """ Return a dict mapping action names to functions performing the action. These functions
-            may return one of the following values:
-            1. True: indicates a change was made; triggers a study_modified signal and redirects
-                to a GET request
-            2. False: indicates no change was made; triggers no signal and no redirect
+        """
+        Return a dict mapping action names to functions performing the action. These functions
+        may return one of the following values:
+            1. True: indicates a change was made; redirects to a GET request
+            2. False: indicates no change was made; no redirect
             3. HttpResponse instance: the explicit response to return
-            4. view function: another view to handle the request """
+            4. view function: another view to handle the request
+        """
         action_lookup = collections.defaultdict(lambda: self.handle_unknown)
         if can_write:
             action_lookup.update({
@@ -326,8 +325,6 @@ class StudyDetailBaseView(StudyObjectMixin, generic.DetailView):
 
     def post_response(self, request, context, form_valid):
         if form_valid:
-            # signal the change
-            study_modified.send(sender=self.__class__, study=self.object)
             # redirect to the same location to avoid re-submitting forms with back/forward
             return HttpResponseRedirect(request.path)
         return self.render_to_response(context)
@@ -358,7 +355,10 @@ class StudyUpdateView(StudyObjectMixin, generic.edit.BaseUpdateView):
         kwargs = super(StudyUpdateView, self).get_form_kwargs()
         # updated value comes in as 'value'; copy it to field the form expects
         if 'data' in kwargs and 'value' in kwargs['data']:
-            kwargs['data'].update({self.fields[0]: kwargs['data']['value']})
+            data = QueryDict(mutable=True)
+            data.update(kwargs['data'])
+            data.update({self.fields[0]: data['value']})
+            kwargs['data'] = data
         return kwargs
 
     def form_valid(self, form):
@@ -829,12 +829,15 @@ class StudyDetailView(StudyDetailBaseView):
             assay_dict = line_dict['assays'].setdefault(a.id, {
                 'assay': a,
                 'measures': collections.OrderedDict(),
-                })
+            })
             assay_dict['measures'][m.id] = {
                 'measure': m,
                 'form': MeasurementValueFormSet(
-                    instance=m, prefix=str(m.id), queryset=m.measurementvalue_set.order_by('x')),
-                }
+                    instance=m,
+                    prefix=str(m.id),
+                    queryset=m.measurementvalue_set.order_by('x')
+                ),
+            }
         return self.handle_measurement_edit_response(request, lines, measures)
 
     def handle_measurement_edit_response(self, request, lines, measures):
@@ -846,7 +849,6 @@ class StudyDetailView(StudyDetailBaseView):
                 'measures': ','.join(['%s' % m.pk for m in measures]),
                 'study': self.object,
             },
-            context_instance=RequestContext(request),
         )
 
     def handle_measurement_update(self, request, context):

@@ -1,9 +1,9 @@
-/// <reference path="../src/EDDDataInterface.ts" />
 // This file contains various utility classes under the Utl module.
 
+import "../src/EDDDataInterface"
 import * as jQuery from "jquery"
 import "jquery.cookie"
-// This file contains various utility classes under the Utl module.
+
 declare function require(name: string): any;
 //load dropzone module
 var Dropzone = require('dropzone');
@@ -23,7 +23,7 @@ export module Utl {
                 if (compID) {
                     var cRecord = EDDData.MeasurementTypeCompartments[compID];
                     if (cRecord) {
-                        compName = cRecord.sn + ' ';
+                        compName = cRecord.code + ' ';
                     }
                 }
                 var mRecord = EDDData.MetaboliteTypes[measurementRecord.mt];

@@ -2,6 +2,7 @@ import { EDDATDGraphing } from "../modules/AssayTableDataGraphing"
 import { Utl } from "../modules/Utl"
 import { EDDAuto } from "../modules/EDDAutocomplete"
 import { EDDGraphingTools } from "../modules/EDDGraphingTools"
+import "bootstrap-loader"
 declare var ATData: any; // Setup by the server.
 
 // Doing this bullshit because TypeScript/InternetExplorer do not recognize static methods
@@ -1403,7 +1404,8 @@ module EDDTableImport {
                     ['First Column Is...', [
                         ['Time (in hours)', TypeEnum.Timestamp],
                             ['Metadata Name', TypeEnum.Metadata_Name],
-                            ['Measurement Type', TypeEnum.Measurement_Type]
+                            ['Measurement Type', TypeEnum.Measurement_Type],
+                            ['Protein ID', TypeEnum.Protein_Name]
                         ]
                     ]
                 ];
@@ -2069,7 +2071,7 @@ module EDDTableImport {
                         // Transcriptomics: RPKM values
                         value = value.replace(/,/g, '');
                         if (value) {
-                            reassembledData = [[null, value]];
+                            reassembledData.push([null, value]);
                         }
                         return;
                     } else if (pulldown === TypeEnum.Gene_Names) {
