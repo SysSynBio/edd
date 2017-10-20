@@ -1372,6 +1372,10 @@ def study_describe_experiment(request, pk=None, slug=None):
     allow_duplicate_names = request.GET.get(ALLOW_DUPLICATE_NAMES_PARAM, False)
     ignore_ice_related_errors = request.GET.get(IGNORE_ICE_RELATED_ERRORS_PARAM, False)
 
+    options = ExperimentDescriptionOptions(allow_duplicate_names,
+                                           dry_run,
+                                           ignore_ice_related_errors)
+
     # detect the input format
     has_file_type = FILE_TYPE_HEADER in request.META
     file_type = request.META.get(FILE_TYPE_HEADER, '')
@@ -1397,8 +1401,7 @@ def study_describe_experiment(request, pk=None, slug=None):
     try:
         with transaction.atomic(savepoint=False):
             status_code, reply_content = (
-                importer.do_import(request, allow_duplicate_names,
-                                   dry_run, ignore_ice_related_errors, excel_filename=file_name))
+                importer.do_import(request, options, excel_filename=file_name))
         logger.debug('Reply content: %s' % json.dumps(reply_content))
         return JsonResponse(reply_content, status=status_code)
 

@@ -834,6 +834,29 @@ module CreateLines {
             this.insertRow(input, parentDiv);
         }
 
+        // TODO: integrate with button and complete work. Note that list elements used to represent
+        // the labels in the "name element order" subsection should update dynamically based on
+        // user entries here
+        addCustomElt(): void {
+            var table: JQuery, row: JQuery, cell: JQuery;
+            table = $('custom-elements-table');
+            row = $('<div>')
+                .addClass('table-row')
+                .appendTo(table);
+
+            // label cell
+            cell = $('<div>')
+                .addClass('cell')
+                .appendTo(row);
+            $('<input type="text">').appendTo(cell);
+
+            // value cell
+            cell = $('<div>')
+                .addClass('cell')
+                .appendTo(row);
+            $('<input type="text">').appendTo(cell);
+        }
+
         insertRow(input:MultiValueInput, parentDiv:JQuery): void {
             var row: JQuery;
             row = $('<div>')
@@ -980,7 +1003,8 @@ module CreateLines {
         }
 
         updatePreview(): void {
-            var self: CreationManager = this;
+            var self: CreationManager, json: string, csrfToken: string;
+            self = this;
             //build an updated list of naming elements based on user entries in steps 1 & 2. Note
             // that events from the connected lists don't give us enough info to know which element
             // was just changed in line names
@@ -990,6 +1014,13 @@ module CreateLines {
                 self.lineNameElements.push(nameElement);
             });
 
+            // clear preview and return early if insufficient inputs available
+            if(!this.lineNameElements.length) {
+                $('#jsonTest').text('');
+                $('#backEndResponse').text('');
+                return;
+            }
+
             //TODO: remove the color-based indicator and auto-JSON creation here following testing
             var color: string;
             console.log('updating JSON results');
@@ -998,7 +1029,26 @@ module CreateLines {
             this.colorIndex = (this.colorIndex+1) % this.colors.length;
             console.log('Color index = ' + this.colorIndex);
 
-            this.buildJson();
+            json = this.buildJson();
+
+            // submit a query to the back end to compute line / assay names and detect errors
+            // before actually making any changes
+            jQuery.ajax(
+                '../../describe/?DRY_RUN=True', // TODO: path?
+                {
+                    'headers': {'Content-Type' : 'application/json'},
+                    'method': 'POST',
+                    'dataType': 'json',
+                    'data': json,
+                    'processData': false,
+                    'success': (responseJson) => {
+                        $('#backEndResponse').text(responseJson);
+                    },
+                    'error': (jqXHR, textStatus: string, errorThrown: string) => {
+                        $('#backEndResponse').text(textStatus + '\n\n' + errorThrown);
+                    }
+                }
+        );
 
             $('#step4Label').removeClass('wait');
         }
@@ -1228,6 +1278,32 @@ module CreateLines {
         // responsively if there are many, and also to show them in the
         loadAllLineMetadataTypes();
     }
+
+    // using jQuery.  See https://docs.djangoproject.com/en/1.11/ref/csrf/
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // send CSRF header on each AJAX request from this page
+    $.ajaxSetup({
+        beforeSend: function(xhr) {
+            var csrfToken = getCookie('csrftoken');
+            xhr.setRequestHeader('X-CSRFToken', csrfToken);
+        }
+    });
+
 }
 
 $(CreateLines.onDocumentReady);

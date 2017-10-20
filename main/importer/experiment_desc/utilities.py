@@ -427,8 +427,7 @@ class CombinatorialDescriptionInput(object):
         self.naming_strategy.fractional_time_digits = count
 
     def replace_strain_part_numbers_with_pks(self, importer, edd_strains_by_part_number,
-                                             ice_parts_by_number,
-                                             ignore_integer_values=False):
+                                             ice_parts_by_number, ignore_integer_values=False):
         """
         Replaces part-number-based strain entries with pk-based entries and converts any
         single-item strain groups into one-item lists for consistency. Also caches strain

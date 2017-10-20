@@ -164,13 +164,13 @@ services:
       - postgres
       - rabbitmq
       - redis
-      - solr
+      #- solr
     links:
       - postgres
       - rabbitmq
       - redis
       - smtp
-      - solr
+      #- solr
     expose:
       - '8000'
     networks:

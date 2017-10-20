@@ -299,7 +299,7 @@ unset POSTGRES_DUMP_FILE
 unset POSTGRES_DUMP_URL
 
 # Wait for solr to become available
-service_wait solr 8983
+#service_wait solr 8983
 
 if [ $INIT_MIGRATE -eq 1 ]; then
     banner "Managing database migrations …"
