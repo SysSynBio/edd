@@ -16,6 +16,7 @@ from django.utils.translation import ugettext as _
 from io import BytesIO
 from openpyxl import load_workbook
 from pprint import pformat
+from requests import codes
 
 from jbei.rest.clients.ice.api import Strain as IceStrain
 from jbei.rest.clients.ice.utils import make_entry_url
@@ -24,7 +25,7 @@ from main.tasks import create_ice_connection
 # avoiding loading a ton of names to the module by only loading the namespace to constants
 from . import constants
 # TODO: refactor to no longer import each of these individually
-from .constants import (FOUND_PART_NUMBER_DOESNT_MATCH_QUERY, NON_STRAIN_ICE_ENTRY,
+from .constants import (EMPTY_RESULTS, FOUND_PART_NUMBER_DOESNT_MATCH_QUERY, NON_STRAIN_ICE_ENTRY,
                         PART_NUMBER_NOT_FOUND, BAD_REQUEST, INTERNAL_SERVER_ERROR, OK, FORBIDDEN,
                         FORBIDDEN_PART_KEY, GENERIC_ICE_RELATED_ERROR,
                         IGNORE_ICE_RELATED_ERRORS_PARAM, ALLOW_DUPLICATE_NAMES_PARAM, NO_INPUT,
@@ -165,15 +166,17 @@ class ImportErrorSummary(object):
 
 
 class ExperimentDescriptionOptions(object):
-    def __init(self, allow_duplicate_names=_ALLOW_DUPLICATE_NAMES_DEFAULT,
+    def __init__(self, allow_duplicate_names=_ALLOW_DUPLICATE_NAMES_DEFAULT,
                dry_run=_DRY_RUN_DEFAULT,
-               ignore_ice_related_errors=_IGNORE_ICE_RELATED_ERRORS_DEFAULT):
-        self.allow_dupicate_names = allow_duplicate_names
+               ignore_ice_related_errors=_IGNORE_ICE_RELATED_ERRORS_DEFAULT,
+               use_ice_part_numbers=True):
+        self.allow_duplicate_names = allow_duplicate_names
         self.dry_run = dry_run
         self.ignore_ice_related_errors = ignore_ice_related_errors
+        self.use_ice_part_numbers = use_ice_part_numbers
 
 
-class IceLookupStrategy(object):
+class IcePartResolver(object):
     """
     Strain identifier resolution strategy used to resolve ICE part numbers from user input in
     Experiment Description files to existing/new Strain entries in EDD's database. Steps
@@ -197,35 +200,35 @@ class IceLookupStrategy(object):
         ###########################################################################################
         # Note: ideally we'd do this externally to the @atomic block, in the surrounding
         # importer code, but other EDD queries have to precede this one
-        ice_parts_by_number = OrderedDict()
-        unique_part_numbers = self.unique_part_numbers
+        parts_by_ice_id = OrderedDict()
+        unique_ids = self.unique_part_numbers
         importer = self.importer
         options = self.options
         performance = importer.performance
-        unique_part_number_count = len(unique_part_numbers)
+        unique_id_count = len(unique_ids)
 
         # query ICE for UUID's part numbers found in the input file
         # NOTE: important to preserve EDD's ability to function without ICE here, so we need some
         # nontrivial error handling to handle ICE/communication errors while still informing the
         # user about problems that occurred / gaps in data entry
         try:
-            self._query_ice_entries(unique_part_numbers, ice_parts_by_number)
+            self._query_ice_entries(unique_ids, parts_by_ice_id,
+                                    self.options.use_ice_part_numbers)
 
         # handle uncaught errors as a result of ICE communication (e.g.
         # requests.ConnectionErrors that we purposefully avoid catching above since they likely
         # impact all future requests)
         except IOError as err:
-            self._handle_systemic_ice_error(unique_part_numbers, ice_parts_by_number)
-        performance.end_ice_search(len(ice_parts_by_number), unique_part_number_count)
+            self._handle_systemic_ice_error(unique_ids, parts_by_ice_id)
+        performance.end_ice_search(len(parts_by_ice_id), unique_id_count)
 
         # if we've detected one or more systemic ICE-related errors during individual queries for
         # part ID's, send a single error email to admins that aggregates them as determined by
         # error handling in get_ice_entries()
         if importer.errors or importer.has_warning(GENERIC_ICE_RELATED_ERROR):
             self._notify_admins_of_systemic_ice_related_errors(options,
-                                                               unique_part_numbers,
-                                                               ice_parts_by_number)
-
+                                                               unique_ids,
+                                                               parts_by_ice_id)
         if importer.errors:
             return
 
@@ -233,19 +236,20 @@ class IceLookupStrategy(object):
         # Search EDD for existing strains using UUID's queried from ICE
         ###########################################################################################
 
-        # query EDD for Strains by UUID's found in ICE
-        strain_search_count = len(ice_parts_by_number)
-        edd_strains_by_part_number, non_existent_edd_strains = (
-            find_existing_strains(ice_parts_by_number, self))
-        performance.end_edd_strain_search(strain_search_count)
+        # query EDD for Strains by UUID's found in ICE (note some may not have been found)
+        strain_search_count = len(parts_by_ice_id)
+        edd_strains_by_ice_id, non_existent_edd_strains = find_existing_strains(parts_by_ice_id,
+                                                                                self)
+        performance.end_edd_strain_search(strain_search_count, len(edd_strains_by_ice_id))
 
         ###########################################################################################
         # Create any missing strains in EDD's database.
         # Even if this is a dry run, we'll go ahead with caching strains in EDD since they're
         # likely to be used below or referenced again soon.
         ###########################################################################################
-        self.create_missing_strains(non_existent_edd_strains, edd_strains_by_part_number)
-        strains_by_pk = {strain.pk: strain for strain in edd_strains_by_part_number.itervalues()}
+        self.create_missing_strains(non_existent_edd_strains, edd_strains_by_ice_id,
+                                    options.use_ice_part_numbers)
+        strains_by_pk = {strain.pk: strain for strain in edd_strains_by_ice_id.itervalues()}
         performance.end_edd_strain_creation(len(non_existent_edd_strains))
 
         ###########################################################################################
@@ -253,13 +257,13 @@ class IceLookupStrategy(object):
         # to create Line entries in EDD's database
         ###########################################################################################
         for input_set in self.combinatorial_inputs:
-            input_set.replace_strain_part_numbers_with_pks(self, edd_strains_by_part_number,
-                                                           ice_parts_by_number)
+            input_set.replace_ice_ids_with_edd_pks(importer, edd_strains_by_ice_id,
+                                                   parts_by_ice_id)
 
         return strains_by_pk
 
-
-    def create_missing_strains(self, non_existent_edd_strains, edd_strains_by_part_number):
+    def create_missing_strains(self, non_existent_edd_strains, edd_strains_by_ice_id,
+                               use_ice_part_numbers):
         """
         Creates Strain entries from the associated ICE entries for any parts.
 
@@ -283,9 +287,10 @@ class IceLookupStrategy(object):
                 registry_url=make_entry_url(settings.ICE_URL, ice_entry.id)
             )
 
-            edd_strains_by_part_number[ice_entry.part_id] = strain
+            identifier = ice_entry.part_id if use_ice_part_numbers else ice_entry.uuid
+            edd_strains_by_ice_id[identifier] = strain
 
-    def _query_ice_entries(self, part_numbers, part_number_to_part):
+    def _query_ice_entries(self, part_ids, part_id_to_part, use_part_numbers=True):
         """
         Queries ICE for parts with the provided (locally-unique) numbers, logging errors for
         any parts that weren't found into the errors parameter. Note that we're purposefully
@@ -293,20 +298,24 @@ class IceLookupStrategy(object):
         JBEI the odds are still pretty good that a part number is sufficient to uniquely identify
         an ICE entry.
 
-        :param part_numbers: a dictionary whose keys are part numbers to be queried
+        :param part_ids: a dictionary whose keys are ids to be queried
             from ICE. Existing entries will be replaced with the Entries read from ICE, or keys
-            will be removed for those that aren't found in ICE.
+            will be removed for those that aren't found in ICE.  Note that UUIDs, part id's,
+            or numeric primary keys will work, though UUID's are preferred where possible as the
+            only truly unique identifier.
+        :param use_part_numbers: true if input identifiers are ICE part IDs.  Otherwise,
+        consistency checks and related error messages will assume they're UUIDs.
         """
 
         importer = self.importer
         ignore_ice_related_errors = self.options.ignore_ice_related_errors
 
         # return early if there are no parts to query
-        if not part_numbers:
+        if not part_ids:
             return
 
         # get an ICE connection to look up strain UUID's from part number user input
-        ice = create_ice_connection(self._ice_username)
+        ice = create_ice_connection(importer.ice_username)
         # avoid throwing errors if failed to build connection
         if ice is None:
             if ignore_ice_related_errors:
@@ -323,7 +332,7 @@ class IceLookupStrategy(object):
             importer.add_error(
                 category_title=constants.SYSTEMIC_ICE_ERROR_CATEGORY,
                 subtitle=constants.ICE_NOT_CONFIGURED,
-                occurrence_detail=details % {'count': len(part_numbers)}
+                occurrence_detail=details % {'count': len(part_ids)}
             )
             return
 
@@ -333,11 +342,11 @@ class IceLookupStrategy(object):
         # requested to ignore on this attempt
         treat_as_error = not ignore_ice_related_errors
 
-        for local_ice_part_number in part_numbers:
+        for part_id in part_ids:
             # query ICE for this part
             found_entry = None
             try:
-                found_entry = ice.get_entry(local_ice_part_number)
+                found_entry = ice.get_entry(part_id)
 
             # catch only HTTPErrors, which are likely to apply only to a single request/ICE
             # entry.
@@ -360,14 +369,14 @@ class IceLookupStrategy(object):
                     # aggregate errors that are helpful to detect on a per-part basis
                     if not ignore_ice_related_errors:
                         importer.add_error(SINGLE_PART_ACCESS_ERROR_CATEGORY,
-                                           FORBIDDEN_PART_KEY, local_ice_part_number)
+                                           FORBIDDEN_PART_KEY, part_id)
                     continue
                 else:
-                    self._handle_systemic_ice_error(part_numbers, part_number_to_part)
+                    self._handle_systemic_ice_error(part_ids, part_id_to_part)
                     return
 
             if found_entry:
-                part_number_to_part[local_ice_part_number] = found_entry
+                part_id_to_part[part_id] = found_entry
 
                 # for now, only allow strain creation in EDD -- non-strains are not currently
                 # supported. see EDD-239.
@@ -376,28 +385,29 @@ class IceLookupStrategy(object):
                                        found_entry.part_id)
 
                 # double-check for a coding error that occurred during testing. initial test
-                #  parts
-                # had "JBX_*" part numbers that matched their numeric ID, but this isn't
-                # always the
-                # case!
-                if found_entry.part_id != local_ice_part_number:
+                # parts had "JBX_*" part numbers that matched their numeric ID, but this isn't
+                # always the case!
+                if (use_part_numbers and found_entry.part_id != part_id) or (
+                            (not use_part_numbers) and found_entry.uuid != str(part_id)):
+                    actual_id = found_entry.part_id if use_part_numbers else found_entry.uuid
                     logger.error(
-                        "Couldn't locate ICE entry \"%(csv_part_number)s\" "
-                        "(#%(list_position)d in the file) by part number. An ICE entry was "
-                        "found with numeric ID %(numeric_id)s, but its part number "
-                        "(%(part_number)s) didn't match the search part number" % {
-                            'csv_part_number': local_ice_part_number,
-                            'list_position': list_position, 'numeric_id': found_entry.id,
-                            'part_number': found_entry.part_id
+                        "Couldn't locate ICE entry \"%(input_id)s\" "
+                        "(#%(list_position)d in the file). An ICE entry was "
+                        "found by searching for ID %(input_id)s, but its returned identifier "
+                        "(%(actual_id)s) didn't match the input" % {
+                            'input_id': part_id,
+                            'list_position': list_position,
+                            'numeric_id': found_entry.id,
+                            'actual_id':  actual_id,
                         })
                     importer.add_error(INTERNAL_EDD_ERROR_CATEGORY,
                                        FOUND_PART_NUMBER_DOESNT_MATCH_QUERY,
-                                       found_entry.part_id)
+                                       actual_id)
 
             elif treat_as_error:
                 # collect the full set of missing strains rather than failing after the first
                 importer.add_error(SINGLE_PART_ACCESS_ERROR_CATEGORY, PART_NUMBER_NOT_FOUND,
-                                   local_ice_part_number)
+                                   part_id)
 
     def _handle_systemic_ice_error(self, part_numbers, ice_entries):
         """
@@ -462,8 +472,8 @@ class IceLookupStrategy(object):
 
         importer = self.importer
 
-        # return early if no notificatian-worthy errors have occurred
-        if ((not self.has_error(GENERIC_ICE_RELATED_ERROR)) and not self.has_warning(
+        # return early if no notification-worthy errors have occurred
+        if ((not importer.has_error(GENERIC_ICE_RELATED_ERROR)) and not importer.has_warning(
                 GENERIC_ICE_RELATED_ERROR)):
             return
 
@@ -499,7 +509,7 @@ class IceLookupStrategy(object):
             'study_name': importer.study.name,
             'study_url': reverse('main:edd-pk:overview',
                                  kwargs={'pk': importer.study.pk}),
-            'username': importer._ice_username,
+            'username': importer.ice_username,
             'ignore_ice_errors_param': IGNORE_ICE_RELATED_ERRORS_PARAM,
             'ignore_ice_errors_val': options.ignore_ice_related_errors,
             'allow_duplicate_names_param': ALLOW_DUPLICATE_NAMES_PARAM,
@@ -565,7 +575,7 @@ class CombinatorialCreationImporter(object):
         self.performance.end_context_queries()
 
     @property
-    def _ice_username(self):
+    def ice_username(self):
         if self.user:
             return self.user.email
         return None
@@ -640,9 +650,9 @@ class CombinatorialCreationImporter(object):
         else:
             parser = JsonInputParser(protocols_by_pk, line_metadata_types_by_pk,
                                      assay_metadata_types_by_pk)
-            parse_input = stream
+            parse_input = stream.read()
 
-        line_def_inputs = parser.parse(parse_input, self)
+        line_def_inputs = parser.parse(parse_input, self, options)
         self.performance.end_input_parse()
 
         if (not line_def_inputs) and (not self.errors):
@@ -689,14 +699,17 @@ class CombinatorialCreationImporter(object):
         for combo in combinatorial_inputs:
             unique_strain_ids = combo.get_unique_strain_ids(unique_strain_ids)
 
-        # if processing an Experiment Description file, assume strain identifiers are
-        # ICE part numbers that have to be resolved by querying ICE.  Otherwise, assumption
-        # is that they're locally-unique integer pk's for EDD's strain table
-        if unique_strain_ids and use_part_number_identifiers:
-            lookup_strategy = IceLookupStrategy(self,
-                                                unique_strain_ids,
-                                                combinatorial_inputs,
-                                                options)
+        # Resolve ICE part identifiers from the input.  When processing an Experiment Description
+        # file, identifiers be ICE part numbers that have to be resolved by querying ICE. For bulk
+        # line creation, identifiers will be UUID's that may not have to be resolved by querying
+        # ICE if already cached in EDD.  For simplicity, we'll just always query ICE unless we
+        # observe a performance problem.
+        strains_by_pk = {}
+        if unique_strain_ids:
+            lookup_strategy = IcePartResolver(self,
+                                              unique_strain_ids,
+                                              combinatorial_inputs,
+                                              options)
 
             # also updates inputs to use pk's instead of part #'s
             strains_by_pk = lookup_strategy.resolve_strains()
@@ -705,8 +718,6 @@ class CombinatorialCreationImporter(object):
                 status_code = (BAD_REQUEST if self.has_error(PART_NUMBER_NOT_FOUND)
                                else INTERNAL_SERVER_ERROR)
                 return status_code, _build_response_content(self.errors, self.warnings)
-        else:
-            strains_by_pk = {pk: Strain.objects.get(pk) for pk in unique_strain_ids}
 
         ###########################################################################################
         # Compute line/assay names if needed as output for a dry run, or if needed to
@@ -725,12 +736,16 @@ class CombinatorialCreationImporter(object):
             content = {
                 'planned_results': planned_names
             }
-            _build_response_content(self.errors, self.warnings, val=content)
 
             status = OK
             if self.errors and not options.allow_duplicate_names:
                 status = BAD_REQUEST
 
+            elif not planned_names:
+                self.add_error(INTERNAL_EDD_ERROR_CATEGORY, EMPTY_RESULTS)
+                status = codes.internal_server_error
+
+            _build_response_content(self.errors, self.warnings, val=content)
             return status, content
 
         # if we've detected errors before modifying the study, fail before attempting db mods

@@ -17,6 +17,7 @@ from requests import codes
 ###################################################################################################
 # generic errors (apply regardless of input format)
 NO_INPUT = "No line description data were found in the input"
+EMPTY_RESULTS = 'No lines created as a result of the input'
 DUPLICATE_INPUT_LINE_NAMES = 'Duplicate line names in the input'
 EXISTING_LINE_NAMES = 'Input would duplicate existing line names'
 DUPLICATE_INPUT_ASSAY_NAMES = 'Duplicate assay names within the input for a single protocol'
@@ -176,7 +177,7 @@ BAD_GENERIC_INPUT_CATEGORY = 'Invalid values'
 ERROR_PRIORITY_ORDER[BAD_GENERIC_INPUT_CATEGORY] = (
         NO_INPUT,
         INVALID_REPLICATE_COUNT,
-        ZERO_REPLICATES
+        ZERO_REPLICATES,
 )
 
 ##################################
@@ -235,6 +236,7 @@ ERROR_PRIORITY_ORDER[INTERNAL_EDD_ERROR_CATEGORY] = (
     INVALID_PROTOCOL_META_PK,
     PARSE_ERROR,
     UNMATCHED_PART_NUMBER,
+    EMPTY_RESULTS
 )
 
 WARNING_PRIORITY_ORDER = OrderedDict()
@@ -255,8 +257,9 @@ WARNING_PRIORITY_ORDER[INTERNAL_EDD_ERROR_CATEGORY] = (PART_NUMBER_PATTERN_UNMAT
 # Name elements for AutomatedNamingStrategy (used during JSON input implemented for eventual
 # combinatorial line creation GUI).
 ###################################################################################################
-STRAIN_NAME_ELT = 'strain_name'
-REPLICATE_ELT = 'replicate'
+NAME_ELT_STRAIN_NAME = 'strain__name'
+NAME_ELT_REPLICATE_NUM = 'replicate_num'
+REPLICATE_COUNT_ELT = 'replicate_count'
 BASE_NAME_ELT = 'base_name'
 ELEMENTS_SECTION = 'elements'
 CUSTOM_ADDITIONS_SECTION = 'custom_additions'

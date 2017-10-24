@@ -31,7 +31,8 @@ from main.importer.experiment_desc.constants import (INTERNAL_SERVER_ERROR, UNPR
                                                      ALLOW_DUPLICATE_NAMES_PARAM,
                                                      IGNORE_ICE_RELATED_ERRORS_PARAM,
                                                      DRY_RUN_PARAM, INTERNAL_EDD_ERROR_CATEGORY)
-from main.importer.experiment_desc.importer import _build_response_content, ImportErrorSummary
+from main.importer.experiment_desc.importer import (_build_response_content, ImportErrorSummary,
+                                                    ExperimentDescriptionOptions)
 from . import autocomplete, models as edd_models, redis
 from .export.forms import ExportOptionForm, ExportSelectionForm, WorklistForm
 from .export.sbml import SbmlExport
@@ -1372,10 +1373,6 @@ def study_describe_experiment(request, pk=None, slug=None):
     allow_duplicate_names = request.GET.get(ALLOW_DUPLICATE_NAMES_PARAM, False)
     ignore_ice_related_errors = request.GET.get(IGNORE_ICE_RELATED_ERRORS_PARAM, False)
 
-    options = ExperimentDescriptionOptions(allow_duplicate_names,
-                                           dry_run,
-                                           ignore_ice_related_errors)
-
     # detect the input format
     has_file_type = FILE_TYPE_HEADER in request.META
     file_type = request.META.get(FILE_TYPE_HEADER, '')
@@ -1395,6 +1392,11 @@ def study_describe_experiment(request, pk=None, slug=None):
                     status=BAD_REQUEST)
     else:
         logger.info('Parsing request body as JSON input')
+
+    options = ExperimentDescriptionOptions(allow_duplicate_names,
+                                           dry_run,
+                                           ignore_ice_related_errors,
+                                           use_ice_part_numbers=is_excel_file)
 
     # attempt the import
     importer = CombinatorialCreationImporter(study, user)

@@ -12,7 +12,7 @@ from openpyxl.utils.cell import get_column_letter
 from six import string_types
 
 from .constants import (DUPLICATE_ASSAY_METADATA, INVALID_CELL_TYPE, INVALID_REPLICATE_COUNT,
-                        MISSING_REQUIRED_LINE_NAME, PARSE_ERROR,
+                        MISSING_REQUIRED_LINE_NAME, PARSE_ERROR, REPLICATE_COUNT_ELT,
                         PART_NUMBER_PATTERN_UNMATCHED_WARNING, ROWS_MISSING_REPLICATE_COUNT,
                         INVALID_COLUMN_HEADER, UNMATCHED_ASSAY_COL_HEADERS_KEY,
                         MULTIPLE_WORKSHEETS_FOUND, UNSUPPORTED_LINE_METADATA, EMPTY_WORKBOOK,
@@ -25,6 +25,7 @@ from .constants import (DUPLICATE_ASSAY_METADATA, INVALID_CELL_TYPE, INVALID_REP
                         PROTOCOL_TO_ASSAY_METADATA_SECTION, COMBINATORIAL_LINE_METADATA_SECTION,
                         COMMON_LINE_METADATA_SECTION, BASE_NAME_ELT, DELIMETER_NOT_ALLOWED_VALUE)
 from .utilities import AutomatedNamingStrategy, CombinatorialDescriptionInput, NamingStrategy
+from .validators import JsonSchemaValidator
 from jbei.utils import TYPICAL_JBEI_ICE_PART_NUMBER_REGEX
 
 logger = logging.getLogger(__name__)
@@ -400,7 +401,7 @@ class CombinatorialInputParser(object):
 
         self.assay_time_meta_pk = assay_time_type.pk
 
-    def parse(self, input_source, importer):
+    def parse(self, input_source, importer, options):
         raise NotImplementedError()  # require subclasses to implement
 
 
@@ -477,7 +478,7 @@ class ExperimentDescFileParser(CombinatorialInputParser):
 
         self.max_fractional_time_digits = 0
 
-    def parse(self, wb, importer):
+    def parse(self, wb, importer, options):
         logger.warning('In parse(). workbook has %d sheets' % len(wb.worksheets))
 
         if len(wb.worksheets) == 0:
@@ -1172,10 +1173,9 @@ class JsonInputParser(CombinatorialInputParser):
         self.max_fractional_time_digits = 0
         self.parsed_json = None
 
-    def parse(self, stream, importer):
+    def parse(self, stream, importer, options):
 
         combinatorial_inputs = []
-        self.importer = importer
 
         if importer.errors:
             return None
@@ -1191,6 +1191,9 @@ class JsonInputParser(CombinatorialInputParser):
 
         if not parsed_json:
             return None
+
+        validator = JsonSchemaValidator()
+        validator.validate(parsed_json, importer)
 
         max_decimal_digits = 0
 
@@ -1223,7 +1226,8 @@ class JsonInputParser(CombinatorialInputParser):
                     self.assay_time_meta_pk
                 )
                 elements = _copy_to_numeric_elts(naming_elements[ELEMENTS_SECTION])
-                abbreviations = _copy_to_numeric_keys(naming_elements[ABBREVIATIONS_SECTION])
+                abbreviations = _copy_to_numeric_keys(naming_elements.get(ABBREVIATIONS_SECTION,
+                                                                          {}))
 
                 naming_strategy.elements = elements
                 naming_strategy.abbreviations = abbreviations
@@ -1238,13 +1242,16 @@ class JsonInputParser(CombinatorialInputParser):
                 # just pass the JSON as initializer arguments. Won't verify the internal
                 # structure/expected data types, but for starters that's probably a safe bet
                 combo_input = CombinatorialDescriptionInput(
-                    naming_strategy, description=description,
+                    naming_strategy,
+                    use_strain_part_ids=options.use_ice_part_numbers,
+                    description=description,
                     common_line_metadata=common_line_metadata,
                     combinatorial_line_metadata=combinatorial_line_metadata,
                     protocol_to_assay_metadata=protocol_to_assay_metadata,
                     protocol_to_combinatorial_metadata=protocol_to_combinatorial_metadata,
                     **value
                 )
+                combo_input.replicate_count = value.get(REPLICATE_COUNT_ELT, 1)
 
                 # inspect JSON input to find the maximum number of decimal digits in the user input
                 if self.assay_time_meta_pk:
@@ -1274,17 +1281,8 @@ class JsonInputParser(CombinatorialInputParser):
                 self.line_metadata_types_by_pk,
                 self.assay_metadata_types_by_pk,
                 self.protocols_by_pk,
-                self.importer,
+                importer,
             )
-
-        # TODO: verify ICE strains are provided for every input if required
-        # if self.require_strains:
-        #     for combo_input in combinatorial_inputs:
-        #         if not combo_input.combinatorial_strain_id_groups:
-        #             add_parse_error(errors, 'strains required for all lines')
-        #
-        #         elif isinstance(combo_input.combinatorial_strain_id_groups, Sequence):
-        #             for strain_id_group in combo
 
         # consistently use decimal or integer time in assay names based on whether any fractional
         # input was provided
