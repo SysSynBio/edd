@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import json
 from jsonschema import Draft4Validator
 
 """
@@ -27,6 +28,7 @@ functools32==3.2.3.post2
 
 
 class JsonSchemaValidator(object):
+
     def validate(self, input, errors):
         # TODO: continue testing this in support of the combinatorial line creation GUI. This
         # schema allows automated tests to work, but doesn't include many of the items drafted
@@ -34,19 +36,19 @@ class JsonSchemaValidator(object):
         # library doesn't support the spec as advertised.
         schema = {
             "$schema": "http://json-schema.org/draft-04/schema#",
-            'id': 'http://www.jbei.org/schemas/informatics/edd/combinatorial_definition.json',
-            'description': 'Defines a repsesentation for combinatioral line/assay creation by the '
-                           'EDD',
+            #'id': 'http://www.jbei.org/schemas/informatics/edd/combinatorial_definition.json',
+            #'description': 'Defines a repsesentation for combinatioral line/assay creation by
+            # the 'EDD',
             # 'definitions': {
             #     'input': {
             #         'type': 'object',
+            'type': 'object',
             'properties': {
                 #     'oneOf': [
                 # {
-                'base_name': {
-                    'type': 'string',
-                },  # },
-                # {
+                # 'base_name': {
+                #     'type': 'string',
+                # },
                 #     'name_elements': {
                 #         'type': 'object',
                 #         'properties': {
@@ -78,39 +80,55 @@ class JsonSchemaValidator(object):
                 # NOTE: 'description' as in our models is a reserved keyword for jsonschema
                 'desc': {
                     'type': 'string',
-                }, 'is_control': {
+                },
+                'is_control': {
                     'type': 'array',
                     # TODO: implication is that this should work, but no specific examples found
                     #  yet that use 'boolean' for 'items'/using jsonschema library
                     # 'items': 'boolean',
 
                     'uniqueItems': True, 'maxItems': 2,
-                }, 'combinatorial_strain_id_groups': {
-                    'type': 'array', 'items': [{'$ref': '#/definitions/strain_id'},
-                                               {'$ref': '#/definitions/strain_id_group'}]
-                }, 'replicate_count': {
+                },
+                'combinatorial_strain_id_groups': {
+                    'type': 'array',
+                    'items': [{'$ref': '#/definitions/strain_id'},
+                              {'$ref': '#/definitions/strain_id_group'}]
+                },
+                'replicate_count': {
                     'type': 'integer', 'minimum': 1,
-                }, 'common_line_metadata': {
-                    'type': 'object', 'additionalProperties': {
+                },
+                'name_elements': {
+                    'type': 'object',
+                    'properties': {
+                        'elements': {
+                            'type': 'array',
+                            'items': {
+                                'type': ['number', 'string'],
+                            }
+                         },
+                    },
+                    'additionalProperties': {
+                        'type': 'array',
+                    }
+                },
+                'common_line_metadata': {
+                    'type': 'object',
+                    'additionalProperties': {
                         'type': 'array',
                     }
                 }, 'combinatorial_line_metadata': {
-                    'type': 'object', 'additionalProperties': {
+                    'type': 'object',
+                    'additionalProperties': {
                         'type': 'array',
+                        'items': {
+                            'type': ['number', 'string'],
+                        }
                     }
                 }, 'protocol_to_assay_metadata': {
                     "$ref": "#/definitions/protocol_to_assay_metadata_map"
                 },  # 'protocol_to_combinatorial_metadata': {
                 #     "$ref": "#/definitions/protocol_to_assay_metadata_map"
                 # },
-                'contact': {
-                    'type': 'string'
-                }, 'experimenter': {
-                    'type': 'string'
-                }, 'carbon_source': {
-                    'type': 'integer'
-                },
-                #             'additionalProperties': False, #},  #
 
                 # 'protocol_to_assay_metadata_map': {
                 #     'type': 'object',
@@ -129,12 +147,17 @@ class JsonSchemaValidator(object):
 
                 # },
                 #     },
-            }, 'additionalProperties': False,  # TODO: not being applied!!
+            },
+            'required': ['combinatorial_line_metadata', 'common_line_metadata',
+                         'name_elements'],
+            'additionalProperties': False,
             'definitions': {
                 'strain_id': {
-                    'type': ['integer', 'string'],
-                }, 'strain_id_group': {
-                    'type': 'array', 'items': {'$ref': '#/definitions/strain_id'},
+                    'type': ['string'],
+                },
+                'strain_id_group': {
+                    'type': 'array',
+                    'items': {'$ref': '#/definitions/strain_id'},
                     'line_metadata_map': {
                         'type': 'object', 'additionalProperties': {  # metadata-specific values
                             'oneOf': [  # metadata values list (or single item)
@@ -159,6 +182,32 @@ class JsonSchemaValidator(object):
 
         }
 
+        # schema = {
+        #     'name_elements': {
+        #             'type': 'object',
+        #             'properties': {
+        #                 'elements': {
+        #                     'type': 'array',
+        #                     'items': {
+        #                         'type': 'number',
+        #                     }
+        #                  },
+        #             },
+        #             'additionalProperties': False
+        #         },
+        #         'common_line_metadata': {
+        #             'type': 'object', 'additionalProperties': {
+        #                 'type': 'array',
+        #                 'items':
+        #             }
+        #         }, 'combinatorial_line_metadata': {
+        #             'type': 'object', 'additionalProperties': {
+        #                 'type': 'array',
+        #             }
+        #         }
+        # }
+
+
         # try to validate the JSON input against the schema (essentially verifies formatting /
         # non-key datatypes only)
         # try:
@@ -166,9 +215,17 @@ class JsonSchemaValidator(object):
         validator = Draft4Validator(schema)
         validator.validate(input)
         validation_errors = validator.iter_errors(input)
+
+        errors_count = 0
+
         for err in validation_errors:
-            print(str(err))
-            self.add_parse_error(errors, err.message, '.'.join(list(err.absolute_path)))
+            print(str(err.relative_schema_path) + ': "' + str(err.validator_value) + '"' + str(
+                err.message))
+            errors_count += 1
+            #errors.add( err.message, '.'.join(list(err.absolute_path)))
+
+        if not errors_count:
+            print('No validation errors!')
 
         # jsonschema.validate(parsed_json, schema)
         # except ValidationError as v_err:

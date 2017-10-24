@@ -1,8 +1,10 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
+import collections
 import copy
 import logging
+import uuid
 from collections import defaultdict, OrderedDict, Sequence
 
 from arrow import utcnow
@@ -14,7 +16,7 @@ from main.models import Strain, MetadataType, Line, Assay
 from .constants import (INVALID_ASSAY_META_PK, INVALID_AUTO_NAMING_INPUT, INVALID_LINE_META_PK,
                         INVALID_PROTOCOL_META_PK, NON_UNIQUE_STRAIN_UUIDS, SUSPECTED_MATCH_STRAINS,
                         UNMATCHED_PART_NUMBER, INTERNAL_EDD_ERROR_CATEGORY, ZERO_REPLICATES,
-                        BAD_GENERIC_INPUT_CATEGORY, STRAIN_NAME_ELT, REPLICATE_ELT)
+                        BAD_GENERIC_INPUT_CATEGORY, NAME_ELT_STRAIN_NAME, NAME_ELT_REPLICATE_NUM)
 
 
 logger = logging.getLogger(__name__)
@@ -234,12 +236,12 @@ class AutomatedNamingStrategy(NamingStrategy):
         self.assay_metadata_types_by_pk = assay_metadata_types_by_pk
         self.assay_time_metadata_type_pk = assay_time_metadata_type_pk
 
-        valid_items = [STRAIN_NAME_ELT, REPLICATE_ELT, ]
+        valid_items = [NAME_ELT_STRAIN_NAME, NAME_ELT_REPLICATE_NUM, ]
         valid_items.extend(pk for pk in self.line_metadata_types_by_pk.iterkeys())
         self._valid_items = valid_items
 
     def names_contain_strains(self):
-        return STRAIN_NAME_ELT in self.elements
+        return NAME_ELT_STRAIN_NAME in self.elements
 
     @property
     def valid_items(self, valid_items):
@@ -273,15 +275,15 @@ class AutomatedNamingStrategy(NamingStrategy):
         line_name = None
         for field_id in self.elements:
             append_value = ''
-            if STRAIN_NAME_ELT == field_id:
+            if NAME_ELT_STRAIN_NAME == field_id:
                 strain_names_list = self._build_strains_names_list(line_strain_ids, strains_by_pk)
                 abbreviated_strains = [
-                    self._get_abbrev(STRAIN_NAME_ELT, strain_name)
+                    self._get_abbrev(NAME_ELT_STRAIN_NAME, strain_name)
                     for strain_name in strain_names_list
                 ]
                 append_value = self.multivalue_separator.join(abbreviated_strains)
 
-            elif REPLICATE_ELT == field_id:
+            elif NAME_ELT_REPLICATE_NUM == field_id:
                 # NOTE: passing raw number causes a warning
                 append_value = str(replicate_num)
             else:
@@ -350,7 +352,8 @@ class CombinatorialDescriptionInput(object):
     Defines the set of inputs required to combinatorially create Lines and Assays for a Study.
     """
 
-    def __init__(self, naming_strategy, description=None, is_control=[False],
+    def __init__(self, naming_strategy, use_strain_part_ids=False, description=None,
+                 is_control=[False],
                  combinatorial_strain_id_groups=[], replicate_count=1, common_line_metadata={},
                  combinatorial_line_metadata=defaultdict(list), protocol_to_assay_metadata={},
                  protocol_to_combinatorial_metadata={}):
@@ -390,6 +393,7 @@ class CombinatorialDescriptionInput(object):
 
         # keeping state in these values, want to copy instead of using references
         self.is_control = copy.copy(is_control)
+
         # sequences of ICE part ID's readable by users
         self.combinatorial_strain_id_groups = copy.copy(combinatorial_strain_id_groups)
         self.replicate_count = replicate_count
@@ -426,36 +430,37 @@ class CombinatorialDescriptionInput(object):
     def fractional_time_digits(self, count):
         self.naming_strategy.fractional_time_digits = count
 
-    def replace_strain_part_numbers_with_pks(self, importer, edd_strains_by_part_number,
-                                             ice_parts_by_number,
-                                             ignore_integer_values=False):
+    def replace_ice_ids_with_edd_pks(self, importer, edd_strains_by_ice_id, ice_parts_by_id,
+                                     ignore_integer_values=False):
         """
         Replaces part-number-based strain entries with pk-based entries and converts any
         single-item strain groups into one-item lists for consistency. Also caches strain
         references for future use by this instance on the assumption that they are not going
         to change.
         """
-        for group_index, part_number_list in enumerate(self.combinatorial_strain_id_groups):
-            if not isinstance(part_number_list, Sequence):
-                part_number_list = [part_number_list]
-                self.combinatorial_strain_id_groups[group_index] = part_number_list
+        logger.debug('pre-replacement strain ids: %s' % self.combinatorial_strain_id_groups)
+        for group_index, ice_id_list in enumerate(self.combinatorial_strain_id_groups):
+            if isinstance(ice_id_list, basestring):
+                ice_id_list = [ice_id_list]
+                self.combinatorial_strain_id_groups[group_index] = ice_id_list
 
-            for part_index, part_number in enumerate(part_number_list):
-                if ignore_integer_values:
-                    if isinstance(part_number, int):
-                        continue
-                strain = edd_strains_by_part_number.get(part_number, None)
+            for part_index, ice_id in enumerate(ice_id_list):
+                strain = edd_strains_by_ice_id.get(ice_id, None)
                 if strain:
-                    part_number_list[part_index] = strain.pk
+                    logger.debug('Found strain with pk %d' % strain.pk)  # TODO: remove
+                    ice_id_list[part_index] = strain.pk
 
                 # Do an efficient double-check for consistency with complex surrounding code:
-                # if part number is present in input, but *was* found in ICE, this is a
+                # if ICE identifier is present in input, but *was* found in ICE, this is a
                 # coding/maintenance error in the surrounding code. Parts NOT found in ICE
                 # should already have resulted in error/warning messages
                 # during the preceding ICE queries, and we don't need to track two errors for
                 # the same problem.
-                elif part_number in ice_parts_by_number:
-                    importer.add_error(UNMATCHED_PART_NUMBER, part_number)
+                elif ice_id in ice_parts_by_id:
+                    importer.add_error(UNMATCHED_PART_NUMBER, ice_id)
+        logger.debug('post-replacement strain ids: %s' % self.combinatorial_strain_id_groups)
+        logger.debug('ice_parts_by_id: %s' % ice_parts_by_id)  # TODO: remove debug stmts
+        logger.debug('edd_strains_by_ice_id: %s' % edd_strains_by_ice_id)
 
     def get_unique_strain_ids(self, unique_strain_ids=()):
         """
@@ -463,7 +468,7 @@ class CombinatorialDescriptionInput(object):
         adding in any unique values in the parameter. Note that the type of identifier in use (
         e.g. pk, part id, uuid) depends on client code.
         :param unique_strain_ids: a list of input identifiers that will be merged with unique 
-        identifiers from this CominatorialDescriptionInput
+        identifiers from this CombinatorialDescriptionInput
 
         :return: a new iterable of unique strain identifiers
         """
@@ -706,7 +711,7 @@ class CombinatorialDescriptionInput(object):
                                 line_metadata,
                                 visitor
                             )
-                    # if only making combinatiors of a single metadata type inner loop above never
+                    # if only making combinations of a single metadata type inner loop above never
                     # visits; do it here
                     if len(self.combinatorial_line_metadata) == 1:
                         self._visit_new_lines_and_assays(study, strains_by_pk, line_strain_ids,
@@ -843,19 +848,21 @@ class CombinatorialCreationPerformance(object):
         now = utcnow()
         self.ice_search_delta = now - self._subsection_start_time
         self._subsection_start_time = now
-        logger.info('Done with ICE search for %(found_count)d of %(total_count)d entries in '
+        logger.info('Done with ICE search. Found %(found_count)d of %(total_count)d entries in '
                     '%(seconds)0.3f seconds' % {
                         'found_count': found_count,
                         'total_count': total_count,
                         'seconds': self.ice_search_delta.total_seconds(), })
 
-    def end_edd_strain_search(self, strain_count):
+    def end_edd_strain_search(self, search_strain_count, found_strain_count):
         now = utcnow()
         self.edd_strain_search_delta = now - self._subsection_start_time
         self._subsection_start_time = now
-        logger.info('Done with EDD search for %(strain_count)d strains in %(seconds)0.3f seconds' %
+        logger.info('Done with EDD search.  Found local cache for %(found_count)d of '
+                    '%(search_count)d ICE strains in %(seconds)0.3f seconds' %
                     {
-                        'strain_count': strain_count,
+                        'found_count': found_strain_count,
+                        'search_count': search_strain_count,
                         'seconds': self.edd_strain_search_delta.total_seconds(),
                     })
 
@@ -883,7 +890,7 @@ class CombinatorialCreationPerformance(object):
                     self.total_time_delta.total_seconds())
 
 
-def find_existing_strains(ice_parts_by_number, importer):
+def find_existing_strains(parts_by_ice_id, importer):
     """
     Directly queries EDD's database for existing Strains that match the UUID in each ICE entry.
     To help with database curation, for unmatched strains, the database is also searched for
@@ -894,10 +901,10 @@ def find_existing_strains(ice_parts_by_number, importer):
     which this one is derived uses EDD's REST API to avoid having to have database credentials.
 
     :param edd: an authenticated EddApi instance
-    :param ice_parts_by_number: a list of Ice Entry objects for which matching EDD Strains should
+    :param parts_by_ice_id: a list of Ice Entry objects for which matching EDD Strains should
     be located
-    :return: two collections; the first is a dict mapping Part ID to EDD Strain, the second is a
-        list of ICE strains not found to have EDD Strain entries
+    :return: two collections; the first is a dict mapping ICE identifiers to existing EDD Strains,
+    the second is a list of ICE strains not found to have EDD Strain entries
     """
     # TODO: following EDD-158, consider doing a bulk query here instead of tiptoeing around strain
     # curation issues
@@ -906,7 +913,7 @@ def find_existing_strains(ice_parts_by_number, importer):
     existing = OrderedDict()
     not_found = []
 
-    for ice_entry in ice_parts_by_number.itervalues():
+    for ice_entry in parts_by_ice_id.itervalues():
         # search for the strain by registry ID. Note we use search instead of .get() until the
         # database consistently contains/requires ICE UUID's and enforces uniqueness
         # constraints for them (EDD-158).
@@ -915,7 +922,9 @@ def find_existing_strains(ice_parts_by_number, importer):
         if found_strains_qs:
             if len(found_strains_qs) == 1:
                 edd_strain = found_strains_qs.get()
-                existing[ice_entry.part_id] = edd_strain
+                identifier = (ice_entry.part_id if importer.options.use_ice_part_numbers else
+                              ice_entry.uuid)
+                existing[identifier] = edd_strain
             else:
                 importer.add_error(INTERNAL_EDD_ERROR_CATEGORY, NON_UNIQUE_STRAIN_UUIDS,
                                    ice_entry.uuid, '')

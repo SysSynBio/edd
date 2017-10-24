@@ -34,7 +34,8 @@ from main.importer.experiment_desc.constants import (
     UNPREDICTED_ERROR,
     UNSUPPORTED_FILE_TYPE,
 )
-from main.importer.experiment_desc.importer import _build_response_content, ImportErrorSummary
+from main.importer.experiment_desc.importer import (_build_response_content, ImportErrorSummary,
+                                                    ExperimentDescriptionOptions)
 from . import autocomplete, models as edd_models, redis
 from .export.forms import ExportOptionForm, ExportSelectionForm, WorklistForm
 from .export.sbml import SbmlExport
@@ -1411,17 +1412,17 @@ def study_describe_experiment(request, pk=None, slug=None):
 
     logger.info('Parsing file')
 
+    options = ExperimentDescriptionOptions(allow_duplicate_names,
+                                           dry_run,
+                                           ignore_ice_related_errors,
+                                           use_ice_part_numbers=is_excel_file)
+
     # attempt the import
     importer = CombinatorialCreationImporter(study, user)
     try:
         with transaction.atomic(savepoint=False):
-            status_code, reply_content = importer.do_import(
-                file,
-                allow_duplicate_names,
-                dry_run,
-                ignore_ice_related_errors,
-                excel_filename=filename
-            )
+            status_code, reply_content = (
+                importer.do_import(request, options, excel_filename=file_name))
         logger.debug('Reply content: %s' % json.dumps(reply_content))
         return JsonResponse(reply_content, status=status_code)
 
