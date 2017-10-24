@@ -2387,6 +2387,26 @@ module EDDTableImport {
 
             // enable autocomplete on statically defined fields
             EDDAuto.BaseAuto.initPreexisting($('#typeDisambiguationStep'));
+
+            // set autofill callback for compartment/units
+            ['.autocomp_compartment', '.autocomp_unit'].forEach((selector) => {
+                var table: JQuery = $('#disambiguateMeasurementsTable');
+                // when an autocomplete changes
+                table.on('autochange', selector, (ev, visibleValue, hiddenValue) => {
+                    var visibleInput: JQuery = $(ev.target);
+                    // mark the changed autocomplete as user-set
+                    visibleInput.data('userSetValue', true);
+                    // then fill in all following autocompletes of same type
+                    // until one is user-set
+                    visibleInput.closest('tr').nextAll('tr').find(selector).each((i, element) => {
+                        var following = $(element);
+                        if (following.data('userSetValue')) {
+                            return false;
+                        }
+                        following.val(visibleValue).next('input').val(hiddenValue);
+                    });
+                });
+            });
         }
 
         setAllInputsEnabled(enabled: boolean) {
@@ -2424,11 +2444,8 @@ module EDDTableImport {
                     .prop('selected', true);
                 currentAssays = ATData.existingAssays[masterP] || [];
                 currentAssays.forEach((id: number): void => {
-                    var assay = EDDData.Assays[id],
-                        line = EDDData.Lines[assay.lid],
-                        protocol = EDDData.Protocols[assay.pid];
-                    $('<option>').appendTo(assayIn).val('' + id).text([
-                        line.name, protocol.name, assay.name].join('-'));
+                    var assay = EDDData.Assays[id];
+                    $('<option>').appendTo(assayIn).val('' + id).text(assay.name);
                 });
                 // Always reveal this, since the default for the Assay pulldown is always 'new'.
                 $('#masterLineSpan').removeClass('off');
@@ -2719,8 +2736,10 @@ module EDDTableImport {
             // Create the table
             ///////////////////////////////////////////////////////////////////////////////////////
 
-            //if there's already a table, remove it
-            if ($('#matchedAssaysTable')) { $('#matchedAssaysTable').remove()}
+            // if there's already a table, remove it
+            $('#matchedAssaysTable').remove();
+            // remove rows of disambiguation table
+            $('#disambiguateAssaysTable tbody').find('tr').remove();
 
             tableMatched = <HTMLTableElement>$('<table>')
                 .attr({ 'id': 'matchedAssaysTable', 'cellspacing': 0 })
@@ -3448,6 +3467,7 @@ module EDDTableImport {
                 container:$(this.row.insertCell()),
                 cache:MeasurementDisambiguationRow.compAutoCache
             });
+            this.compAuto.visibleInput.addClass('autocomp_compartment');
             this.typeAuto = new EDDAuto.GenericOrMetabolite({
                 container:$(this.row.insertCell()),
                 cache:MeasurementDisambiguationRow.metaboliteAutoCache
@@ -3456,11 +3476,11 @@ module EDDTableImport {
                 container:$(this.row.insertCell()),
                 cache:MeasurementDisambiguationRow.unitAutoCache
             });
+            this.unitsAuto.visibleInput.addClass('autocomp_unit');
 
             // create autocompletes
             [this.compAuto, this.typeAuto, this.unitsAuto].forEach(
                 (auto: EDDAuto.BaseAuto): void => {
-                    var cell: JQuery = $(this.row.insertCell()).addClass('disamDataCell');
                     auto.container.addClass('disamDataCell');
                     auto.visibleInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
                     auto.hiddenInput.addClass(TypeDisambiguationStep.STEP_4_USER_INPUT_CLASS);
@@ -3525,73 +3545,31 @@ module EDDTableImport {
             var protocol: number;
             selections = {
                 lineID: 'new',
-                assayID: 'named_or_new'
+                assayID: 'named_or_new',
+                match: false
             };
             highest = 0;
             // ATData.existingAssays is type {[index: string]: number[]}
             protocol = EDDTableImport.selectMajorKindStep.masterProtocol;
             assays = ATData.existingAssays[protocol] || [];
             assays.every((id: number, i: number): boolean => {
-                var assay: AssayRecord, line: LineRecord, protocol: any, name: string;
-                assay = EDDData.Assays[id];
-                line = EDDData.Lines[assay.lid];
-                protocol = EDDData.Protocols[assay.pid];
-                name = [line.name, protocol.name, assay.name].join('-');
-                if (assayOrLine.toLowerCase() === name.toLowerCase()) {
+                var assay: AssayRecord = EDDData.Assays[id];
+                if (assayOrLine.toLowerCase() === assay.name.toLowerCase()) {
                     // The full Assay name, even case-insensitive, is the best match
                     selections.assayID = id;
                     return false;  // do not need to continue
-                } else if (highest < 0.8 && assayOrLine === assay.name) {
-                    // An exact-case match with the Assay name fragment alone is second-best.
-                    highest = 0.8;
-                    selections.assayID = id;
-                } else if (highest < 0.7 && assay.name.indexOf(assayOrLine) >= 0) {
-                    // Finding the whole string inside the Assay name fragment is pretty good
-                    highest = 0.7;
-                    selections.assayID = id;
-                } else if (highest < 0.6 && line.name.indexOf(assayOrLine) >= 0) {
-                    // Finding the whole string inside the originating Line name is good too.
-                    // It means that the user may intend to pair with this Assay even though the
-                    // Assay name is different.
-                    highest = 0.6;
-                    selections.assayID = id;
-                } else if (highest < 0.4 &&
-                    (new RegExp('(^|\\W)' + assay.name + '(\\W|$)', 'g')).test(assayOrLine)) {
-                    // Finding the Assay name fragment within the whole string, as a whole word,
-                    // is our last option.
-                    highest = 0.4;
-                    selections.assayID = id;
-                } else if (highest < 0.3 && currentIndex === i) {
-                    // If all else fails, choose Assay of current index in sorted order.
-                    highest = 0.3;
-                    selections.assayID = id;
                 }
                 return true;
             });
             // Now we repeat the practice, separately, for the Line pulldown.
             highest = 0;
             // ATData.existingLines is type {id: number; n: string;}[]
-            (ATData.existingLines || []).every((line: any, i: number): boolean => {
-                if (assayOrLine === line.n) {
-                    // The Line name, case-sensitive, is the best match
+            (ATData.existingLines || []).every((line: any): boolean => {
+                if (assayOrLine.toLowerCase() === line.n.toLowerCase()) {
+                    // The Line name, case-insensitive, is the best match
                     selections.lineID = line.id;
                     selections.name = line.n;
                     return false;  // do not need to continue
-                } else if (highest < 0.8 && assayOrLine.toLowerCase() === line.n.toLowerCase()) {
-                    // The same thing case-insensitive is second best.
-                    highest = 0.8;
-                    selections.lineID = line.id;
-                    selections.name = line.n;
-                } else if (highest < 0.7 && assayOrLine.indexOf(line.n) >= 0) {
-                    // Finding the Line name within the string is odd, but good.
-                    highest = 0.7;
-                    selections.lineID = line.id;
-                    selections.name = line.n;
-                } else if (highest < 0.6 && line.n.indexOf(assayOrLine) >= 0) {
-                    // Finding the string within the Line name is also good.
-                    highest = 0.6;
-                    selections.lineID = line.id;
-                    selections.name = line.n;
                 }
                 return true;
             });
