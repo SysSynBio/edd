@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import json
+from builtins import str
 from jsonschema import Draft4Validator
 
 """
@@ -19,7 +20,7 @@ Also worth noting that a supporing Python 3.2 library seems to have gotten pulle
 requirements by jsonschema (which claims to support Python 2 and 3).  Consider untangling all this
 later...for now, just don't import/use this code.
 
-Early testing of this version was done against the following requirements (purposefully omitted 
+Early testing of this version was done against the following requirements (purposefully omitted
 from EDD's requirements.txt for now):
 
 jsonschema==2.5.1

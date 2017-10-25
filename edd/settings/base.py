@@ -28,7 +28,7 @@ if env('SECRET_KEY', default=DOCKER_SENTINEL) is DOCKER_SENTINEL:
 # Custom EDD-defined configuration options
 ###################################################################################################
 
-EDD_VERSION_NUMBER = env('EDD_VERSION', default='2.1.0')
+EDD_VERSION_NUMBER = env('EDD_VERSION', default='2.1.1')
 
 # Optionally alter the UI to make a clear distinction between deployment environments (e.g. to
 # help prevent developers from accidentally altering data in production). Any value that starts
@@ -106,6 +106,9 @@ USE_X_FORWARDED_HOST = True
 
 LOGIN_REDIRECT_URL = '/'
 
+# Default 1000; limits number of parameters in requests. None disables the limit.
+DATA_UPLOAD_MAX_NUMBER_FIELDS = None
+
 # Application definition
 INSTALLED_APPS = (
     'django.contrib.admin',
@@ -118,7 +121,8 @@ INSTALLED_APPS = (
     'django.contrib.postgres',
     'django_extensions',  # django-extensions in pip
     'rest_framework',  # djangorestframework in pip
-    'rest_framework_swagger',
+    'rest_framework_swagger',  # django-rest-swagger in pip
+    'django_filters',  # django-filter in pip
     'messages_extends',  # django-messages-extends in pip
     # django-allauth in pip; separate apps for each provider
     'allauth',
@@ -230,6 +234,10 @@ REST_FRAMEWORK = {
     ),
     # allow default client-configurable pagination for REST API result size
     'DEFAULT_PAGINATION_CLASS': 'edd.rest.paginators.ClientConfigurablePagination',
+
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
 
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
 }
