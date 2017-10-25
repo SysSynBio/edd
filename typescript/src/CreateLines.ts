@@ -1,5 +1,21 @@
-/// <reference path="EDDRest.ts" />
-/// <reference path="EDDAutocomplete.ts" />
+import { EDDAuto } from "../modules/EDDAutocomplete"
+import { EddRest } from "../modules/EDDRest"
+import * as $ from "jquery"
+import "bootstrap-loader"
+
+declare function require(name: string): any;  // avoiding warnings for require calls below
+
+// as of JQuery UI 1.12, need to require each dependency individually
+require('jquery-ui/themes/base/core.css');
+require('jquery-ui/themes/base/selectable.css');
+require('jquery-ui/themes/base/sortable.css');
+require('jquery-ui/themes/base/dialog.css');
+require('jquery-ui/themes/base/spinner.css');
+require('jquery-ui/themes/base/theme.css');
+require('jquery-ui/ui/widgets/selectable');
+require('jquery-ui/ui/widgets/sortable');
+require('jquery-ui/ui/widgets/dialog');
+require('jquery-ui/ui/widgets/spinner');
 
 module CreateLines {
     const DATA_FORMAT_STRING:string = 'string';
@@ -1306,4 +1322,6 @@ module CreateLines {
 
 }
 
-$(CreateLines.onDocumentReady);
+$(window).on('load', function() {
+    CreateLines.onDocumentReady();
+});

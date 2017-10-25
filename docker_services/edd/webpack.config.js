@@ -14,6 +14,7 @@ var css_extract = new ExtractTextPlugin({
 
 module.exports = {
   entry: {
+    CreateLines: "./code/typescript/src/CreateLines.ts",
     Cytometry: "./code/typescript/src/Cytometry.ts",
     ExperimentDescHelp: "./code/typescript/src/Experiment-Desc-Help.ts",
     Export: "./code/typescript/src/Export.ts",

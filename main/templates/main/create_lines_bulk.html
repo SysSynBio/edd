@@ -3,11 +3,7 @@
 
 {% block js_css %}
     <link rel="stylesheet" type="text/css" href="{% static 'main/create_lines_bulk.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'main/js/lib/jquery-ui/jquery-ui.min.css' %}"/>
-    <script type="text/javascript" src="{% static 'main/js/lib/jquery-ui/jquery-ui.min.js' %}"></script>
-    <script src="{% static 'main/js/EDDAutocomplete.js' %}"></script>
-    <script src="{% static 'main/js/CreateLines.js' %}"></script>
-    <script type="text/javascript" src="{% static 'main/js/EDDRest.js' %}"></script>
+    <script type="text/javascript" src="{% static 'dist/CreateLines.js' %}"></script>
     {{ block.super }}
 {% endblock js_css %}
 

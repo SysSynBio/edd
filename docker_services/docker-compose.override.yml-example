@@ -91,8 +91,7 @@ services:
     #command: [init-only]
     # [DEVMODE] By default, edd runs with the application command; uncomment below to run with
     #   the devmode command instead, and use Django's runserver to serve the application.
-    command: [--watch-static, devmode]  # 2.1.0
-    #command: [-M, devmode] # 2.0.9, skips migrations
+    # command: [--watch-static, devmode]
     # [LOCAL] For more control over settings on each container, use the --local flag to pass a
     #   path to a local.py file to use. The path must be mounted in the volumes section! Take care
     #   to use only one volumes section, if multiples are specified in a service, only the last
