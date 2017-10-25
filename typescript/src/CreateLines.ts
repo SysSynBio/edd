@@ -1,5 +1,6 @@
 import { EDDAuto } from "../modules/EDDAutocomplete"
 import { EddRest } from "../modules/EDDRest"
+import { Utl } from "../modules/Utl"
 import * as $ from "jquery"
 import "bootstrap-loader"
 
@@ -46,7 +47,7 @@ module CreateLines {
                 'request_all': true, // get all result pages
                 'wait': showWaitMessage,
                 'context': EddRest.LINE_METADATA_CONTEXT,
-                'sort_order': EddRest.ASCENDING_SORT,
+                'sort_order': EddRest.ASCENDING_SORT, //
             });
     }
 
@@ -597,8 +598,12 @@ module CreateLines {
             var visible: JQuery, hidden: JQuery, self: LineAttributeAutoInput;
             self = this;
 
-            visible = $('<input type="text">')
-                .addClass('columnar-text-input');
+            visible = $('<input type="text" autocomplete="off">')
+                .addClass('columnar-text-input')
+                .addClass('autocomp')
+                .addClass('autocomp_search')
+                //.addClass('form-control')
+                .addClass('ui-autocomplete-input');
             hidden = $('<input type="hidden">')
                 .addClass('step2-value-input');
 
@@ -745,7 +750,7 @@ module CreateLines {
         abbreviations: AbbreviationInput[] = [];
 
         replicateInput: LineAttributeInput;
-        lineMetaAutocomplete:EDDAuto.LineMetadataType = null;  //TODO
+        lineMetaAutocomplete: EDDAuto.LineMetadataType = null;  //TODO
 
         nonAutocompleteLineMetaTypes: any[] = [];
         autocompleteLineMetaTypes: any = {};
@@ -1105,7 +1110,7 @@ module CreateLines {
                         hiddenInput = $('#add-line-metadata-value');
                         meta_name = textInput.val();
                         meta_pk = hiddenInput.val();
-                        self.lineMetaAutocomplete.omitKey(String(meta_pk));
+                        //self.lineMetaAutocomplete.omitKey(String(meta_pk));
                         creationManager.addInput(new LineAttributeDescriptor(
                             meta_pk, meta_name));
                         textInput.val(null);
@@ -1128,6 +1133,9 @@ module CreateLines {
                             'visibleInput': $('#add-line-metadata-text'),
                             'hiddenInput': $('#add-line-metadata-value'),
                             'search_extra': {'sort': 'type_name'}});
+
+            // TODO: remove if unused
+            //this.lineMetaAutocomplete.autocomplete( "option", "minLength", 0 );
 
             // add click behavior to the "add property" button
             $('#addPropertyButton')
@@ -1295,27 +1303,10 @@ module CreateLines {
         loadAllLineMetadataTypes();
     }
 
-    // using jQuery.  See https://docs.djangoproject.com/en/1.11/ref/csrf/
-    function getCookie(name) {
-        var cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            var cookies = document.cookie.split(';');
-            for (var i = 0; i < cookies.length; i++) {
-                var cookie = jQuery.trim(cookies[i]);
-                // Does this cookie string begin with the name we want?
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
     // send CSRF header on each AJAX request from this page
     $.ajaxSetup({
         beforeSend: function(xhr) {
-            var csrfToken = getCookie('csrftoken');
+            var csrfToken = Utl.EDD.findCSRFToken();
             xhr.setRequestHeader('X-CSRFToken', csrfToken);
         }
     });

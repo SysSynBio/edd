@@ -116,24 +116,7 @@ def optional_sort(request, queryset):
     if not sort_field:
         return queryset
 
-    # proactively check client input to ensure it matches the name of a valid model field.
-    # Without this check, invalid inputs will result in an unhelpful 500 response instead of a
-    # helpful 400.  TODO: this design assumes better error handling in client code...result for now
-    # is still a 500 error, and eventual port to REST implementation or enclosing JSON response
-    model_class = queryset.model
-    valid_fields = model_class._meta.get_all_field_names()
-    match = sort_pattern.match(sort_field)
-
-    if match and match.group(1) in valid_fields:
-        return queryset.order_by(sort_field)
-
-    raise ValidationError('"%(input)s" is not a valid sort input for %(model)s. '
-                          'Valid inputs are: (%(valid_fields)s). An optional '
-                          '"+" or "-" prefix can indicate sort order (default is ascending).' % {
-                              'input': sort_field,
-                              'model': model_class.__name__,
-                              'valid_fields': ', '.join(['"%s"' % str(field_name) for field_name in
-                                                        valid_fields])})
+    return queryset.order_by(sort_field)
 
 
 def search_study_lines(request):

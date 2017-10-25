@@ -65,6 +65,10 @@ from edd import utilities
 logger = logging.getLogger(__name__)
 
 FILE_TYPE_HEADER = 'HTTP_X_EDD_FILE_TYPE'
+EXCEL_TYPES = [
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ]
 
 
 @register.filter(name='lookup')
@@ -1390,32 +1394,22 @@ def study_describe_experiment(request, pk=None, slug=None):
 
     # detect the input format
     file = request.FILES.get('file', None)
-    # TODO update API of CombinatorialCreationImporter.do_import() to not require a string
-    #   filename to switch between Excel and JSON modes
-    EXCEL_TYPES = [
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ]
-    if file and file.content_type in EXCEL_TYPES:
-        filename = file.name
-    elif file and file.content_type == 'application/json':
-        filename = None
-    elif file:
-        summary = ImportErrorSummary(BAD_FILE_CATEGORY, UNSUPPORTED_FILE_TYPE)
-        summary.add_occurrence(file.content_type)
-        errors = {BAD_FILE_CATEGORY: {UNSUPPORTED_FILE_TYPE: summary}}
-        return JsonResponse(_build_response_content(errors, {}), status=codes.bad_request)
-    else:
-        summary = ImportErrorSummary(BAD_FILE_CATEGORY, "File missing")
-        errors = {BAD_FILE_CATEGORY: {"File missing": summary}}
-        return JsonResponse(_build_response_content(errors, {}), status=codes.bad_request)
+    file_name = None
+    print('file = %s, content_type=%s' % (file, file.content_type if file else None))
+    if file:
+        file_name = file.name
+        if file.content_type not in EXCEL_TYPES:
+            summary = ImportErrorSummary(BAD_FILE_CATEGORY, UNSUPPORTED_FILE_TYPE)
+            summary.add_occurrence(file.content_type)
+            errors = {BAD_FILE_CATEGORY: {UNSUPPORTED_FILE_TYPE: summary}}
+            return JsonResponse(_build_response_content(errors, {}), status=codes.bad_request)
 
     logger.info('Parsing file')
 
     options = ExperimentDescriptionOptions(allow_duplicate_names,
                                            dry_run,
                                            ignore_ice_related_errors,
-                                           use_ice_part_numbers=is_excel_file)
+                                           use_ice_part_numbers=file_name)
 
     # attempt the import
     importer = CombinatorialCreationImporter(study, user)
