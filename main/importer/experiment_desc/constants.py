@@ -172,12 +172,15 @@ ERROR_PRIORITY_ORDER[INVALID_FILE_VALUE_CATEGORY] = (
     DELIMETER_NOT_ALLOWED_VALUE,
 )
 
+INVALID_JSON = 'Invalid JSON format'
+
 # these apply equally to JSON or Excel
 BAD_GENERIC_INPUT_CATEGORY = 'Invalid values'
 ERROR_PRIORITY_ORDER[BAD_GENERIC_INPUT_CATEGORY] = (
         NO_INPUT,
         INVALID_REPLICATE_COUNT,
         ZERO_REPLICATES,
+        INVALID_JSON,
 )
 
 ##################################

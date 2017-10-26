@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import itertools
 import json
+import jsonschema
 import logging
 import re
 
@@ -23,7 +24,8 @@ from .constants import (DUPLICATE_ASSAY_METADATA, INVALID_CELL_TYPE, INVALID_REP
                         ELEMENTS_SECTION, ABBREVIATIONS_SECTION, NAME_ELEMENTS_SECTION,
                         PROTOCOL_TO_COMBINATORIAL_METADATA_SECTION,
                         PROTOCOL_TO_ASSAY_METADATA_SECTION, COMBINATORIAL_LINE_METADATA_SECTION,
-                        COMMON_LINE_METADATA_SECTION, BASE_NAME_ELT, DELIMETER_NOT_ALLOWED_VALUE)
+                        COMMON_LINE_METADATA_SECTION, BASE_NAME_ELT,
+                        DELIMETER_NOT_ALLOWED_VALUE, INVALID_JSON)
 from .utilities import AutomatedNamingStrategy, CombinatorialDescriptionInput, NamingStrategy
 from .validators import JsonSchemaValidator
 from jbei.utils import TYPICAL_JBEI_ICE_PART_NUMBER_REGEX
@@ -1192,8 +1194,18 @@ class JsonInputParser(CombinatorialInputParser):
         if not parsed_json:
             return None
 
-        validator = JsonSchemaValidator()
-        validator.validate(parsed_json, importer)
+        # TODO: consider moving schema and simple validation code out of separate module once it's
+        # been proved / once code change detection is less necessary to help with development
+        try:
+            validator = JsonSchemaValidator()
+            validator.validate(parsed_json, importer)
+        except jsonschema.exceptions.ValidationError as v:
+            path_str = '.'.join(elt for elt in v.relative_path) if v.relative_path else 'root'
+            importer.add_error(BAD_GENERIC_INPUT_CATEGORY, INVALID_JSON,
+                               '%(path)s: %(cause)s' % {
+                                   'path': path_str,
+                                   'cause': v.message,})
+            return None
 
         max_decimal_digits = 0
 
