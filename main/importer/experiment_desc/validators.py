@@ -115,7 +115,7 @@ class JsonSchemaValidator(object):
                 'common_line_metadata': {
                     'type': 'object',
                     'additionalProperties': {
-                        'type': 'array',
+                        'type': ['array', 'string', 'number'],
                     }
                 }, 'combinatorial_line_metadata': {
                     'type': 'object',

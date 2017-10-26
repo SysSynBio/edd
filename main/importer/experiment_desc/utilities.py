@@ -236,6 +236,9 @@ class AutomatedNamingStrategy(NamingStrategy):
         self.assay_metadata_types_by_pk = assay_metadata_types_by_pk
         self.assay_time_metadata_type_pk = assay_time_metadata_type_pk
 
+        # TODO: note starter assumption that line can only have one strain...we'll work on that
+        supported_related_model_fields = ['contact', 'experimenter', 'strain']
+
         valid_items = [NAME_ELT_STRAIN_NAME, NAME_ELT_REPLICATE_NUM, ]
         valid_items.extend(pk for pk in self.line_metadata_types_by_pk.iterkeys())
         self._valid_items = valid_items

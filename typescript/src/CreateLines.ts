@@ -33,10 +33,26 @@ module CreateLines {
     export const STRAINS_META_NAME = 'Strain(s)';
     export const CONTROL_META_NAME = 'Control';
 
+
     // Metadata types present in the database that should be omitted from user-displayed lists in
     // contexts where separate display is available for line attributes.
     export const LINE_ATTRIBUTE_META_TYPES = [LINE_NAME_META_NAME, LINE_DESCRIPTION_META_NAME,
         LINE_CONTACT_META_NAME, LINE_EXPERIMENTER_META_NAME, STRAINS_META_NAME];
+
+    const RELATED_MODEL_FIELDS = {};
+    RELATED_MODEL_FIELDS[STRAINS_META_NAME] = {
+                nameEltLabel: 'Strain Name',
+                nameEltJsonId: 'strain__name'};
+    RELATED_MODEL_FIELDS[LINE_CONTACT_META_NAME] = {
+                nameEltLabel: 'Contact Last Name',
+                nameEltJsonId: 'contact__last_name'};
+    RELATED_MODEL_FIELDS[LINE_EXPERIMENTER_META_NAME]= {
+                nameEltLabel: 'Experimenter Last Name',
+                nameEltJsonId: 'experimenter__last_name',};
+    //CARBON_SOURCE_META_NAME: [], // TODO: add Carbon Source Support
+
+    const REPLICATE_COUNT_JSON_ID = 'replicate_count';
+    const REPLICATE_NUM_NAME_ID = 'replicate_num';
 
     function loadAllLineMetadataTypes():void {
         $('#addPropertyButton').prop('disabled', true);
@@ -80,15 +96,19 @@ module CreateLines {
 
     class LineAttributeDescriptor {
         jsonId: any; // string for special-cases, integer pk for metadata
-        displayText: string;
+        nameEltJsonId: any;
+        inputLabel: string;
+        nameEltLabel: string;
 
-        constructor(json_elt, displayText) {
-            this.jsonId = json_elt;
-            this.displayText = displayText;
+        constructor(jsonId, inputLabel, nameEltLabel=null, nameEltJsonId=null) {
+            this.jsonId = jsonId;
+            this.inputLabel = inputLabel;
+            this.nameEltJsonId = nameEltJsonId || jsonId;
+            this.nameEltLabel = nameEltLabel || inputLabel;
         }
 
         toString(): string {
-            return '(' + this.jsonId.toString() + ', ' + this.displayText + ')';
+            return '(' + this.jsonId.toString() + ', ' + this.inputLabel + ')';
         }
     }
 
@@ -108,7 +128,7 @@ module CreateLines {
             }
 
             this.uiLabel = $('<label>')
-                .text(this.lineAttribute.displayText + ':')
+                .text(this.lineAttribute.inputLabel + ':')
                 .addClass('not-in-use');
 
             this.maxRows = options.maxRows === undefined ? 30 : options.maxRows;
@@ -287,6 +307,13 @@ module CreateLines {
     }
 
     export class AbbreviationInput extends MultiValueInput {
+
+        constructor(options:any) {
+            super(options);
+            this.uiLabel = $('<label>')
+                .text(this.lineAttribute.nameEltLabel + ':')
+                .addClass('not-in-use');
+        }
 
         hasValidInput(rowIndex: number): boolean {
             var match:any, abbrev:any;
@@ -502,6 +529,11 @@ module CreateLines {
                     values.push(this.getInput(index));
                 }
             });
+
+            // if there's only one valid value, don't package it in an array
+            if(values.length == 1) {
+                return values[0];
+            }
             return values;
         }
 
@@ -615,7 +647,7 @@ module CreateLines {
             inputCell.append(visible)
                 .append(hidden);
 
-            switch (this.lineAttribute.displayText) {
+            switch (this.lineAttribute.inputLabel) {
                 case LINE_EXPERIMENTER_META_NAME:
                 case LINE_CONTACT_META_NAME:
                     visible.attr('eddautocompletetype', "User");
@@ -648,6 +680,12 @@ module CreateLines {
         getInput(rowIndex: number): any {
             var stringVal: string;
             stringVal = this.rows[rowIndex].find('input[type=hidden]').first().val();
+
+            if(this.lineAttribute.inputLabel == STRAINS_META_NAME) {
+                // strain autocomplete uses UUID
+                return stringVal;
+            }
+            // non-strain autocompletes use integer pk's
             return parseInt(stringVal);
         }
     }
@@ -768,8 +806,9 @@ module CreateLines {
 
         constructor() {
             this.replicateInput = new NumberInput({
-                    'lineAttribute': new LineAttributeDescriptor('replicates',
-                                                                 'Replicates')});
+                    'lineAttribute': new LineAttributeDescriptor(REPLICATE_COUNT_JSON_ID,
+                                                                 'Replicates', 'Replicate #',
+                                                                  REPLICATE_NUM_NAME_ID)});
             this.lineProperties = [this.replicateInput];
         }
 
@@ -791,7 +830,7 @@ module CreateLines {
             if(autocompleteMetaItem) {
                 newInput = new LineAttributeAutoInput({'lineAttribute': lineAttr});
             }
-            else if(EddRest.CONTROL_META_NAME == lineAttr.displayText) {
+            else if(EddRest.CONTROL_META_NAME == lineAttr.inputLabel) {
                 newInput = new BooleanInput({'lineAttribute': lineAttr, 'maxRows': 1})
             }
             else {
@@ -817,6 +856,9 @@ module CreateLines {
             $('#line-properties-table')
                 .children('.line_attr_' + lineAttr.jsonId)
                 .remove();
+
+            // restore user's ability to choose this option via the "add property" dropdown
+            this.lineMetaAutocomplete.reinstateKey(String(lineAttr.jsonId));
 
             this.updateNameElementChoices();
         }
@@ -881,7 +923,7 @@ module CreateLines {
         insertRow(input:MultiValueInput, parentDiv:JQuery): void {
             var row: JQuery;
             row = $('<div>')
-                    .addClass('line_attr_' + input.lineAttribute.jsonId)
+                    .addClass('line_attr_' + input.lineAttribute.nameEltJsonId)
                     .addClass('table-row')
                     .appendTo(parentDiv);
             input.fillRow(row);
@@ -982,7 +1024,7 @@ module CreateLines {
                     for(newIndex = 0; newIndex < newElts.length; newIndex++) {
                         availableElt = newElts[newIndex];
 
-                        if(availableElt.displayText == listElement.textContent) {
+                        if(availableElt.inputLabel == listElement.textContent) {
                             console.log('Found matching element ' + listElement.textContent);
                             newElts.splice(newIndex, 1);
                             return true;
@@ -1000,7 +1042,7 @@ module CreateLines {
             newElts.forEach((elt:LineAttributeDescriptor) => {
                 var li: JQuery;
                 li = $('<li>')
-                    .text(elt.displayText)
+                    .text(elt.nameEltLabel)
                     .addClass('ui-state-default')
                     .data(elt)
                     .appendTo(unusedList);
@@ -1024,7 +1066,7 @@ module CreateLines {
         }
 
         updatePreview(): void {
-            var self: CreationManager, json: string, csrfToken: string;
+            var self: CreationManager, json: string, csrfToken: string, statusDiv: JQuery;
             self = this;
             //build an updated list of naming elements based on user entries in steps 1 & 2. Note
             // that events from the connected lists don't give us enough info to know which element
@@ -1037,9 +1079,15 @@ module CreateLines {
 
             // clear preview and return early if insufficient inputs available
             if(!this.lineNameElements.length) {
+                $('#step4-status-div').empty().text('Select at least one line name element' +
+                    ' above');
+                $('#bulk-line-table').addClass('hide');
+
                 $('#jsonTest').text('');
                 $('#backEndResponse').text('');
                 return;
+            } else {
+                $('#step4-status-div').empty();
             }
 
             //TODO: remove the color-based indicator and auto-JSON creation here following testing
@@ -1054,15 +1102,15 @@ module CreateLines {
 
             // submit a query to the back end to compute line / assay names and detect errors
             // before actually making any changes
-            jQuery.ajax(
+            $.ajax(
                 '../../describe/?DRY_RUN=True', // TODO: path?
                 {
-                    'headers': {'Content-Type' : 'application/json'},
-                    'method': 'POST',
-                    'dataType': 'json',
-                    'data': json,
-                    'processData': false,
-                    'success': (responseJson) => {
+                    headers: {'Content-Type' : 'application/json'},
+                    method: 'POST',
+                    dataType: 'json',
+                    data: json,
+                    processData: false,
+                    success: (responseJson) => {
                         $('#backEndResponse').text(responseJson);
                     },
                     'error': (jqXHR, textStatus: string, errorThrown: string) => {
@@ -1105,14 +1153,26 @@ module CreateLines {
                 buttons: {
                     'Add Property': function() {
                         var meta_name:string, meta_pk:number, textInput: JQuery,
-                            hiddenInput: JQuery;
+                            hiddenInput: JQuery, supportedProperties: any,
+                            descriptor: LineAttributeDescriptor;
                         textInput = $('#add-line-metadata-text');
                         hiddenInput = $('#add-line-metadata-value');
                         meta_name = textInput.val();
                         meta_pk = hiddenInput.val();
-                        //self.lineMetaAutocomplete.omitKey(String(meta_pk));
-                        creationManager.addInput(new LineAttributeDescriptor(
-                            meta_pk, meta_name));
+
+                        self.lineMetaAutocomplete.omitKey(String(meta_pk));
+
+                        if(RELATED_MODEL_FIELDS.hasOwnProperty(meta_name)) {
+                            supportedProperties = RELATED_MODEL_FIELDS[meta_name];
+                            descriptor = new LineAttributeDescriptor(
+                                meta_pk, meta_name,
+                                supportedProperties.nameEltLabel,
+                                supportedProperties.nameEltJsonId);
+                        } else {
+                            descriptor = new LineAttributeDescriptor(meta_pk, meta_name)
+                        }
+
+                        creationManager.addInput(descriptor);
                         textInput.val(null);
                         hiddenInput.val(null);
                     },
@@ -1162,7 +1222,7 @@ module CreateLines {
                 }
 
                 $('<li>')
-                    .text(namingElement.displayText)
+                    .text(namingElement.nameEltLabel)
                     .addClass('ui-widget-content')
                     .data(namingElement)
                     .appendTo(list);
@@ -1215,8 +1275,8 @@ module CreateLines {
             selectedItems.remove();
             this.updateHasAbbrevDialogOptions(abbreviationsList);
 
-            selectedAttrs.forEach(function(nameElement) {
-                self.insertAbbreviation(nameElement);
+            selectedAttrs.forEach(function(attribute) {
+                self.insertAbbreviation(attribute);
             });
 
             this.updateHasAbbrevInputs();
@@ -1240,17 +1300,15 @@ module CreateLines {
             var result: any, json: string, jsonNameElements: string[],
                 combinatorialValues: any, commonValues: any, abbrevs: any;
 
-            // build json for values included as part of generated line names
+            // name element ordering
             jsonNameElements = [];
             this.lineNameElements.forEach(function(nameElement:LineAttributeDescriptor) {
-                jsonNameElements.push(nameElement.jsonId);
+                jsonNameElements.push(nameElement.nameEltJsonId);
             });
-            result = {name_elements: {elements: jsonNameElements}};
 
-            //TODO: abbreviations / custom additions...see the mockup
+            // abbreviations
             if(this.abbreviations.length) {
                 abbrevs = {};
-                result['abbreviations'] = abbrevs;
                 this.abbreviations.forEach(function(inputs: AbbreviationInput, index: number) {
                     // vals = inputs.validInputCount() )
                     var values: any = inputs.getValueJson();
@@ -1258,17 +1316,41 @@ module CreateLines {
                         abbrevs[inputs.lineAttribute.jsonId] = values;
                     }
                 });
+                jsonNameElements['abbreviations'] = abbrevs;
             }
-
-            result.replicate_count = $('#spinner').val();
+            result = {name_elements: {elements: jsonNameElements}};
 
             // include all inputs in the JSON, separating them by "combinatorial" status as
             // required
             commonValues = {};
             combinatorialValues = {};
             this.lineProperties.forEach((input: LineAttributeInput): boolean => {
+                var value: any, v: number;
                 if(!input.validInputCount()) {
                     return true; // keep looping
+                }
+
+                if(REPLICATE_NUM_NAME_ID == input.lineAttribute.nameEltJsonId) {
+                    result[REPLICATE_COUNT_JSON_ID] = input.getValueJson();
+                    return true; // keep looping
+                }
+                if(STRAINS_META_NAME == input.lineAttribute.inputLabel) {
+                    // for starters, assume each strain specified should result in creation
+                    // of a combinatorial group of lines.  later on we can add complexity
+                    // to support co-culture.  here we package the list of provided strains in
+                    // the format supported by the back end, which should already support
+                    // co-cultures.
+                    value = input.getValueJson();
+                    if(value.constructor === Array) {
+                       for(v=0; v<value.length; v++) {
+                           value[v] = [value[v]];
+                       }
+                    } else {
+                         value = [value]
+                    }
+                    result.combinatorial_strain_id_groups = value;
+
+                    return true
                 }
 
                 if(input.hasComboInputs()) {

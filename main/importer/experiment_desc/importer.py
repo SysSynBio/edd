@@ -672,9 +672,9 @@ class CombinatorialCreationImporter(object):
             self._input_summary = parser.parsed_json
 
         with transaction.atomic(savepoint=False):
-            return self._define_study(line_def_inputs, options, excel_filename)
+            return self._define_study(line_def_inputs, options)
 
-    def _define_study(self, combinatorial_inputs, options, use_part_number_identifiers):
+    def _define_study(self, combinatorial_inputs, options):
         """
         Queries EDD and ICE to verify that the required ICE strains have an entry in EDD's
         database. If not, creates them.  Once strains are created, combinatorially creates lines
@@ -807,6 +807,7 @@ class CombinatorialCreationImporter(object):
         unnecessary database I/O for line/assay creation prior to detecting duplicated naming.
         :return a dict with a hierarchical listing of all planned line/assay names (regardless of
         whether some are duplicates)
+        :raises ValueError: for invalid input (e.g. incorrect metadata items)
         """
         logger.info('in determine_names()')
 
