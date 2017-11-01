@@ -1,27 +1,30 @@
 # coding: utf-8
-from __future__ import unicode_literals
 
 import collections
 import copy
 import logging
-import uuid
 from collections import defaultdict, OrderedDict, Sequence
 
 from arrow import utcnow
-from builtins import str
 from django.db.models import Q
-from django.core.exceptions import FieldDoesNotExist
-from django.apps import AppConfig
+from future.utils import viewitems, viewvalues
 from six import string_types
 
-from main.importer.experiment_desc.validators import SCHEMA as JSON_SCHEMA
-from main.models import  Assay, Line, MetadataType, Protocol, Strain
-from .constants import (INVALID_ASSAY_META_PK, INVALID_AUTO_NAMING_INPUT, INVALID_LINE_META_PK,
-                        INVALID_PROTOCOL_META_PK, NON_UNIQUE_STRAIN_UUIDS, SUSPECTED_MATCH_STRAINS,
-                        UNMATCHED_PART_NUMBER, INTERNAL_EDD_ERROR_CATEGORY,
-                        ILLEGAL_RELATED_FIELD_REFERENCE, INVALID_RELATED_FIELD_REFERENCE,
-                        ZERO_REPLICATES, BAD_GENERIC_INPUT_CATEGORY, NAME_ELT_STRAIN_NAME,
-                        NAME_ELT_REPLICATE_NUM)
+from main.models import Assay, Line, MetadataType, Protocol, Strain
+from .constants import (
+    BAD_GENERIC_INPUT_CATEGORY,
+    ILLEGAL_RELATED_FIELD_REFERENCE,
+    INTERNAL_EDD_ERROR_CATEGORY,
+    INVALID_ASSAY_META_PK,
+    INVALID_LINE_META_PK,
+    INVALID_PROTOCOL_META_PK,
+    INVALID_RELATED_FIELD_REFERENCE,
+    NAME_ELT_REPLICATE_NUM,
+    NON_UNIQUE_STRAIN_UUIDS,
+    SUSPECTED_MATCH_STRAINS,
+    UNMATCHED_PART_NUMBER,
+    ZERO_REPLICATES,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -99,7 +102,7 @@ class NamingStrategy(object):
 
         line_meta_type = line_meta_types[line_meta_pk]
         line_attr_name = line_meta_type.type_field
-        if not line_attr_name in ALLOWED_RELATED_OBJECT_FIELDS:
+        if line_attr_name not in ALLOWED_RELATED_OBJECT_FIELDS:
             importer.add_error(BAD_GENERIC_INPUT_CATEGORY,
                                ILLEGAL_RELATED_FIELD_REFERENCE,
                                field_source_detail)
@@ -176,9 +179,12 @@ class LineAndAssayCreationVisitor(NewLineAndAssayVisitor):
     """
     def __init__(self, study_pk, cache, replicate_count, omit_all_strains=False,
                  omit_missing_strains=False):
-        super(LineAndAssayCreationVisitor, self).__init__(study_pk, replicate_count,
-                                                          omit_missing_strains=omit_missing_strains,
-                                                          omit_all_strains=omit_missing_strains)
+        super(LineAndAssayCreationVisitor, self).__init__(
+            study_pk,
+            replicate_count,
+            omit_missing_strains=omit_missing_strains,
+            omit_all_strains=omit_missing_strains
+        )
         self.lines_created = []
         self.require_strains = True
         self.cache = cache
@@ -195,8 +201,9 @@ class LineAndAssayCreationVisitor(NewLineAndAssayVisitor):
         # 1-to-M or M2M relations, which can't be set until after a Line pk is
         # defined
         hstore_compliant_dict = {
-            str(pk): cache.line_meta_types.get(pk).encode_value(value) for pk, value in
-            line_metadata_dict.iteritems() if value and pk not in self.cache.related_objects
+            str(pk): cache.line_meta_types.get(pk).encode_value(value)
+            for pk, value in viewitems(line_metadata_dict)
+            if value and pk not in cache.related_objects
         }
 
         line_attrs = {
@@ -217,7 +224,7 @@ class LineAndAssayCreationVisitor(NewLineAndAssayVisitor):
             values = cache.get_related_objects(meta_type_pk, value_pks)
 
             # unpack what should be single-valued items returned as a list
-            if not meta_type_pk in cache.many_related_mtypes:
+            if meta_type_pk not in cache.many_related_mtypes:
                 values = values[0]
 
             line_attrs[meta_type.type_field] = values
@@ -266,7 +273,7 @@ class LineAndAssayCreationVisitor(NewLineAndAssayVisitor):
         # make sure everything gets cast to str to comply with Postgres' hstore field
         hstore_compliant_dict = {
             str(pk): str(value)
-            for pk, value in assay_metadata_dict.items() if value
+            for pk, value in viewitems(assay_metadata_dict) if value
         }
 
         assay = Assay.objects.create(
@@ -378,8 +385,8 @@ class ExperimentDescriptionContext(object):
             for_context=MetadataType.LINE).get(type_name='Carbon Source(s)')
         ##################################################
 
-        self.assay_time_mtype = MetadataType.objects.filter(for_context=MetadataType.ASSAY).get(
-                                                            type_name='Time')
+        self.assay_time_mtype = MetadataType.objects.filter(
+            for_context=MetadataType.ASSAY).get(type_name='Time')
 
         # get related MetadataTypes that describe related object fields
         relation_mtypes = self.query_related_object_types(
@@ -440,7 +447,7 @@ class ExperimentDescriptionContext(object):
         # regardless of its input format, extract a flattened set of primary keys from value_pks.
         # this is essentially unrolling the JSON output from the combinatorial GUI, or analagous
         # in-memory storage of combinatorial (+\- group) strain/carbon source pks used by ED files
-        if isinstance(value_pks, Sequence) and not isinstance(value_pks, basestring):
+        if isinstance(value_pks, Sequence) and not isinstance(value_pks, string_types):
             pks_set = set(value_pks)
         else:
             pks_set = set([value_pks])
@@ -466,7 +473,6 @@ class ExperimentDescriptionContext(object):
             if cached_obj:
                 result.append(cached_obj)
         return result
-
 
     @property
     def strains_by_pk(self):
@@ -504,10 +510,8 @@ class AutomatedNamingStrategy(NamingStrategy):
 
         related_obj_meta_pks = set()
         for element in self.elements:
-
-            if not isinstance(element, basestring):
+            if not isinstance(element, string_types):
                 continue
-
             tokens = element.split(_RELATED_OBJ_SEPARATOR)
             if len(tokens) == 2:
                 line_meta_pk, related_obj_attr_name = tokens
@@ -515,7 +519,7 @@ class AutomatedNamingStrategy(NamingStrategy):
 
                 line_meta_type = self.cache.line_meta_types[line_meta_pk]
                 line_attr_name = line_meta_type.type_field
-                if not line_attr_name in ALLOWED_RELATED_OBJECT_FIELDS:
+                if line_attr_name not in ALLOWED_RELATED_OBJECT_FIELDS:
                     importer.add_error(BAD_GENERIC_INPUT_CATEGORY,
                                        ILLEGAL_RELATED_FIELD_REFERENCE,
                                        element)
@@ -680,8 +684,8 @@ class CombinatorialDescriptionInput(object):
         ###########################################################################################
         # protocol-specific metadata
         ###########################################################################################
-        self.unique_protocols = set(protocol_to_assay_metadata.keys())
-        self.unique_protocols.update(protocol_to_combinatorial_metadata.keys())
+        self.unique_protocols = set(protocol_to_assay_metadata)
+        self.unique_protocols.update(protocol_to_combinatorial_metadata)
 
         # optional. maps protocol pk -> { MetadataType.pk -> [values] }
         self.protocol_to_assay_metadata = defaultdict(lambda: defaultdict(list))
@@ -716,7 +720,7 @@ class CombinatorialDescriptionInput(object):
         # common metadata will at most be a list of identifiers
         values = self.common_line_metadata.get(line_meta_pk)
         if values:
-            if isinstance(values, collections.Iterable) and not isinstance(values, basestring):
+            if isinstance(values, collections.Iterable) and not isinstance(values, string_types):
                 result.update(values)
             else:
                 result.add(values)
@@ -727,10 +731,10 @@ class CombinatorialDescriptionInput(object):
         if not values:
             return result
 
-        if isinstance(values, collections.Iterable) and not isinstance(values, basestring):
+        if isinstance(values, collections.Iterable) and not isinstance(values, string_types):
             for elt in values:
                 if (isinstance(elt, collections.Iterable)
-                        and not isinstance(elt, basestring)):
+                        and not isinstance(elt, string_types)):
                     for val in elt:
                         result.add(val)  # can't do result.update(list)
                 else:
@@ -748,20 +752,16 @@ class CombinatorialDescriptionInput(object):
         references for future use by this instance on the assumption that they are not going
         to change.
         """
-        logger.info('Pre-replacement combinatorial metadata: %s' %
-                    self.combinatorial_line_metadata)
+        logger.info(f'Pre-replacement combinatorial metadata: {self.combinatorial_line_metadata}')
         self._replace_ice_ids_with_edd_pks(self.combinatorial_line_metadata, strains_mtype_pk,
                                            edd_strains_by_ice_id, ice_parts_by_id,
                                            is_combinatorial=True)
-        logger.info('Post-replacement combinatorial metadata: %s' %
-                    self.combinatorial_line_metadata)
+        logger.info(f'Post-replacement combinatorial metadata: {self.combinatorial_line_metadata}')
 
-        logger.info('Pre-replacement common metadata: %s' %
-                    self.common_line_metadata)
+        logger.info(f'Pre-replacement common metadata: {self.common_line_metadata}')
         self._replace_ice_ids_with_edd_pks(self.common_line_metadata, strains_mtype_pk,
                                            edd_strains_by_ice_id, ice_parts_by_id)
-        logger.info('Post-replacement common metadata: %s' %
-                    self.common_line_metadata)
+        logger.info(f'Post-replacement common metadata: {self.common_line_metadata}')
 
     def _replace_ice_ids_with_edd_pks(self, line_metadata_src, strains_mtype_pk,
                                       edd_strains_by_ice_id, ice_parts_by_id,
@@ -779,7 +779,7 @@ class CombinatorialDescriptionInput(object):
 
         # if strain metadata only contains a single item, wrap it in a list for consistency
         if (not isinstance(strain_id_groups, collections.Sequence)) or isinstance(
-                strain_id_groups, basestring):
+                strain_id_groups, string_types):
             strain_id_groups = [strain_id_groups]
             line_metadata_src[strains_mtype_pk] = strain_id_groups
 
@@ -792,7 +792,7 @@ class CombinatorialDescriptionInput(object):
         # multiple strains
         for group_index, ice_id_list in enumerate(strain_id_groups):
             if (not isinstance(ice_id_list, collections.Sequence)) or isinstance(ice_id_list,
-                                                                                 basestring):
+                                                                                 string_types):
                 ice_id_list = [ice_id_list]
                 strain_id_groups[group_index] = ice_id_list
 
@@ -896,7 +896,7 @@ class CombinatorialDescriptionInput(object):
             INVALID_PROTOCOL_META_PK,
         )
 
-        for protocol_pk, input_assay_metadata_dict in self.protocol_to_assay_metadata.iteritems():
+        for protocol_pk, input_assay_metadata_dict in viewitems(self.protocol_to_assay_metadata):
             self._verify_pk_keys(
                 input_assay_metadata_dict,
                 assay_metadata_types_by_pk,
@@ -914,7 +914,7 @@ class CombinatorialDescriptionInput(object):
             INVALID_PROTOCOL_META_PK,
         )
 
-        for protocol_pk, metadata_dict in self.protocol_to_combinatorial_metadata_dict.iteritems():
+        for protocol_pk, metadata_dict in viewitems(self.protocol_to_combinatorial_metadata_dict):
             self._verify_pk_keys(
                 metadata_dict,
                 assay_metadata_types_by_pk,
@@ -980,7 +980,7 @@ class CombinatorialDescriptionInput(object):
 
     def _visit_new_lines(self, visitor):
             line_metadata = copy.copy(self.common_line_metadata)
-            unvisited_meta_pks = set(self.combinatorial_line_metadata.iterkeys())
+            unvisited_meta_pks = set(self.combinatorial_line_metadata.keys())
             self._visit_new_lines_helper(line_metadata, unvisited_meta_pks, visitor)
 
     def _visit_new_lines_helper(self, line_metadata, unvisited_meta_pks, visitor):
@@ -994,7 +994,6 @@ class CombinatorialDescriptionInput(object):
         unvisited_meta_pks = copy.copy(unvisited_meta_pks)  # only outer loop visitation counts!
         meta_pk = unvisited_meta_pks.pop()
         combinatorial_values = self.combinatorial_line_metadata[meta_pk]
-        cache = self._cache
 
         for value in combinatorial_values:
             line_metadata[meta_pk] = value
@@ -1005,7 +1004,6 @@ class CombinatorialDescriptionInput(object):
             self.importer.add_error(BAD_GENERIC_INPUT_CATEGORY, ZERO_REPLICATES)
 
         for replicate_num in range(1, self.replicate_count + 1):
-
             line_name = self.naming_strategy.get_line_name(line_metadata_dict, replicate_num)
             line = visitor.visit_line(
                 line_name,
@@ -1024,12 +1022,12 @@ class CombinatorialDescriptionInput(object):
                 combo = self.protocol_to_combinatorial_metadata_dict[protocol_pk]
                 visited_pks = set()
                 # outer loop for combinatorial
-                for metadata_pk, values in combo.iteritems():
+                for metadata_pk, values in viewitems(combo):
                     visited_pks.add(metadata_pk)
                     for value in values:
                         assay_metadata[metadata_pk] = value
                         # inner loop for combinatorial
-                        for k, v in combo.iteritems():
+                        for k, v in viewitems(combo):
                             if k in visited_pks:
                                 continue
                             for value in v:
@@ -1175,9 +1173,9 @@ def find_existing_strains(parts_by_ice_id, importer):
     not_found = []
 
     if parts_by_ice_id:
-        logger.info('Searching EDD for %d strains...' % len(parts_by_ice_id))
+        logger.info(f'Searching EDD for {len(parts_by_ice_id)} strains...')
 
-    for ice_entry in parts_by_ice_id.itervalues():
+    for ice_entry in viewvalues(parts_by_ice_id):
         # search for the strain by registry ID. Note we use search instead of .get() until the
         # database consistently contains/requires ICE UUID's and enforces uniqueness
         # constraints for them (EDD-158).

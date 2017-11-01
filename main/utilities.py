@@ -1,11 +1,10 @@
 # coding: utf-8
-from __future__ import unicode_literals
 
-from builtins import str
 from collections import defaultdict, Iterable
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.sites.models import Site
+from future.utils import viewitems
 from six import string_types
 from threadlocals.threadlocals import get_current_request
 
@@ -42,12 +41,12 @@ def flatten_json(source):
     # convert lists/tuples to a dict
     if not isinstance(source, dict) and isinstance(source, Iterable):
         source = dict(enumerate(source))
-    for key, value in source.iteritems():
+    for key, value in viewitems(source):
         key = str(key)
         if isinstance(value, string_types):
             output[key] = value
         elif isinstance(value, (dict, Iterable)):
-            for sub, item in flatten_json(value).iteritems():
+            for sub, item in viewitems(flatten_json(value)):
                 output['.'.join((key, sub, ))] = item
         else:
             output[key] = value
