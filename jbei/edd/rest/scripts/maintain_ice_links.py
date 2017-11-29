@@ -25,47 +25,14 @@ from __future__ import unicode_literals
 import json
 import os
 
-os.environ.setdefault('ICE_SETTINGS_MODULE', 'jbei.edd.rest.scripts.settings')
-####################################################################################################
-
-
-####################################################################################################
-# configure an INFO-level logger just for our code (avoids INFO messages from supporting frameworks)
-# Note: needs to be before importing other modules that get a logger reference
-####################################################################################################
-import logging
-import sys
-
-LOG_LEVEL = logging.DEBUG
-# redirect to stdout so log messages appear sequentially
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(LOG_LEVEL)
-formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s: %(message)s')
-console_handler.setFormatter(formatter)
-
-# set a higher log level for supporting frameworks to help with debugging
-root_logger = logging.getLogger('root')
-root_logger.setLevel(LOG_LEVEL)
-root_logger.addHandler(console_handler)
-
-logger = logging.getLogger(__name__)
-logger.setLevel(LOG_LEVEL)
-logger.addHandler(console_handler)
-
-# silence INFO-level messages from elsewhere in the JBEI framework
-# (note that order is important here...must be *after getting the logger instance for this module)
-jbei_root_logger = logging.getLogger('jbei')
-jbei_root_logger.setLevel(logging.WARNING)
-jbei_root_logger.addHandler(console_handler)
-
-####################################################################################################
-
 from collections import OrderedDict
 import argparse
 import arrow
 import locale
+import logging
 import re
 import requests
+from logging.config import dictConfig
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.exceptions import HTTPError
 from urlparse import urlparse
@@ -77,9 +44,13 @@ from jbei.rest.clients.ice.api import ICE_ENTRY_TYPES
 from jbei.rest.utils import is_url_secure
 from jbei.utils import to_human_relevant_delta, UserInputTimer, session_login, TYPICAL_UUID_PATTERN
 
+from . import settings
 from .settings import (EDD_URL, EDD_PRODUCTION_HOSTNAMES, ICE_PRODUCTION_HOSTNAMES, ICE_URL,
-    VERIFY_EDD_CERT,
-    VERIFY_ICE_CERT, EDD_REQUEST_TIMEOUT, ICE_REQUEST_TIMEOUT)
+                       VERIFY_EDD_CERT, VERIFY_ICE_CERT, EDD_REQUEST_TIMEOUT, ICE_REQUEST_TIMEOUT)
+
+dictConfig(settings.LOGGING)
+
+logger = logging.getLogger(__name__)
 
 
 ###################################################################################################
@@ -222,9 +193,9 @@ class StrainProcessingPerformance:
         self.scan_percent_when_complete = scan_percent_when_complete
 
     def print_summary(self):
-        ############################################################################################
+        ###########################################################################################
         # Print a summary of runtime
-        ############################################################################################
+        ###########################################################################################
 
         print('Run time for strain "%(name)s" (pk=%(pk)d): %(time)s' % {
             'name': self.strain.name, 'pk': self.strain.pk,

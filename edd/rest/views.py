@@ -13,11 +13,11 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.forms.widgets import TextInput as FormTextInput
 from django_filters import filters as django_filters, rest_framework as filters
 from rest_framework import mixins, response, schemas, viewsets
 from rest_framework.decorators import api_view, permission_classes, renderer_classes
 from rest_framework.permissions import AllowAny, DjangoModelPermissions, IsAuthenticated
-from rest_framework.viewsets import GenericViewSet
 from rest_framework_swagger.renderers import OpenAPIRenderer, SwaggerUIRenderer
 from threadlocals.threadlocals import get_request_variable, set_request_variable
 from uuid import UUID
@@ -28,7 +28,6 @@ from . import serializers
 
 
 logger = logging.getLogger(__name__)
-
 
 @api_view()
 @permission_classes([AllowAny, ])
@@ -92,7 +91,13 @@ class EDDObjectFilter(filters.FilterSet):
         fields = []
 
 
-class StudyFilterMixin(object):
+class StudyObjectFilter(EDDObjectFilter):
+    class Meta:
+        model = models.Study
+        fields = ['slug', 'contact', 'metabolic_map']
+
+
+class StudyInternalsFilterMixin(object):
     """
     Mixin class handling the filtering of a queryset to only return objects linked to a
     visible study.
@@ -101,7 +106,7 @@ class StudyFilterMixin(object):
     _filter_prefix = ''
 
     def filter_queryset(self, queryset):
-        queryset = super(StudyFilterMixin, self).filter_queryset(queryset)
+        queryset = super(StudyInternalsFilterMixin, self).filter_queryset(queryset)
         if not models.Study.user_role_can_read(self.request.user):
             q_filter = models.Study.user_permission_q(
                 self.request.user,
@@ -134,15 +139,17 @@ class StudyFilterMixin(object):
             self.lookup_field = 'uuid'
         except ValueError:
             pass
-        return super(StudyFilterMixin, self).get_object()
+        return super(StudyInternalsFilterMixin, self).get_object()
 
 
-class StudiesViewSet(StudyFilterMixin,
+class StudyObjectFilterMixin(StudyInternalsFilterMixin):
+    filter_class = StudyObjectFilter
+
+
+class StudiesViewSet(StudyObjectFilterMixin,
                      mixins.CreateModelMixin,
                      mixins.UpdateModelMixin,
-                     mixins.RetrieveModelMixin,
-                     mixins.ListModelMixin,
-                     GenericViewSet):
+                     viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that provides access to studies, subject to user/role read access
     controls. Note that some privileged 'manager' users may have access to the base study name,
@@ -150,79 +157,222 @@ class StudiesViewSet(StudyFilterMixin,
     """
     serializer_class = serializers.StudySerializer
     permission_classes = [StudyResourcePermissions]
-    queryset = models.Study.objects.order_by('pk')
+    queryset = models.Study.objects.order_by('pk').select_related('created', 'updated')
 
 
-class LinesViewSet(StudyFilterMixin, viewsets.ReadOnlyModelViewSet):
-    """
-    API endpoint that allows to be searched, viewed, and edited.
-    """
+class LineFilter(EDDObjectFilter):
+    strain = django_filters.CharFilter(name='strains', method='filter_strain')
+    strains__in = django_filters.CharFilter(name='strains', method='filter_strains')
+    # TODO: filter on Carbon Source.  Note that 'in' filtering via Meta.fields doesn't work on
+    # m2m relationships
+
+    class Meta:
+        model = models.Line
+        fields = {
+            'study': ['exact', 'in'],
+            'control': ['exact'],
+            'replicate': ['exact'],
+            'contact': ['exact'],
+            'experimenter': ['exact'],
+        }
+
+    def filter_strain(self, queryset, name, value):
+        return self.filter_strains(queryset, name, (value,))
+
+    def filter_strains(self, queryset, name, values):
+        # split out multiple values similar to other django_filters 'in' param processing
+        values = values.split(',')
+        try:
+            return queryset.filter(strains__registry_id__in=(UUID(value) for value in values))
+        except ValueError:
+            pass
+        return queryset.filter(strains__registry_url__in=values)
+
+
+class LineFilterMixin(StudyInternalsFilterMixin):
+    filter_class = LineFilter
     serializer_class = serializers.LineSerializer
-    queryset = models.Line.objects.order_by('pk')
     _filter_prefix = 'study__'
 
-
-class StudyLinesView(StudyFilterMixin, mixins.ListModelMixin, GenericViewSet):
-    """
-    API endpoint that allows lines within a study to be searched, viewed, and edited.
-    """
-    serializer_class = serializers.LineSerializer
-    _filter_prefix = 'study__'
-
     @cached_request_queryset
     def get_queryset(self):
-        return models.Line.objects.filter(self.get_nested_filter()).order_by('pk')
+        qs = models.Line.objects.order_by('pk')
+        qs = qs.select_related('created', 'updated')
+        return qs.prefetch_related('strains', 'carbon_source')
 
 
-class AssaysViewSet(StudyFilterMixin, viewsets.ReadOnlyModelViewSet):
+class LinesViewSet(LineFilterMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows Lines to be searched, viewed, and edited.
+    """
+    pass
+
+
+class StudyLinesView(LineFilterMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows Lines within a study to be searched, viewed, and edited.
+    """
+    @cached_request_queryset
+    def get_queryset(self):
+        return super(StudyLinesView, self).get_queryset().filter(self.get_nested_filter())
+
+
+class AssayFilter(EDDObjectFilter):
+    class Meta:
+        model = models.Assay
+        fields = {
+            'line': ['exact', 'in'],
+            'protocol': ['exact', 'in'],
+            'experimenter': ['exact', 'in'],
+        }
+
+
+class AssayFilterMixin(StudyInternalsFilterMixin):
+    filter_class = AssayFilter
     serializer_class = serializers.AssaySerializer
-    queryset = models.Assay.objects.order_by('pk')
     _filter_prefix = 'line__study__'
 
-
-class StudyAssaysViewSet(StudyFilterMixin, mixins.ListModelMixin, GenericViewSet):
-    serializer_class = serializers.AssaySerializer
-    _filter_prefix = 'line__study__'
-
     @cached_request_queryset
     def get_queryset(self):
-        return models.Assay.objects.filter(self.get_nested_filter()).order_by('pk')
+        qs = models.Assay.objects.order_by('pk')
+        return qs.select_related('created', 'updated')
 
 
-class MeasurementsViewSet(StudyFilterMixin, viewsets.ReadOnlyModelViewSet):
+class AssaysViewSet(AssayFilterMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows Assays to be searched, viewed, and edited.
+    """
+    pass
+
+
+class StudyAssaysViewSet(AssayFilterMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows Assays within a study to be searched, viewed, and edited.
+    """
+    @cached_request_queryset
+    def get_queryset(self):
+        return super(StudyAssaysViewSet, self).get_queryset().filter(self.get_nested_filter())
+
+
+class MeasurementFilter(filters.FilterSet):
+    active = django_filters.BooleanFilter(name='active')
+    created_before = django_filters.IsoDateTimeFilter(
+        name='update_ref__mod_time',
+        lookup_expr='lte',
+    )
+    created_after = django_filters.IsoDateTimeFilter(
+        name='update_ref__mod_time',
+        lookup_expr='gte',
+    )
+    compartment = django_filters.ChoiceFilter(
+        name='compartment',
+        choices=models.Measurement.Compartment.CHOICE,
+    )
+    line = django_filters.ModelChoiceFilter(
+        name='assay__line',
+        queryset=models.Line.objects.all(),
+    )
+    measurement_format = django_filters.ChoiceFilter(
+        name='measurement_format',
+        choices=models.Measurement.Format.CHOICE,
+    )
+
+    class Meta:
+        model = models.Measurement
+        fields = {'assay': ['exact', 'in'],
+                  'measurement_type': ['exact', 'in'],
+                  'x_units': ['exact', 'in'],
+                  'y_units': ['exact', 'in']}
+
+
+class MeasurementFilterMixin(StudyInternalsFilterMixin):
+    filter_class = MeasurementFilter
     serializer_class = serializers.MeasurementSerializer
-    queryset = models.Measurement.objects.order_by('pk')
     _filter_prefix = 'assay__line__study__'
 
+    @cached_request_queryset
+    def get_queryset(self):
+        qs = models.Measurement.objects.order_by('pk')
+        return qs.select_related('update_ref')
 
-class StudyMeasurementsViewSet(StudyFilterMixin, mixins.ListModelMixin, GenericViewSet):
-    serializer_class = serializers.MeasurementSerializer
-    _filter_prefix = 'assay__line__study__'
+
+class MeasurementsViewSet(MeasurementFilterMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows Measurements to be searched, viewed, and edited.
+    """
+    pass
+
+
+class StudyMeasurementsViewSet(MeasurementFilterMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows Measurements within a study to be searched, viewed, and edited.
+    """
+    @cached_request_queryset
+    def get_queryset(self):
+        qs = super(StudyMeasurementsViewSet, self).get_queryset()
+        return qs.filter(self.get_nested_filter())
+
+
+class MeasurementValueFilter(filters.FilterSet):
+    assay = django_filters.ModelChoiceFilter(
+        name='measurement__assay',
+        queryset=models.Assay.objects.all(),
+    )
+    created_before = django_filters.IsoDateTimeFilter(
+        name='updated__mod_time',
+        lookup_expr='lte',
+    )
+    created_after = django_filters.IsoDateTimeFilter(
+        name='updated__mod_time',
+        lookup_expr='gte',
+    )
+    line = django_filters.ModelChoiceFilter(
+        name='measurement__assay__line',
+        queryset=models.Line.objects.all(),
+    )
+    x__gt = django_filters.NumberFilter(name='x', lookup_expr='0__gte')
+    x__lt = django_filters.NumberFilter(name='x', lookup_expr='0__lte')
+    y__gt = django_filters.NumberFilter(name='y', lookup_expr='0__gte')
+    y__lt = django_filters.NumberFilter(name='y', lookup_expr='0__lte')
+
+    class Meta:
+        model = models.MeasurementValue
+        fields = {'measurement': ['exact', 'in']}
+
+
+class ValuesFilterMixin(StudyInternalsFilterMixin):
+    filter_class = MeasurementValueFilter
+    serializer_class = serializers.MeasurementValueSerializer
+    _filter_prefix = 'measurement__assay__line__study__'
 
     @cached_request_queryset
     def get_queryset(self):
-        return models.Measurement.objects.filter(self.get_nested_filter()).order_by('pk')
+        return models.MeasurementValue.objects.order_by('pk').select_related('updated')
 
 
-class MeasurementValuesViewSet(StudyFilterMixin, viewsets.ReadOnlyModelViewSet):
-    serializer_class = serializers.MeasurementValueSerializer
-    queryset = models.MeasurementValue.objects.order_by('pk')
-    _filter_prefix = 'measurement__assay__line__study__'
+class MeasurementValuesViewSet(ValuesFilterMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows Values to be searched, viewed, and edited.
+    """
+    pass
 
 
-class StudyValuesViewSet(StudyFilterMixin, mixins.ListModelMixin, GenericViewSet):
-    serializer_class = serializers.MeasurementValueSerializer
-    _filter_prefix = 'measurement__assay__line__study__'
-
+class StudyValuesViewSet(ValuesFilterMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows Values within a study to be searched, viewed, and edited.
+    """
     @cached_request_queryset
     def get_queryset(self):
-        return models.MeasurementValue.objects.filter(self.get_nested_filter()).order_by('pk')
+        return super(StudyValuesViewSet, self).get_queryset().filter(self.get_nested_filter())
 
 
 class MeasurementTypesFilter(filters.FilterSet):
+    type_name = django_filters.CharFilter(name='type_name', lookup_expr='iregex')
+    type_group = django_filters.CharFilter(name='type_group', lookup_expr='iregex')
+
     class Meta:
         model = models.MeasurementType
-        fields = ['type_group']
+        fields = []
 
 
 class MeasurementTypesViewSet(viewsets.ReadOnlyModelViewSet):
@@ -281,7 +431,17 @@ class MetadataTypeViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.MetadataTypeSerializer
 
 
+class MeasurementUnitFilter(filters.FilterSet):
+    unit_name = django_filters.CharFilter(name='unit_name', lookup_expr='iregex')
+    alternate_names = django_filters.CharFilter(name='alternate_names', lookup_expr='iregex')
+
+    class Meta:
+        model = models.MeasurementUnit
+        fields = []
+
+
 class MeasurementUnitViewSet(viewsets.ReadOnlyModelViewSet):
+    filter_class = MeasurementUnitFilter
     queryset = models.MeasurementUnit.objects.order_by('pk')
     serializer_class = serializers.MeasurementUnitSerializer
     lookup_url_kwarg = 'id'
@@ -294,7 +454,7 @@ class ProtocolFilter(EDDObjectFilter):
 
 
 class ProtocolViewSet(viewsets.ReadOnlyModelViewSet):
-    filter_class = EDDObjectFilter
+    filter_class = ProtocolFilter
     queryset = models.Protocol.objects.order_by('pk')
     serializer_class = serializers.ProtocolSerializer
 

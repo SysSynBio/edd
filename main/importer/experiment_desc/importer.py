@@ -20,7 +20,7 @@ from pprint import pformat
 from requests import codes
 
 from jbei.rest.clients.ice.api import Strain as IceStrain
-from jbei.rest.clients.ice.utils import make_entry_url
+from jbei.rest.clients.ice.utils import build_entry_ui_url
 from main.models import Protocol, MetadataType, Strain, Assay, Line
 from main.tasks import create_ice_connection
 # avoiding loading a ton of names to the module by only loading the namespace to constants
