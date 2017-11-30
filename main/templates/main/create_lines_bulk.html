@@ -24,7 +24,7 @@
     <div id="no-abbrev-options-div" class="off">No more items available</div>
 </div>
     <!-- Step 1 -->
-    <div class="pageSection" id="select_input_source_step">
+    <div class="pageSection stepBorder" id="select_input_source_step">
         <div class="sectionHead">Step 1: Choose the source(s) for line definitions</div>
             <div class="sectionContent">
                 <ul id="step1_list">
@@ -48,7 +48,7 @@
             </div>
     </div>
     <!-- Step 2 (Dynamic) -->
-    <div class="pageSection" id="select_line_properties_step_dynamic">
+    <div class="pageSection stepBorder" id="select_line_properties_step_dynamic">
         <div class="sectionHead">Step 2: Choose line properties relevant to your experiment</div>
         <div class="sectionContent">
             <div id="step2_status_div"></div>
@@ -71,11 +71,10 @@
         </div>
     </div>
     <!-- Step 3 -->
-    <div class="pageSection" id="choose_line_names_step">
-        <div class="sectionHead">Step 3: Choose the order of identifying data in generated line
-            names:</div>
+    <div class="pageSection stepBorder" id="choose_line_names_step">
+        <div class="sectionHead">Step 3: Choose the order of identifying data in line names</div>
         <div class="sectionContent">
-
+            <div>
                 <div class="step3_subsection">
                     <label>Custom Name Elements:</label>
                 <button name="add_custom_label" class="addButton">
@@ -88,8 +87,10 @@
                     <div class="bulk_lines_table_cell"><label>Value</label></div>
                 </div>
             </div>
-            <div
-                    class="step3_subsection">
+        </div>
+        </div>
+        <div class="sectionContent stepSeparator">
+            <div class="step3_subsection">
                 <label for="name_ordering_table">Name Element Order:</label>
             </div>
             <div class="bulk-line-table" id="name_ordering_table">
@@ -112,6 +113,8 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="sectionContent stepSeparator">
                 <div class="step3_subsection"><label>Abbreviations:</label><button
                         id="addAbbreviationButton" class="addButton">
                             <span class="ui-icon ui-icon-plusthick"></span></button></div>
@@ -129,9 +132,9 @@
                         </div>
                     </div>
                 </div>
+        </div>
     </div>
-
-    <div class="pageSection" id="review_step">
+    <div class="pageSection stepBorder" id="review_step">
             <div id="step4Label" class="sectionHead">Step 4: Review line creation summary</div>
             <div class="sectionContent">
                 <div id="step4-status-div"></div>

@@ -1,3 +1,4 @@
+/// <reference types="jqueryui" />
 import { EDDAuto } from "../modules/EDDAutocomplete"
 import { EddRest } from "../modules/EDDRest"
 import { Utl } from "../modules/Utl"
@@ -63,7 +64,7 @@ module CreateLines {
                 'request_all': true, // get all result pages
                 'wait': showWaitMessage,
                 'context': EddRest.LINE_METADATA_CONTEXT,
-                'sort_order': EddRest.ASCENDING_SORT, //
+                'ordering': 'type_name',
             });
     }
 

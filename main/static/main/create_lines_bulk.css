@@ -39,11 +39,11 @@
 }
 
 .step3_subsection {
-    margin-top: 25px;
+    margin-top: 15px;
 }
 
 .step3_subsection, .step3_subsection label {
-    font-size: 110%;
+    /*font-size: 110%;*/
     font-weight: bold;
     text-decoration: underline;
 }
@@ -205,6 +205,21 @@ input[type="radio"] {
 
 }
 
+
+/* TODO: consider relocating these import-derived classes to a "multistep.css" or similar. */
 div.sectionContent {
     padding-bottom: 30px;
+}
+
+.stepBorder {
+	background: #fcfcfc;
+    margin: 10px 8px 3px 8px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #a0a0a0;
+}
+
+.stepSeparator {
+	border-top:1px solid #6CA5E9;
+	padding:0em 1em 3px 3em;
 }
