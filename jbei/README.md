@@ -41,7 +41,7 @@ You have two options for setting up a Python environment to run this code.
    out the Docker image, just run the following example steps:
    
        docker pull jbei/rest-client:latest
-       docker run -it --entrypoint /bin/bash jbei/rest-client:latest
+       docker run -it --rm --entrypoint /bin/bash jbei/rest-client:latest
        
    At this point, you'll get a terminal prompt for the running Docker container, and you can 
    execute the sample scripts (see sample commands below). 
@@ -51,7 +51,7 @@ You have two options for setting up a Python environment to run this code.
    providing them as command line arguments.  You can use Docker's `--mount` option to make a 
    file from your computer visible inside the Docker container, e.g.
 
-       docker run -it --entrypoint /bin/bash  \
+       docker run -it --rm --entrypoint /bin/bash  \
            --mount type=bind,src=/your/local/path/local.py,
            dst=/code/jbei/edd/rest/scripts/settings/local.py \
            jbei/rest-client:latest
