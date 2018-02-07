@@ -669,8 +669,8 @@ def authenticate_with_apis(args, user_input):
     # trying to query strain data
     ##############################
     ice = None
-    ice_login_details = None
     try:
+        logger.info('Logging into ICE at %s...' % ice_url)
         login_application = 'ICE'
         ice_login_details = session_login(IceSessionAuth, ice_url, login_application,
                                           username_arg=edd_login_details.username,
