@@ -324,8 +324,9 @@ class EddSessionAuth(AuthBase):
             _DJANGO_LOGIN_FAILURE_CONTENT = 'Login failed'
             _DJANGO_REST_API_FAILURE_CONTENT = 'This field is required'
 
-            # while EDD server-side code is transitioning from Python 2 to 3, convert response
-            # to unicode so client can tolerate either bytestring or unicode content
+            # Note use of response.text here instead of response.content.  While EDD server-side
+            # code is transitioning from Python 2 to 3, .text is important for converting response
+            # to unicode so client can tolerate either bytestring or unicode content from server.
             if (_DJANGO_LOGIN_FAILURE_CONTENT in response.text or
                     _DJANGO_REST_API_FAILURE_CONTENT in response.text):
                 logger.warning('Login failed. Please try again.')

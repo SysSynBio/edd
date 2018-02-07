@@ -620,8 +620,8 @@ class EddApi(RestApiClient):
             returned in the "next" result from a results page).  If provided, all other
             parameters will be ignored.
         :param slug: the slug (URL portion) that uniquely identifies the study within this
-                     EDD instance.  This is the URL portion visible in the web browser when
-                     accessing a study.
+            DD instance.  This is the URL portion visible in the web browser when
+            accessing a study.
         :param name_regex: a regular expression for the name (case-insensitive).
         :param description_regex: a regular expression for the description (case-insensitive)
         :param created_after: a datetime used to filter objects by creation date (inclusive)

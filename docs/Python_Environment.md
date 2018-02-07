@@ -8,7 +8,7 @@ code distributed with EDD.
 
 Don't panic! :-)
 
-These directions assume you're using a Mac and that you're basically comfortable using the OSX 
+These directions assume you're using a Mac and that you're basically comfortable using the OSX
 Terminal. If not, or if you use
 other Python tools such as iPython, Jupyter, Pandas, etc and aren't comfortable working with
 virtual environments, it's probably best to ask for help.
@@ -25,16 +25,16 @@ This stuff can be intimidating! Ask for help!
 #### Install basic development tools needed to support the scripts.
 Depending on what's already installed on your computer, you'll want to consider
 following directions the sections below. If you're a software developer and have already configured
-Docker for development, you can skip this section and just run scripts from inside the 
-`jbei/rest-client` container, or from within EDD's `edd` container. Directions below are for 
-configuring a new Python 3 environment with only the minimal dependencies for scripts that 
+Docker for development, you can skip this section and just run scripts from inside the
+`jbei/rest-client` container, or from within EDD's `edd` container. Directions below are for
+configuring a new Python 3 environment with only the minimal dependencies for scripts that
 interact with, but aren't an integral part of, EDD.
 
 1. Install XCode: <a name="XCode"></a>
     Install XCode and associated Developer Tools via the App Store. If you type `git` at the
     command line and get a usage message rather than `command not found` or similar , you can
     probably skip this step.
-    * As of OS X 10.9 "Mavericks": you can just run `xcode-select --install` at the terminal to 
+    * As of OS X 10.9 "Mavericks": you can just run `xcode-select --install` at the terminal to
       just only get the command-line tools
 2. Install [Homebrew][3] <a name="HomeBrew"></a>
 
@@ -62,19 +62,19 @@ interact with, but aren't an integral part of, EDD.
     `defaults write com.apple.finder AppleShowAllFiles YES`
 
 5. Create a [virtual environment][4] to
-   isolate dependencies for these scripts from other Python code on your computer. Even if you 
-   don't do any other Python work at present, it's best to start off on the right foot in case 
+   isolate dependencies for these scripts from other Python code on your computer. Even if you
+   don't do any other Python work at present, it's best to start off on the right foot in case
    you need to do so later on.
 
    * Install virtualenvwrapper
 
        `sudo pip3 install virtualenvwrapper`
-   * Add the following lines to your shell startup file (e.g. 
-     `/Users/your_username/.bash_profile`), or create one if it doesn't exist. Remember that 
-     because this file is hidden (starts with a '.'), it may not be visible by default (see 
+   * Add the following lines to your shell startup file (e.g.
+     `/Users/your_username/.bash_profile`), or create one if it doesn't exist. Remember that
+     because this file is hidden (starts with a '.'), it may not be visible by default (see
      previous step).
-   
-     Open the text editor of your choice to open/create `.bash_profile` and add the following 
+
+     Open the text editor of your choice to open/create `.bash_profile` and add the following
      lines:
 
             # configure virtualenvwrapper to isolate Python environments
@@ -92,9 +92,9 @@ interact with, but aren't an integral part of, EDD.
 6. Check that your Terminal is working in the context of the the virtual environment you just
 created.
 
-    After running commands above to create a virtual environment, you'll want to get in the habit 
+    After running commands above to create a virtual environment, you'll want to get in the habit
     of checking that your terminal is using the correct virtual environment before running scripts
-    included in this package, and especially before using `pip3` to change the installed Python
+    included in this package, and especially before using `pip` to change the installed Python
     packages.
 
     To check which virtual environment your Terminal is in, run the Terminal and look at the
@@ -102,16 +102,16 @@ created.
     beginning of the prompt. For example:
 
         (jbei)username@hostname:/Users/username$
-    Alternately, you can edit change your `.bash_profile` to use this virtual environment by 
+    Alternately, you can edit change your `.bash_profile` to use this virtual environment by
     default by appending the line `workon jbei` after the commands you added above.
 
 #### Check out code to run the scripts
-	
-* Download scripts from [the GitHub repo][5]. 
-  These files may eventually be hosted elsewhere, but for now the initial versions are being 
+
+* Download scripts from [the GitHub repo][5].
+  These files may eventually be hosted elsewhere, but for now the initial versions are being
   developed/maintained concurrently with EDD.
 * Do a sparse checkout
-  to get just the subsection of EDD code that you need to run these scripts. You won't want the 
+  to get just the subsection of EDD code that you need to run these scripts. You won't want the
   whole application codebase. For example, run the following commands:
    * Create and initialize your local repo (replacing the sample on the last line below with
    your own LDAP username):
@@ -123,7 +123,7 @@ created.
 
            git config core.sparsecheckout true
 	   
-   * Configure git's `sparse-checkout`` file to get just the script code and its dependencies in 
+   * Configure git's `sparse-checkout`` file to get just the script code and its dependencies in
      the EDD code
 
            echo jbei/* >> .git/info/sparse-checkout
@@ -145,7 +145,7 @@ created.
       PYTHONPATH=$PYTHONPATH:`pwd`/code
 
   Alternately, update the `PYTHNONPATH` in your `.bash_profile`
-	   
+
 #### Get the latest code
 
 From the repository directory you configured, just run
