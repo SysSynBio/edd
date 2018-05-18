@@ -99,12 +99,12 @@ class ErrorAggregator(object):
 
     @staticmethod
     def _issue(dest, type_id, subcategory=None, occurrence=None):
-        summary = dest.get(type_id)
-        if not summary:
-            summary = ImportErrorSummary(type_id)
-            dest[type_id] = summary
+        errs = dest.get(type_id)
+        if not errs:
+            errs = ImportErrorSummary(type_id)
+            dest[type_id] = errs
         if occurrence:
-            summary.add_occurrence(occurrence=occurrence, subcategory=subcategory)
+            errs.add_occurrence(occurrence=occurrence, subcategory=subcategory)
 
     def add_errors(self, err_type, subcategory=None, occurrences=None):
         logger.debug(f'add_errors called! {err_type}: {occurrences}')
@@ -115,6 +115,7 @@ class ErrorAggregator(object):
         for detail in occurrences:
             self.add_warning(warn_type, occurrence=detail)
 
+    # TODO: add / enforce a limit so we aren't adding an unbounded list
     def raise_errors(self, err_type=None, subcategory=None, occurrences=None):
         if err_type:
             self.add_errors(err_type, subcategory=subcategory, occurrences=occurrences)

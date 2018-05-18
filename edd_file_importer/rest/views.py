@@ -124,7 +124,7 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
             # if client requested a status transition, in this case, likely to SUBMITTED, verify
             # that import state is consistent with attempting it
             response = self.attempt_status_transition(import_, request.data.get('status', None),
-                                                      ui_payload.get('required_values'))
+                                                      request.user.pk)
             if response:
                 return response
 
@@ -158,8 +158,8 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
         the UI wizard.
         """
 
-        user_pk = request.user.pk,
-        study_pk = self.kwargs['study_pk'],
+        user_pk = request.user.pk
+        study_pk = self.kwargs['study_pk']
         import_pk = self.kwargs['pk']
 
         try:
@@ -199,9 +199,9 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
 
             # otherwise, save changes and determine any additional missing inputs
             else:
-                self._save_context(import_, request)
+                self._save_context(import_, request, study_pk, import_pk, user_pk)
 
-            # if client requested a status transition, verify it and try to fulfill
+            # if client requested a status transition, verify it and try to fulfill.
             response = self.attempt_status_transition(import_, request.data.get('status', None),
                                                       user_pk)
             if response:
@@ -237,14 +237,16 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
     def update(self, request, *args, **kwargs):
         pass  # TODO
 
-    def _save_context(self, import_, request):
+    def _save_context(self, import_, request, study_pk, import_pk, user_pk):
         """
         Saves parameters to persistent storage that don't require reprocessing the file, but will
         affect the final stage of the import.  Note we purposefully don't let just anything
-        through here, e.g. allowing client to change "study" or "status"
+        through here, e.g. allowing client to change "study" or "status".
         """
         update_params = [param for param in ('x_units', 'y_units', 'compartment')
                          if param in request.data]
+        logger.info(f'Updating import context for study {study_pk}, import {import_pk}, '
+                    f'user {user_pk}')
         for param in update_params:
             setattr(import_, param, request.data.get(param))
         import_.save()
@@ -329,13 +331,12 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
         except import_table_task.OperationalError as e:
             import_.status = Import.Status.FAILED
             import_.save()
-
-            logger.exception('Exception submitting import {existing_import.uuid}')
+            logger.exception(f'Exception submitting import {import_.uuid}')
             return self._build_simple_err_response(
                 'Error',
                 'An unexpected error occurred',
                 status=codes.internal_server_error,
-                detail=e.message)
+                detail=str(e))
 
     def _build_err_response(self, aggregator, status=codes.bad_request):
         # flatten errors & warnings into a single list to send to the UI. Each ImportErrorSummary

@@ -56,7 +56,7 @@ class FileProcessingCodes(Enum):
 parse_code_to_ui_detail = {
     # basic file read errors
     FileParseCodes.UNSUPPORTED_FILE_TYPE: {
-        'category': _('Bad file'),
+        'category': _('Invalid file'),
         'summary': _('Unsupported file type'),
     },
     FileParseCodes.EMPTY_FILE: {
@@ -67,14 +67,14 @@ parse_code_to_ui_detail = {
     # file format errors
     FileParseCodes.IGNORED_WORKSHEET: {
         'category': _('Ignored data'),
-        'summary': _(''),
+        'summary': _('Worksheets ignored'),
     },
     FileParseCodes.MISSING_REQ_COL_HEADER: {
-        'category': _('Bad file'),
-        'summary': _(''),
+        'category': _('Invalid file'),
+        'summary': _('Required column headers missing'),
     },
     FileParseCodes.DUPLICATE_COL_HEADER: {
-        'category': _('Bad file'),
+        'category': _('Invalid file'),
         'summary': _('Duplicate column headers'),
     },
     FileParseCodes.COLUMN_IGNORED: {
@@ -83,20 +83,20 @@ parse_code_to_ui_detail = {
     },
     FileParseCodes.IGNORED_VALUE_BEFORE_HEADERS: {
         'category': _('Ignored data'),
-        'summary': _(''),
+        'summary': _('Ignored values before recognized headers'),
     },
 
     # file content errors
     FileParseCodes.UNSUPPORTED_UNITS: {
-        'category': _('Bad file'),
+        'category': _('Invalid file'),
         'summary': _('Unsupported units'),
     },
     FileParseCodes.MISSING_REQ_VALUE: {
-        'category': _('Bad file'),
+        'category': _('Invalid file'),
         'summary': _('Required values missing'),
     },
     FileParseCodes.INVALID_VALUE: {
-        'category': _('Bad file'),
+        'category': _('Invalid file'),
         'summary': _('Invalid value'),
     },
     FileParseCodes.DUPLICATE_DATA_ENTRY: {
@@ -108,7 +108,7 @@ parse_code_to_ui_detail = {
 processing_code_to_ui_detail = {
     # invalid identifier format
     FileProcessingCodes.INVALID_ID_FORMAT: {
-        'category': _('Bad file'),
+        'category': _('Invalid file'),
         'summary': _('Invalid identifier format'),
     },
 
@@ -123,9 +123,9 @@ processing_code_to_ui_detail = {
     },
 
     FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS: {
-        'category': _('Unmatched study internals'),
-        'summary': _('Identifiers must either match line or assay names in the study.  Neither '
-                     'matched'),
+        'category': _("File doesn't match study"),
+        'summary': _('Identifiers in your file must either match line or assay names in the '
+                     'study'),
     },
     FileProcessingCodes.MEASUREMENT_TYPE_NOT_FOUND: {
         'category': _('Identifiers not found'),
@@ -139,13 +139,13 @@ processing_code_to_ui_detail = {
 
     FileProcessingCodes.MEASUREMENT_COLLISION: {
         'category': _('Measurement collision'),
-        'summary': _('File contains duplicate measurements of the same quantity at the same time'),
+        'summary': _('Duplicate simultaneous measurements'),
     },
 
     FileProcessingCodes.MERGE_NOT_SUPPORTED: {
         'category': _('Merge not yet supported'),
-        'summary': _('Your study already contains data for this protocol.  Merge is not yet '
-                     'supported.'),
+        'summary': _("Your study already contains data for this protocol.  Merge with existing "
+                     "assays isn't supported"),
     }
 }
 

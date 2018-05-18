@@ -188,8 +188,8 @@ class ImportFileHandler(ErrorAggregator):
         if not matched_assays:
             matched_lines = self._verify_line_or_assay_match(line_or_assay_names, lines=True)
             if not matched_lines:
-                self.raise_error(FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS,
-                                 line_or_assay_names)
+                self.raise_errors(FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS,
+                                  occurrences=line_or_assay_names)
 
         ###########################################################################################
         # Resolve MeasurementType and MeasurementUnit identifiers from local and/or remote sources
@@ -275,6 +275,10 @@ class ImportFileHandler(ErrorAggregator):
                 defaults=import_context)
 
     def _verify_line_or_assay_match(self, line_or_assay_names, lines):
+        """
+        @:return the number of items in line_or_assay_names that match items in the study
+        """
+
         context = self.cache
         extract_vals = ['name', 'pk']
         if lines:
@@ -367,6 +371,7 @@ class ImportFileHandler(ErrorAggregator):
             mtype_class = MTYPE_GROUP_TO_CLASS[mtype_group]
             return mtype_class.load_or_create(mtype_id, self.cache.user)
 
+    # TODO: reduce complexity
     def cache_resolved_import(self, import_id, parser, matched_assays, initial_upload):
         """
         Converts MeasurementParseRecords into JSON to send to the legacy import Celery task.
@@ -414,7 +419,8 @@ class ImportFileHandler(ErrorAggregator):
                     # detect parse records that clash with each other, e.g. that fall
                     # exactly on the same line/assay + time + measurement type
                     if import_time == parsed_time:
-                        self._record_record_clash(import_time, import_record, parse_record, mtype)
+                        self._record_record_clash(parse_record.line_or_assay_name, import_time,
+                                                  import_record, parse_record, mtype)
                     elif import_time > parsed_time:
                         insert_index = index
                         break
@@ -422,6 +428,8 @@ class ImportFileHandler(ErrorAggregator):
                     import_series.insert(insert_index, parse_record.data)
                 else:
                     import_series.append(parse_record.data)
+
+        self.raise_errors()   # raise any errors detected during the merge (e.g. duplicate entries)
 
         import_records_list = list(import_records.values())
 
@@ -478,17 +486,20 @@ class ImportFileHandler(ErrorAggregator):
             'src_ids': []  # ids for where the data came from, e.g. row #s in an Excel file
         }
 
+        protocol = self.cache.protocol
+
         if matched_assays:
             import_record['assay_id'] = assay_or_line_pk
         else:
             line_pk = assay_or_line_pk
             import_record['assay_id'] = 'new'
             import_record['line_id'] = line_pk
-            import_record['protocol_id'] = self.cache.protocol.pk
-            assays_count = Assay.objects.filter(line_id=line_pk,
-                                                protocol_id=self.cache.protocol.pk).count()
-            if assays_count:
-                self.raise_error(FileProcessingCodes.MERGE_NOT_SUPPORTED)
+            import_record['protocol_id'] = protocol.pk
+            assays = Assay.objects.filter(line_id=line_pk,
+                                          protocol_id=protocol.pk).values_list('name')
+            if assays:
+                self.raise_errors(FileProcessingCodes.MERGE_NOT_SUPPORTED,
+                                  occurrences=assays)
 
         return import_record
 
@@ -506,13 +517,15 @@ class ImportFileHandler(ErrorAggregator):
         for i in range(0, len(import_records), cache_page_size):
             yield import_records[i:i+cache_page_size]
 
-    def _record_record_clash(self, import_time, import_record, parse_record, mtype):
+    def _record_record_clash(self, loa_name, import_time, import_record, parse_record,
+                             mtype):
         occurrences = []
-        if len(import_record.src_ids) == 1:
-            occurrences.extend(import_record.src_ids)
+        if len(import_record['src_ids']) == 1:
+            occurrences.extend(import_record['src_ids'])
         occurrences.append(parse_record.src_id)
         self.add_errors(FileProcessingCodes.MEASUREMENT_COLLISION,
-                        f'({mtype.type_name}, T={import_time})', occurrences=occurrences)
+                        f'({loa_name}: {mtype.type_name}, T={import_time})',
+                        occurrences=occurrences)
         return True
 
 
@@ -627,6 +640,7 @@ def build_ui_payload_from_cache(import_):
 
     :return: the UI JSON for Step 4 "Inspect"
     """
+    logger.info(f"Building import {import_.pk}'s UI payload from cache.")
     parser = SeriesCacheParser(master_units=import_.y_units)
     import_records = parser.parse(import_.uuid)
     aggregator = ErrorAggregator()

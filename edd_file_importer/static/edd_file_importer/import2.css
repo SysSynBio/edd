@@ -1,0 +1,71 @@
+.helpButton {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background-size: contain;
+    margin-left: auto;
+}
+
+.errorMessageContent {
+    margin-left: 10px;
+    margin-top: 10px;
+}
+
+.contextBreadcrumbs {
+    display: inline-block;
+    margin-bottom: 20px;
+    margin-right: 20px;
+    margin-top: 10px;
+}
+
+.emphasizeErrorSubject, .contextSectionHeader {
+    text-decoration: underline;
+}
+
+#importWizard H2 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.import2SectionHead {
+    display: flex;
+    flex-grow: 0;
+}
+
+.import2SectionHead .helpButton {
+    flex-grow: 0;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.import2SectionHead h2 {
+    flex-grow: 0;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.prototype {
+    color: red;
+    font-style: italic;
+}
+
+#prototype-status-div {
+    /*width: 100%; */
+    margin-top: 50px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: lightgrey;
+}
+
+#prototype-status-div li {
+    margin-left: 20px;
+}
+
+.progtrckr {
+    text-align: center;
+    padding-bottom: 16px;
+}
+
+.stepDiv {
+    margin-bottom: 30px;
+}
