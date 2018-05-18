@@ -11,6 +11,7 @@ from openpyxl import load_workbook
 from openpyxl.utils.cell import get_column_letter
 from six import string_types
 
+from ..constants import OPT_UNIT_SUFFIX
 from .constants import (
     ABBREVIATIONS_SECTION,
     BAD_FILE_CATEGORY,
