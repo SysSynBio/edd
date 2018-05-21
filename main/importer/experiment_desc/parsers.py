@@ -58,6 +58,7 @@ from .utilities import (
     CombinatorialDescriptionInput,
     NamingStrategy
 )
+from ..constants import OPT_UNIT_SUFFIX
 from jbei.utils import TYPICAL_JBEI_ICE_PART_NUMBER_REGEX
 from main.importer.experiment_desc.validators import SCHEMA as JSON_SCHEMA
 
@@ -93,9 +94,8 @@ _TIME_VALUE_REGEX = r'^\s*(\d+(?:\.\d+)?)\s*h\s*$'
 _TIME_VALUE_PATTERN = re.compile(_TIME_VALUE_REGEX, re.IGNORECASE)
 
 # tests whether the input string ends with 's' or '(s)'
-_OPT_UNIT_SUFFIX = r'(?:\s*(?:\(%(units)s\)|%(units)s))?'
-_TYPE_NAME_REGEX = r'^%(type_name)s' + _OPT_UNIT_SUFFIX + '$'
-_PLURALIZED_REGEX = r'^%(type_name)s(?:S|\(S\))' + _OPT_UNIT_SUFFIX + '$'
+_TYPE_NAME_REGEX = r'^%(type_name)s' + OPT_UNIT_SUFFIX + '$'
+_PLURALIZED_REGEX = r'^%(type_name)s(?:S|\(S\))' + OPT_UNIT_SUFFIX + '$'
 
 _WHITESPACE_PATTERN = re.compile(r'\s+')
 
