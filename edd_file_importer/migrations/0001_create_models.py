@@ -97,8 +97,8 @@ class Migration(migrations.Migration):
                                                        on_delete=django.db.models.deletion.CASCADE,
                                                        parent_link=True, primary_key=True,
                                                        serialize=False, to='main.EDDObject')),
-                ('parser_class', models.CharField(help_text='Name of this object.', max_length=255,
-                                                  verbose_name='Name')),
+                ('parser_class', models.CharField(help_text='Parser class', max_length=255,
+                                                  verbose_name='Parser')),
             ],
             options={
                 'db_table': 'import_format',
