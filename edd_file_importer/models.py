@@ -117,7 +117,7 @@ class ImportCategory(BaseImportModel):
         edd_models.Protocol,
         help_text=_('Protocols that appear in this import category'),
         verbose_name=_('Protocols'),
-        related_name='import_category',
+        related_name='category',
     )
 
     default_mtype_group = models.CharField(
@@ -135,7 +135,7 @@ class ImportCategory(BaseImportModel):
         through='CategoryFormat',
         help_text=_('Supported input formats for this import category'),
         verbose_name=_('File formats'),
-        related_name='import_category')
+        related_name='category')
 
     object_ref = models.OneToOneField(
         BaseImportModel,
