@@ -1204,7 +1204,7 @@ class CombinatorialCreationImporter(object):
                 'total': len(combinatorial_inputs),
             })
             names = input_set.compute_line_and_assay_names(study, self.cache, options)
-            for line_name in names.line_names:
+            for line_name in names.line_or_assay_names:
                 protocol_to_assay_names = names.line_to_protocols_to_assays_list.get(line_name)
 
                 if isinstance(input_set, _ExperimentDescriptionFileRow):
