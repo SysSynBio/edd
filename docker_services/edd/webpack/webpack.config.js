@@ -21,6 +21,7 @@ module.exports = {
     Export: "./code/typescript/src/Export.ts",
     GCMS_Workbench: "./code/typescript/src/GCMS_Workbench.ts",
     Import: "./code/typescript/src/Import.ts",
+    Import2: "./code/typescript/src/Import2.tsx",
     index: "./code/typescript/src/index.ts",
     RNASeq: "./code/typescript/src/RNASeq.ts",
     Skyline_Convert: "./code/typescript/src/Skyline_Convert.ts",

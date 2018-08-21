@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
@@ -48,6 +49,11 @@ study_url_patterns = [
     path('setcontact/',
          login_required(views.StudyUpdateView.as_view(update_action='setcontact'))),
 ]
+
+if 'edd_file_importer' in settings.INSTALLED_APPS:
+    from edd_file_importer.views import ImportView as Import2View
+    study_url_patterns.append(path('import2', login_required(Import2View.as_view()),
+                                   name='import2'))
 
 urlpatterns = [
     # "homepage" URLs

@@ -1,0 +1,23 @@
+.helpButton {
+    display: inline-block;
+    background-image: url("images/help.png");
+    width: 32px;
+    height: 32px;
+    background-size: contain;
+}
+
+.import2SectionHead {
+    display: flex;
+}
+
+.import2SectionHead .helpButton {
+    flex-grow: 0;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.import2SectionHead h2 {
+    flex-grow: 1;
+    margin-top: auto;
+    margin-bottom: auto;
+}
