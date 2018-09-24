@@ -532,8 +532,7 @@ class ImportFileHandler(ErrorAggregator):
 def verify_assay_times(err_aggregator, assay_pks, parser, assay_time_meta_pk):
     """
     Checks existing assays ID'd in the import file for time metadata, and verifies that they
-    all have time metadata (or don't).
-
+    all either have time metadata (or don't).
     :return: a dict that maps assay pk => time if assay times were consistently found,
         None if they were consistently *not* found
     :raises EDDImportError: if time is inconsistently specified or overspecified
