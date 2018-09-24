@@ -52,7 +52,7 @@ study_url_patterns = [
 
 if 'edd_file_importer' in settings.INSTALLED_APPS:
     from edd_file_importer.views import ImportView as Import2View
-    study_url_patterns.append(path('import2', login_required(Import2View.as_view()),
+    study_url_patterns.append(path('import2/', login_required(Import2View.as_view()),
                                    name='import2'))
 
 urlpatterns = [

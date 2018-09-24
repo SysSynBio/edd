@@ -188,8 +188,8 @@ class ImportFileHandler(ErrorAggregator):
         if not matched_assays:
             matched_lines = self._verify_line_or_assay_match(line_or_assay_names, lines=True)
             if not matched_lines:
-                self.raise_error(FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS,
-                                 line_or_assay_names)
+                self.raise_errors(FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS,
+                                  occurrences=line_or_assay_names)
 
         ###########################################################################################
         # Resolve MeasurementType and MeasurementUnit identifiers from local and/or remote sources
@@ -275,6 +275,10 @@ class ImportFileHandler(ErrorAggregator):
                 defaults=import_context)
 
     def _verify_line_or_assay_match(self, line_or_assay_names, lines):
+        """
+        @:return the number of items in line_or_assay_names that match items in the study
+        """
+
         context = self.cache
         extract_vals = ['name', 'pk']
         if lines:
@@ -414,7 +418,8 @@ class ImportFileHandler(ErrorAggregator):
                     # detect parse records that clash with each other, e.g. that fall
                     # exactly on the same line/assay + time + measurement type
                     if import_time == parsed_time:
-                        self._record_record_clash(import_time, import_record, parse_record, mtype)
+                        self._record_record_clash(parse_record.line_or_assay_name, import_time,
+                                                  import_record, parse_record, mtype)
                     elif import_time > parsed_time:
                         insert_index = index
                         break
@@ -422,6 +427,8 @@ class ImportFileHandler(ErrorAggregator):
                     import_series.insert(insert_index, parse_record.data)
                 else:
                     import_series.append(parse_record.data)
+
+        self.raise_errors()   # raise any errors detected during the merge (e.g. duplicate entries)
 
         import_records_list = list(import_records.values())
 
@@ -506,13 +513,15 @@ class ImportFileHandler(ErrorAggregator):
         for i in range(0, len(import_records), cache_page_size):
             yield import_records[i:i+cache_page_size]
 
-    def _record_record_clash(self, import_time, import_record, parse_record, mtype):
+    def _record_record_clash(self, loa_name, import_time, import_record, parse_record,
+                             mtype):
         occurrences = []
-        if len(import_record.src_ids) == 1:
-            occurrences.extend(import_record.src_ids)
+        if len(import_record['src_ids']) == 1:
+            occurrences.extend(import_record['src_ids'])
         occurrences.append(parse_record.src_id)
         self.add_errors(FileProcessingCodes.MEASUREMENT_COLLISION,
-                        f'({mtype.type_name}, T={import_time})', occurrences=occurrences)
+                        f'({loa_name}: {mtype.type_name}, T={import_time})',
+                        occurrences=occurrences)
         return True
 
 
