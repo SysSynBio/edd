@@ -491,7 +491,7 @@ class Import extends React.Component<any, ImportState> {
                     cache: false,
                     contentType:  false,//'multipart/form-data', //'application/json',
                     data: data,
-                    dataType: 'application/json',
+                    dataType: 'json',
                     processData: false,
                     success: this.uploadSuccess.bind(this),
                     error: this.uploadErr.bind(this),
