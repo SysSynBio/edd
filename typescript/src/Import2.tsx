@@ -13,7 +13,6 @@ class HelpButton extends React.Component {
         return <span className="helpButton"></span>
     }
 }
-// ReactDOM.render(<HelpButton/>, document.getElementById("helpButton"));
 
 export interface Selectable {
     name: string;
@@ -63,9 +62,10 @@ class MultiButtonSelect<T extends Selectable> extends React.Component<SelectProp
     }
 }
 
-export interface Step2State {
+export interface Step2State extends ImportContextProps {
     acceptMimeTypes: string[],
     uploadWait: boolean,
+    uploadedFileName: string,
     postUploadStep: number,
     uploadErrors: ErrorSummary[],
     uploadWarnings: ErrorSummary[],
@@ -75,7 +75,8 @@ export interface Step2Props extends Step2State
 {
     onDropCallback: any,
     errorCallback: any,
-    clearErrsCallback: any,
+    clearFeedbackFn: any,
+    submitCallback: any,
     jumpToStep: any, // injected by StepZilla
 }
 
@@ -89,10 +90,12 @@ export interface ErrorSummary {
     doc_url?: string,
 }
 
-export interface ParseErrProps {
+export interface UploadProps {
     errors: ErrorSummary[],
     warnings: ErrorSummary[],
-    clearErrsCallback: any,
+    uploadedFileName: string,
+    postUploadStep: number,
+    clearFeedbackFn: any,
 }
 
 function categorizeErrs(errors: ErrorSummary[]): ErrorSummary[][] {
@@ -119,10 +122,14 @@ function categorizeErrs(errors: ErrorSummary[]): ErrorSummary[][] {
     return errsByCategory;
 }
 
-class UploadFeedback extends React.Component<ParseErrProps, any> {
+class UploadFeedback extends React.Component<UploadProps, any> {
     render() {
         if((!this.props.errors || !this.props.warnings) ||
            !(this.props.errors.length || this.props.warnings.length)) {
+            if(this.props.postUploadStep) {
+                return <UploadSuccessAlert postUploadStep={this.props.postUploadStep}
+                                    uploadedFileName={this.props.uploadedFileName}/>
+            }
             return <div/>
         }
 
@@ -145,7 +152,48 @@ class UploadFeedback extends React.Component<ParseErrProps, any> {
         return <div>
             {total > 4 &&
             <button className="btn btn-info"
-                    onClick={this.props.clearErrsCallback(false)}>Dismiss</button>}
+                    onClick={this.props.clearFeedbackFn(false)}>Dismiss</button>}
+            {errorAlerts}{warningAlerts}</div>
+    }
+}
+
+export interface SubmitStatusProps {
+    errors: ErrorSummary[],
+    warnings: ErrorSummary[],
+    clearFeedbackFn?: any,
+}
+
+class SubmitFeedback extends React.Component<SubmitStatusProps, any> {
+    render() {
+        if((!this.props.errors || !this.props.warnings) ||
+           !(this.props.errors.length || this.props.warnings.length)) {
+                return <div>
+                    <h4>Import Submitted</h4>
+                    Your import has been submitted for processing.  You'll get a notification at
+                    top right in the menu bar when it's complete.
+                </div>
+        }
+
+        let total:number = this.props.errors.length + this.props.warnings.length;
+
+        // show errors, if any
+        let errsByCategory: ErrorSummary[][] = categorizeErrs(this.props.errors);
+        let errorAlerts = errsByCategory.map((categoryErrors: ErrorSummary[]) => {
+                return <ErrCategoryAlert errs={categoryErrors} alertClass="alert alert-danger"/>
+        });
+
+        // show warnings, if any
+        let warningsByCategory: ErrorSummary[][] = categorizeErrs(this.props.warnings);
+        let warningAlerts = warningsByCategory.map(
+            (categoryWarnings: ErrorSummary[]) => {
+                            return <ErrCategoryAlert errs={categoryWarnings}
+                                                     alertClass="alert alert-warning"/>
+        });
+
+        return <div>
+            {total > 4 &&
+            <button className="btn btn-info"
+                    onClick={this.props.clearFeedbackFn(false)}>Dismiss</button>}
             {errorAlerts}{warningAlerts}</div>
     }
 }
@@ -153,6 +201,47 @@ class UploadFeedback extends React.Component<ParseErrProps, any> {
 export interface ErrSequenceProps {
     errs: ErrorSummary[];
     alertClass: string;
+}
+
+export interface ImportContextProps {
+    category: Category,
+    protocol: Protocol,
+    format: Selectable,
+    uploadedFileName: string,
+}
+
+class ContextFeedback extends React.Component<ImportContextProps, any> {
+    render() {
+        let category = this.props.category;
+        let protocol = this.props.protocol;
+        let fileName = this.props.uploadedFileName;
+        let cat = category && <div className="contextBreadcrumbs">
+                <span className="contextSectionHeader">Category:</span> {category.name}
+            </div>;
+        let prot = protocol && <div className="contextBreadcrumbs">
+            <span className="contextSectionHeader">Protocol:</span> {protocol.name}
+            </div>;
+        let file =  fileName && <div className="contextBreadcrumbs">
+            <span className="contextSectionHeader">File:</span> {fileName}
+            </div>;
+
+        return <div>{cat}{prot}{file}</div>
+    }
+}
+
+export interface  UploadSuccessProps {
+    postUploadStep: number,
+    uploadedFileName: string,
+}
+
+class UploadSuccessAlert extends React.Component<UploadSuccessProps, any> {
+    render() {
+        return this.props.postUploadStep && <div className="alert alert-success">
+            <h4>File accepted</h4>
+            Your file has been accepted for import. Press "Next" to complete your import.
+        </div>
+    }
+
 }
 
 class ErrCategoryAlert extends React.Component<ErrSequenceProps, any> {
@@ -197,9 +286,17 @@ class ErrCategoryAlert extends React.Component<ErrSequenceProps, any> {
 class Step2 extends React.Component<Step2Props, any> {
     render() {
         let tenMB: number = 1048576;
-        return <div>
-            <UploadFeedback errors={this.props.uploadErrors} warnings={this.props.uploadWarnings}
-                clearErrsCallback={this.props.clearErrsCallback}/>
+        return <div className="stepDiv">
+            <ContextFeedback category={this.props.category} protocol={this.props.protocol}
+                             format={this.props.format}
+                             uploadedFileName={this.props.uploadedFileName}/>
+            <UploadFeedback
+                errors={this.props.uploadErrors}
+                warnings={this.props.uploadWarnings}
+                clearFeedbackFn={this.props.clearFeedbackFn}
+                uploadedFileName={this.props.uploadedFileName}
+                postUploadStep={this.props.postUploadStep}/>
+            <div>Click or click-and-drag to upload a file</div>
             <DropZone accept={this.props.acceptMimeTypes} multiple={false} maxSize={tenMB}
                       onDrop={this.props.onDropCallback} disabled={this.props.uploadWait}/>
             </div>
@@ -207,7 +304,6 @@ class Step2 extends React.Component<Step2Props, any> {
 
     isValidated() {
         if(!this.props.postUploadStep) {
-            console.error('No file uploaded');  // TODO: remove
             this.props.errorCallback({
                 'uploadErrors': [{
                     'category': 'Data file required',
@@ -226,9 +322,34 @@ class Step2 extends React.Component<Step2Props, any> {
     }
 }
 
-class StepPlaceHolder extends React.Component<any, any> {
+export interface Step5State extends ImportContextProps {
+    submitWait: boolean,
+    submitSuccess: boolean,
+    submitErrors: any,
+}
+
+export interface Step5Props extends Step5State {
+    submitCallback: any,
+}
+
+class Step5 extends React.Component<Step5Props, any> {
     render() {
-        return <div>Not implemented yet</div>
+        let wait = this.props.submitWait && <div>Submitting your import...please wait.</div>;
+        let outcome = ((this.props.submitSuccess || this.props.submitErrors) &&
+            <SubmitFeedback errors={this.props.submitErrors} warnings={[]} />);
+        return <div className="stepDiv">{wait}{outcome}</div>
+    }
+}
+
+class StepPlaceHolder extends React.Component<ImportContextProps, any> {
+    render() {
+        return <div>
+                <ContextFeedback category={this.props.category}
+                             protocol={this.props.protocol}
+                             format={this.props.format}
+                             uploadedFileName={this.props.uploadedFileName}/>
+                Not implemented yet
+            </div>
     }
 }
 
@@ -306,13 +427,19 @@ class Step1 extends React.Component<Step1Props, any> {
     }
 }
 
-export interface ImportState extends Step1State, Step2State {
+export interface ImportState extends Step1State, Step2State, Step5State {
+    nextButtonText: string,
+    importPk: number,
+    importUUID: any,
 }
 
 class Import extends React.Component<any, ImportState> {
     constructor(props) {
         super(props);
         this.state = {
+            importPk: null,
+            importUUID: null,
+            nextButtonText: 'Next',
 
             /* Step 1 state */
             categories: [],
@@ -321,14 +448,20 @@ class Import extends React.Component<any, ImportState> {
             format: null,
 
             /* Step 2 state */
-            acceptMimeTypes: [  /* TODO: should depend on format */
+            acceptMimeTypes: [  /* TODO: should eventually depend on format */
                                 "text/csv",
                                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                              ],
+            uploadedFileName: null,
             uploadWait: false,
             postUploadStep: 0,
             uploadErrors: [],
             uploadWarnings: [],
+
+            /* Step 5 state */
+            submitWait: false,
+            submitSuccess: false,
+            submitErrors: null,
         };
     }
 
@@ -336,7 +469,7 @@ class Import extends React.Component<any, ImportState> {
         let steps =
         [
           {
-              name: 'Identify',
+              name: '1. Identify',
               component: <Step1 categories={this.state.categories}
                             category={this.state.category}
                             protocol={this.state.protocol}
@@ -345,22 +478,53 @@ class Import extends React.Component<any, ImportState> {
                             protocolSelectedCallback={this.protocolSelected.bind(this)}
                             formatSelectedCallback={this.formatSelected.bind(this)}/>},
            {
-               name: 'Upload',
+               name: '2. Upload',
                component: <Step2 acceptMimeTypes={this.state.acceptMimeTypes}
+                                 category={this.state.category}
+                                 protocol={this.state.protocol}
+                                 format={this.state.format}
                                  uploadWait={this.state.uploadWait}
+                                 uploadedFileName={this.state.uploadedFileName}
                                  postUploadStep={this.state.postUploadStep}
                                  uploadErrors={this.state.uploadErrors}
                                  uploadWarnings={this.state.uploadWarnings}
                                  errorCallback={this.setState.bind(this)}
                                  onDropCallback={this.onFileDrop.bind(this)}
-                                 clearErrsCallback={this.clearUploadErrors.bind(this)}
+                                 clearFeedbackFn={this.clearUploadErrors.bind(this)}
+                                 submitCallback={this.submitImport.bind(this)}
                                  jumpToStep={null}/>
            },
-           {name: 'Interpret', component: <StepPlaceHolder/>},
-           {name: 'Review', component: <StepPlaceHolder/>},
-           {name: 'Import', component: <StepPlaceHolder/>},
+           {
+               name: '3. Interpret',
+               component: <StepPlaceHolder category={this.state.category}
+                                           protocol={this.state.protocol}
+                                           format={this.state.format}
+                                           uploadedFileName={this.state.uploadedFileName}/>
+           },
+           {
+               name: '4. Review',
+               component: <StepPlaceHolder category={this.state.category}
+                                           protocol={this.state.protocol}
+                                           format={this.state.format}
+                                           uploadedFileName={this.state.uploadedFileName}/>
+           },
+           {
+               name: '5. Import',
+               component: <Step5 category={this.state.category}
+                                 protocol={this.state.protocol}
+                                 format={this.state.format}
+                                 uploadedFileName={this.state.uploadedFileName}
+                                 submitCallback={this.submitImport.bind(this)}
+                                 submitWait={this.state.submitWait}
+                                 submitSuccess={this.state.submitSuccess}
+                                 submitErrors={this.state.submitErrors}/>
+           },
         ];
-        return <StepZilla steps={steps} stepsNavigation={false} nextTextOnFinalActionStep="Import"/>
+        return <StepZilla steps={steps}
+                          stepsNavigation={false}
+                          // Note: only applied @ step transition...too late for initial prototype
+                          nextButtonText={this.state.nextButtonText}
+                          onStepChange={this.onStepChange.bind(this)}/>
     }
 
     categoriesLookupSuccess(result_json: any, textStatus: string, jqXHR: JQueryXHR): void {
@@ -403,16 +567,21 @@ class Import extends React.Component<any, ImportState> {
 
     uploadSuccess(result_json: any, textStatus: string, jqXHR: JQueryXHR): void {
         let json = JSON.parse(jqXHR.responseText);
+        let nextStep = 2;
+        let nextButtonText = 'Next';
 
-        let nextStep = 4;
-        if(json.hasOwnProperty('raw_data')) {
-            nextStep = 2;
+        if(json['status'] === 'Ready') {
+            nextStep = 4;
+            nextButtonText = 'Submit Import';
         }
 
         this.setState({
             'uploadWait': false,
+            'importPk': json['pk'],
+            'importUUID': json['uuid'],
             'postUploadStep': nextStep,
             'uploadWarnings': json.warnings || [],
+            'nextButtonText': nextButtonText,
         });
     }
 
@@ -477,19 +646,33 @@ class Import extends React.Component<any, ImportState> {
 
         if(acceptedFiles.length) {
             let data: FormData = new FormData();
+            let file: File = acceptedFiles[0];  // DZ is configured to only accept one
             data.append('category', ""+ this.state.category.pk);
             data.append('protocol', ""+ this.state.protocol.pk);
             data.append('file_format', ""+ this.state.format.pk);
-            data.append('file', acceptedFiles[0]); // configured to only accept one
+            data.append('file', file);
+
+            // if we're re-uploading a file after the import is created, but before
+            // submission, avoid filling up the database with junk
+            let method = 'POST';
+            let url = '/rest/studies/' + EDDData.currentStudyID + '/imports/';
+            if(this.state.importPk) {
+                method = 'PATCH';
+                url += this.state.importPk + '/'
+            }
 
             this.setState({
                 'uploadWait': true,
+                'uploadedFileName': file.name,
+                'submitWait': false,
+                'submitSuccess': false,
+                'submitErrors': [],
             });
-            $.ajax('/rest/studies/' + EDDData.currentStudyID + '/imports/',
+            $.ajax(url,
                 {
-                    method: 'POST',
+                    method: method,
                     cache: false,
-                    contentType:  false,//'multipart/form-data', //'application/json',
+                    contentType:  false,  // Note: 'multipart/form-data' doesn't work w/ file
                     data: data,
                     dataType: 'json',
                     processData: false,
@@ -507,7 +690,73 @@ class Import extends React.Component<any, ImportState> {
                 } as ErrorSummary],
             });
         }
-}
+    }
+
+    onStepChange(stepIndex: number) {
+        console.log("step index = " + stepIndex);
+        if(stepIndex === 4 &&
+            (this.state.submitErrors.length === 0) && (!this.state.submitWait) &&
+            (!this.state.submitSuccess)) {
+            this.submitImport();
+        }
+    }
+
+    submitImport() {
+        //TODO: disable changes in previous steps, short of clearing all the state...otherwise
+        // sebsequent use of the form to upload new files risks overwriting records of previous
+        // imports performed without reloading the page
+
+        //TODO: provide required values entered in earlier steps, if any
+        this.setState({
+            'submitWait': true,
+            'submitSuccess': false,
+        });
+        $.ajax('/rest/studies/' + EDDData.currentStudyID + '/imports/' + this.state.importPk + '/',
+                {
+                    method: 'PATCH',
+                    cache: false,
+                    contentType:  'application/json',
+                    data: JSON.stringify({
+                        'status': 'Submitted',
+                    }),
+                    dataType: 'json',
+                    processData: false,
+                    success: this.submitSuccess.bind(this),
+                    error: this.submitErr.bind(this),
+                }
+            );
+    }
+
+    submitSuccess(result_json: any, textStatus: string, jqXHR: JQueryXHR) {
+        this.setState({
+            'submitSuccess': true,
+            'submitErrors': null,
+            'submitWait': false,
+        });
+    }
+
+    submitErr(jqXHR, textStatus: string, errorThrown: string): void {
+        let contentType = jqXHR.getResponseHeader('Content-Type');
+
+        let vals = {
+            submitWait: false,
+        };
+
+        if (contentType === 'application/json') {
+            let json = JSON.parse(jqXHR.responseText);
+            vals['submitErrors']=json.errors;
+            this.setState(vals);
+        } else {
+            // if there is a back end or proxy error (likely html response), show this
+            vals['submitErrors'] = [{
+                    category: "Unexpected error",
+                    summary: "There was an unexpected error submitting your import. Please try" +
+                        " again.  If your upload still fails, please contact" +
+                        " system administrators to confirm that they're aware of this problem.",
+                 }];
+            this.setState(vals);
+        }
+    }
 
     componentDidMount() {
         // send CSRF header on each AJAX request from this page
@@ -529,11 +778,6 @@ class Import extends React.Component<any, ImportState> {
             }
         );
     }
-
-
 }
-
-//ReactDOM.render(<StepZilla steps={steps} stepsNavigation={false}
-// nextTextOnFinalActionStep="Import"/>, document.getElementById("step1"));
 
 ReactDOM.render(<Import/>, document.getElementById("importWizard"));

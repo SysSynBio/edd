@@ -636,6 +636,7 @@ def build_ui_payload_from_cache(import_):
 
     :return: the UI JSON for Step 4 "Inspect"
     """
+    logger.info(f"Building import {import_.pk}'s UI payload from cache.")
     parser = SeriesCacheParser(master_units=import_.y_units)
     import_records = parser.parse(import_.uuid)
     aggregator = ErrorAggregator()
