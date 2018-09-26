@@ -448,10 +448,7 @@ class Import extends React.Component<any, ImportState> {
             format: null,
 
             /* Step 2 state */
-            acceptMimeTypes: [  /* TODO: should eventually depend on format */
-                                "text/csv",
-                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                             ],
+            acceptMimeTypes: "text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", /* TODO: should eventually depend on format */
             uploadedFileName: null,
             uploadWait: false,
             postUploadStep: 0,
