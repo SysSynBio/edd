@@ -63,7 +63,7 @@ class MultiButtonSelect<T extends Selectable> extends React.Component<SelectProp
 }
 
 export interface Step2State extends ImportContextProps {
-    acceptMimeTypes: string[],
+    acceptMimeTypes: string,
     uploadWait: boolean,
     uploadedFileName: string,
     postUploadStep: number,
