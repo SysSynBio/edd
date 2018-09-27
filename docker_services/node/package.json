@@ -51,7 +51,7 @@
     "qtip2": "^3.0.3",
     "react": "^15.5.4",
     "react-dom": "^15.5.4",
-    "react-dropzone": "^5.1.1",
+    "react-dropzone": "5.0.1",
     "react-stepzilla": "^4.7.2",
     "reconnecting-websocket": "^3.2.2",
     "resolve-url-loader": "^2.1.0",
