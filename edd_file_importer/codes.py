@@ -144,8 +144,8 @@ processing_code_to_ui_detail = {
 
     FileProcessingCodes.MERGE_NOT_SUPPORTED: {
         'category': _('Merge not yet supported'),
-        'summary': _('Your study already contains data for this protocol.  Merge is not yet '
-                     'supported.'),
+        'summary': _("Your study already contains data for this protocol.  Merge with existing "
+                     "assays isn't supported"),
     }
 }
 

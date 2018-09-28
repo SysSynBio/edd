@@ -485,17 +485,20 @@ class ImportFileHandler(ErrorAggregator):
             'src_ids': []  # ids for where the data came from, e.g. row #s in an Excel file
         }
 
+        protocol = self.cache.protocol
+
         if matched_assays:
             import_record['assay_id'] = assay_or_line_pk
         else:
             line_pk = assay_or_line_pk
             import_record['assay_id'] = 'new'
             import_record['line_id'] = line_pk
-            import_record['protocol_id'] = self.cache.protocol.pk
-            assays_count = Assay.objects.filter(line_id=line_pk,
-                                                protocol_id=self.cache.protocol.pk).count()
-            if assays_count:
-                self.raise_error(FileProcessingCodes.MERGE_NOT_SUPPORTED)
+            import_record['protocol_id'] = protocol.pk
+            assays = Assay.objects.filter(line_id=line_pk,
+                                          protocol_id=protocol.pk).values_list('name')
+            if assays:
+                self.raise_errors(FileProcessingCodes.MERGE_NOT_SUPPORTED,
+                                  occurrences=assays)
 
         return import_record
 
