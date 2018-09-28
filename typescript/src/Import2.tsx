@@ -98,6 +98,10 @@ export interface UploadProps {
     clearFeedbackFn: any,
 }
 
+/*
+ * Takes the flat list of errors returned by the back end and breaks it into sublists that fall
+  * within the same category.
+ */
 function categorizeErrs(errors: ErrorSummary[]): ErrorSummary[][] {
     let prevCategory = "";
     let errsByCategory: ErrorSummary[][] = [];
@@ -122,6 +126,9 @@ function categorizeErrs(errors: ErrorSummary[]): ErrorSummary[][] {
     return errsByCategory;
 }
 
+/*
+*  Displays file upload feedback for either success or error.
+*/
 class UploadFeedback extends React.Component<UploadProps, any> {
     render() {
         if((!this.props.errors || !this.props.warnings) ||
@@ -163,6 +170,7 @@ export interface SubmitStatusProps {
     clearFeedbackFn?: any,
 }
 
+// Displays user feedback re: import submission
 class SubmitFeedback extends React.Component<SubmitStatusProps, any> {
     render() {
         if((!this.props.errors || !this.props.warnings) ||
@@ -210,6 +218,7 @@ export interface ImportContextProps {
     uploadedFileName: string,
 }
 
+// Displays user feedback re: import context selected in step 1 and file uploaded in step 2
 class ContextFeedback extends React.Component<ImportContextProps, any> {
     render() {
         let category = this.props.category;
@@ -244,6 +253,11 @@ class UploadSuccessAlert extends React.Component<UploadSuccessProps, any> {
 
 }
 
+/*
+* Displays user feedback for errors returned by the back end.  Takes as input a list of errors
+* that all fall under the same category.  They are displayed in a single alert with styling
+* to help differentiate them from each other.
+*/
 class ErrCategoryAlert extends React.Component<ErrSequenceProps, any> {
     render() {
         let contentDivs = this.buildContentDivs();
@@ -268,6 +282,9 @@ class ErrCategoryAlert extends React.Component<ErrSequenceProps, any> {
         )
     }
 
+    // builds a list of <divs> where each contains the content of a single error.
+    // styling depends on the number of errors that need to be displayed in sequence, and also
+    // on whether any have a subcategory
     buildContentDivs() {
         return this.props.errs.map((err: ErrorSummary) => {
             let cls = this.props.errs.length > 1 ? ' emphasizeErrorSubject' : '';
@@ -283,6 +300,7 @@ class ErrCategoryAlert extends React.Component<ErrSequenceProps, any> {
     }
 }
 
+// implements step 2 of the import -- file upload
 class Step2 extends React.Component<Step2Props, any> {
     render() {
         let tenMB: number = 1048576;
@@ -366,6 +384,7 @@ export interface Step1Props extends Step1State {
     formatSelectedCallback: any,
 }
 
+// implements step 1 of the import, where user selects data catagory, protocol, & file format
 class Step1 extends React.Component<Step1Props, any> {
     constructor(props) {
         super(props);
@@ -433,6 +452,7 @@ export interface ImportState extends Step1State, Step2State, Step5State {
     importUUID: any,
 }
 
+// parent component for the import
 class Import extends React.Component<any, ImportState> {
     constructor(props) {
         super(props);
@@ -569,6 +589,7 @@ class Import extends React.Component<any, ImportState> {
 
         if(json['status'] === 'Ready') {
             nextStep = 4;
+            // doesn't seem to get updated by StepZilla until after it's pressed
             nextButtonText = 'Submit Import';
         }
 
