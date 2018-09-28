@@ -18,8 +18,9 @@
 {% block content %}
 
 <!-- Step 1 -->
-<div id="importWizard">
-</div>
+<div id="importWizard"></div>
+<script type="text/javascript" src="{% static 'dist/Import2.js' %}"></script>
+<p></p>
 <div id="prototype-status-div">
     <h5>Prototype status</h5>
     <p>This prototype is tested for:
@@ -29,6 +30,6 @@
         </ul>
     </p>
 </div>
-<script type="text/javascript" src="{% static 'dist/Import2.js' %}"></script>
+
 
 {% endblock content %}

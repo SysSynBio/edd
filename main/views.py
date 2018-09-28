@@ -247,6 +247,7 @@ class StudyDetailBaseView(StudyObjectMixin, generic.DetailView):
         context['writable'] = instance.user_can_write(self.request.user)
         context['lines'] = instance.line_set.filter(active=True).count() > 0
         context['assays'] = Assay.objects.filter(line__study=instance, active=True).count() > 0
+        context['showImportPrototype'] = 'edd_file_importer' in settings.INSTALLED_APPS
         return context
 
     def handle_clone(self, request, context, *args, **kwargs):

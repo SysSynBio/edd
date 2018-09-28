@@ -402,7 +402,8 @@ class Step1 extends React.Component<Step1Props, any> {
 
         return <div className="pageSection stepBorder">
             <div className="import2SectionHead">
-                <h2>What category of data do you have?</h2><HelpButton/></div>
+                <h2>What category of data do you have?</h2>
+            </div>
             <div className="import2SectionContent">
                 <div>
                     <MultiButtonSelect options={categories}
