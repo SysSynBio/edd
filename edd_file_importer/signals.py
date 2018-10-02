@@ -4,6 +4,7 @@ Adds signal handlers for custom models defined in the "edd_file_importer" app, l
 signal handler code from "main".
 """
 
+from django.db import connection
 from django.db.models.signals import post_delete, post_save, pre_save
 
 import main.models as edd_models
@@ -21,8 +22,8 @@ def set_file_info_wrapper(sender, instance, raw, using, **kwargs):
 # the latest file for each import.
 @receiver(post_delete, sender=models.ImportFile)
 def remove_from_filesystem(sender, instance, using, **kwargs):
-    instance.file.delete(False)  # False avoids saving the model instance
-
+    # False avoids saving the model instance
+    connection.on_commit(instance.file.delete(False))
 
 has_uuid = [
     models.Import,

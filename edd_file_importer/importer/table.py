@@ -1,4 +1,5 @@
 # coding: utf-8
+import codecs
 import importlib
 import json
 import logging
@@ -31,6 +32,15 @@ MTYPE_GROUP_TO_CLASS = {
     MeasurementType.Group.GENEID: GeneIdentifier,
     MeasurementType.Group.PROTEINID: ProteinIdentifier,
     MeasurementType.Group.PHOSPHOR: Phosphor,
+}
+
+# maps mtype group to error identifiers for failed lookup
+MTYPE_GROUP_TO_ID_ERR = {
+    MeasurementType.Group.GENERIC: FileProcessingCodes.MEASUREMENT_TYPE_NOT_FOUND,
+    MeasurementType.Group.METABOLITE: FileProcessingCodes.METABOLITE_NOT_FOUND,
+    MeasurementType.Group.GENEID: FileProcessingCodes.GENE_ID_NOT_FOUND,
+    MeasurementType.Group.PROTEINID: FileProcessingCodes.PROTEIN_ID_NOT_FOUND,
+    MeasurementType.Group.PHOSPHOR: FileProcessingCodes.PHOSPHOR_NOT_FOUND,
 }
 
 
@@ -121,7 +131,7 @@ class ImportFileHandler(ErrorAggregator):
         self.file = uploaded_file
         self.latest_status = None
 
-    def process_file(self, reprocessing_file):
+    def process_file(self, reprocessing_file, encoding='utf8'):
         """
         Performs initial processing for an import file uploaded to EDD.  The main purpose of this
         method is to parse and resolve the content of the file against data in EDD's database and
@@ -162,7 +172,9 @@ class ImportFileHandler(ErrorAggregator):
         if file_extension == ImportFileTypeFlags.EXCEL:
             parser.parse_excel(file)
         else:
-            parser.parse_csv(file)
+            reader = codecs.getreader(encoding)
+            rows = reader(file).readlines()
+            parser.parse_csv(rows)
 
         # if file format is unknown and parsing so far has only returned row/column data to the UI
         # for display, then just cache the inputs and return. arguably we don't have to even upload
@@ -238,9 +250,14 @@ class ImportFileHandler(ErrorAggregator):
         with transaction.atomic():
             import_uuid = self.import_uuid
 
+            # if a file was already uploaded, get a ref to it so we can delete after replacing it
+            old_file = None
+            try:
+                old_file = ImportFile.objects.get(import_ref__uuid=import_uuid)
+            except ImportFile.DoesNotExist:
+                pass
+
             if not reprocessing_file:
-                # if a file was already uploaded, delete the old one
-                ImportFile.objects.filter(import_ref__uuid=import_uuid).delete()
 
                 # save the new file
                 file_model = ImportFile.objects.create(file=self.file)
@@ -270,9 +287,15 @@ class ImportFileHandler(ErrorAggregator):
             if self.cache.compartment:
                 import_context['compartment'] = self.cache.compartment
 
-            return Import.objects.update_or_create(
+            import_, initial_upload = Import.objects.update_or_create(
                 uuid=self.import_uuid,
                 defaults=import_context)
+
+            # delete old file now that foreign key constraint is satisfied
+            if old_file:
+                old_file.delete()
+
+            return import_, initial_upload
 
     def _verify_line_or_assay_match(self, line_or_assay_names, lines):
         """
@@ -314,7 +337,7 @@ class ImportFileHandler(ErrorAggregator):
 
         category_name = self.cache.category.name
         mtype_group = self.cache.category.default_mtype_group
-        err_limit = 100  # TODO: make this a setting
+        err_limit = getattr(settings, 'EDD_IMPORT_LOOKUP_ERR_LIMIT', 0)
         err_count = 0
 
         types = f': {parser.unique_mtypes}' if len(parser.unique_mtypes) <= 10 else ''
@@ -327,7 +350,8 @@ class ImportFileHandler(ErrorAggregator):
                 self.cache.mtype_name_to_type[mtype_id] = mtype
             except ValidationError as v:
                 logger.exception(f'Exception verifying MeasurementType id {mtype_id}')
-                self.add_error(FileProcessingCodes.MEASUREMENT_TYPE_NOT_FOUND, mtype_id)
+                err_type = MTYPE_GROUP_TO_ID_ERR.get(mtype_group)
+                self.add_error(err_type, occurrence=mtype_id)
                 err_count += 1
                 if err_count == err_limit:
                     break

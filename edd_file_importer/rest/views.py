@@ -119,7 +119,8 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                     x_units=request.data.get('x_units', None),
                     y_units=request.data.get('y_units', None),
             )
-            import_, ui_payload = upload_handler.process_file(reprocessing_file=False)
+            import_, ui_payload = upload_handler.process_file(reprocessing_file=False,
+                                                              encoding=request.encoding or 'utf8')
 
             # if client requested a status transition, in this case, likely to SUBMITTED, verify
             # that import state is consistent with attempting it

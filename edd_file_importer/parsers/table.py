@@ -8,6 +8,7 @@ import numbers
 import re
 from io import BytesIO
 
+from decimal import Decimal
 from openpyxl import load_workbook
 from openpyxl.utils.cell import get_column_letter
 from six import string_types
@@ -121,6 +122,19 @@ class TableParser(object):
             vals = '|'.join([TableParser._process_label(unit) for unit in units])
             pat = re.compile(r'^\s*({vals})\s*$'.format(vals=vals))
             self._unit_patterns[col] = pat
+
+    @staticmethod
+    def _has_value(*args):
+        """
+        Tests whether any of the provided arguments should be treated as having a valid value
+        """
+        for arg in args:
+            if isinstance(arg, string_types):
+                if arg:  # assume it's already .strip()ed
+                    return True
+            elif arg is not None:
+                return True
+        return False
 
     @staticmethod
     def _process_label(s):
@@ -504,6 +518,91 @@ class MeasurementParseRecord(object):
         }
 
 
+class SkylineParser(TableParser):
+
+    def __init__(self, aggregator=None):
+        super(SkylineParser, self).__init__(
+            req_cols=['Replicate Name', 'Protein Name', 'Peptide', 'Total Area'],
+            numeric_cols=['Total Area'],
+            aggregator=aggregator
+        )
+        self.unique_units = ('counts',)  # TODO: only counts are valid
+        self.unique_mtypes = set()
+        self.unique_line_or_assay_names = set()
+        self.summed_areas = collections.defaultdict(float)
+        self.area_sources = collections.defaultdict(list)
+        self._measurements = []
+
+    def _parse_row(self, cells_list, row_index):
+        line_or_assay_name = self._get_raw_value(cells_list, 'Replicate Name')
+        protein_id = self._get_raw_value(cells_list, 'Protein Name')
+        total_area_str = self._get_raw_value(cells_list, 'Total Area')
+
+        # TODO: skip the row entirely if no in-use cell has content
+        any_value = self._has_value(line_or_assay_name, protein_id, total_area_str)
+        if not any_value:
+            return None
+
+        total_area = self._parse_and_verify_val(total_area_str, row_index, 'Total Area')
+
+        if total_area:
+            id = (line_or_assay_name, protein_id)
+            self.summed_areas[id] += total_area
+            self.area_sources[id].append(str(row_index+1))
+            self.unique_mtypes.add(protein_id)
+            self.unique_line_or_assay_names.add(line_or_assay_name)
+
+    @property
+    def mtypes(self):
+        return self.unique_mtypes
+
+    @property
+    def line_or_assay_names(self):
+        return self.unique_line_or_assay_names
+
+    @property
+    def units(self):
+        return self.unique_units
+
+    @property
+    def series_data(self):
+        if self._measurements:
+            return self._measurements
+
+        time = None  # this format doesn't include time
+        for (line_or_assay_name, protein_id), area in self.summed_areas.items():
+            src_rows = ', '.join(self.area_sources[(line_or_assay_name, protein_id)])
+
+            m = MeasurementParseRecord(
+                line_or_assay_name=line_or_assay_name,
+                mtype_name=protein_id,
+                data=[time, area],
+                units_name='counts',
+                src_id=f'rows {src_rows}'
+            )
+            self._measurements.append(m)
+
+        return self._measurements
+
+    @property
+    def measurement_count(self):
+        return len(self._measurements)
+
+    @property
+    def has_all_times(self):
+        """
+        Tests whether the parsed file contained time values for all measurements.
+        """
+        return False  # Time not included as part of this file format
+
+    def has_all_units(self):
+        """
+        Tests whether the parsed file contained units for all measurements
+        Partial units should be treated as a parse error.
+        """
+        return True  # overrides default False.  'counts' Units implied by use of this format
+
+
 class GenericImportParser(TableParser):
     """
     Parser for EDD's "Generic" import file, a normalized, a simple, accessible,
@@ -553,7 +652,6 @@ class GenericImportParser(TableParser):
             data = [time, val]
 
         m = MeasurementParseRecord(
-            # assume the name is for an assay...if not we'll fix it later
             line_or_assay_name=line_or_assay_name,
             mtype_name=mtype,
             data=data,
@@ -569,19 +667,6 @@ class GenericImportParser(TableParser):
             self.unique_mtypes.add(mtype)
         if units:
             self.unique_units.add(units)
-
-    @staticmethod
-    def _has_value(*args):
-        """
-        Tests whether any of the provided arguments should be treated as having a valid value
-        """
-        for arg in args:
-            if isinstance(arg, string_types):
-                if arg:  # assume it's already .strip()ed
-                    return True
-            elif arg is not None:
-                return True
-        return False
 
     @property
     def mtypes(self):

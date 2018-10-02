@@ -44,6 +44,11 @@ class FileProcessingCodes(Enum):
     # PERMISSION_DENIED = auto()
     MEASUREMENT_TYPE_NOT_FOUND = auto()
 
+    PROTEIN_ID_NOT_FOUND = auto()
+    GENE_ID_NOT_FOUND = auto()
+    PHOSPHOR_NOT_FOUND = auto()
+    METABOLITE_NOT_FOUND = auto()
+
     MEASUREMENT_UNIT_NOT_FOUND = auto()
 
     MERGE_NOT_SUPPORTED = auto()
@@ -124,12 +129,25 @@ processing_code_to_ui_detail = {
 
     FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS: {
         'category': _("File doesn't match study"),
-        'summary': _('Identifiers in your file must either match line or assay names in the '
+        'summary': _('Identifiers in your file must match either line or assay names in the '
                      'study'),
     },
     FileProcessingCodes.MEASUREMENT_TYPE_NOT_FOUND: {
-        'category': _('Identifiers not found'),
+        'category': _('Measurement identifiers not found'),
         'summary': _(''),
+    },
+
+    FileProcessingCodes.PROTEIN_ID_NOT_FOUND: {
+        'category': _('Identifiers not found'),
+        'summary': _('Protein identifiers in the file were not found in UniProt'),
+    },
+    FileProcessingCodes.GENE_ID_NOT_FOUND: {
+        'category': _('Identifiers not found'),
+        'summary': _('Genes identifiers in the file were not found in the registry'),
+    },
+    FileProcessingCodes.METABOLITE_NOT_FOUND: {
+        'category': _('Identifiers not found'),
+        'summary': _('Metabolites were not found by PubChem CID'),
     },
 
     FileProcessingCodes.ASSAYS_MISSING_TIME: {
