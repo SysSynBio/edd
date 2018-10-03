@@ -331,8 +331,7 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
         except import_table_task.OperationalError as e:
             import_.status = Import.Status.FAILED
             import_.save()
-
-            logger.exception(f'Exception submitting import {existing_import.uuid}')
+            logger.exception(f'Exception submitting import {import_.uuid}')
             return self._build_simple_err_response(
                 'Error',
                 'An unexpected error occurred',

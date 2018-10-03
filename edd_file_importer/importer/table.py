@@ -371,6 +371,7 @@ class ImportFileHandler(ErrorAggregator):
             mtype_class = MTYPE_GROUP_TO_CLASS[mtype_group]
             return mtype_class.load_or_create(mtype_id, self.cache.user)
 
+    # TODO: reduce complexity
     def cache_resolved_import(self, import_id, parser, matched_assays, initial_upload):
         """
         Converts MeasurementParseRecords into JSON to send to the legacy import Celery task.

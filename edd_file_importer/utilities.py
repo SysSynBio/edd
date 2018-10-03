@@ -115,6 +115,7 @@ class ErrorAggregator(object):
         for detail in occurrences:
             self.add_warning(warn_type, occurrence=detail)
 
+    # TODO: add / enforce a limit so we aren't adding an unbounded list
     def raise_errors(self, err_type=None, subcategory=None, occurrences=None):
         if err_type:
             self.add_errors(err_type, subcategory=subcategory, occurrences=occurrences)

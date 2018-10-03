@@ -39,6 +39,11 @@ module.exports = {
       "jquery-ui",
       "jquery.cookie",
       "qtip2",
+      "react",
+      "react-dom",
+      "react-dropzone",
+      "react-stepzilla",
+      "react-stepzilla.css",
       "select2",
       "tinymce",
       "underscore"
@@ -63,6 +68,10 @@ module.exports = {
       'handsontable.css': path.resolve(
         __dirname,
         'node_modules/handsontable/dist/handsontable.full.css'
+      ),
+      'react-stepzilla.css': path.resolve(
+        __dirname,
+        'node_modules/react-stepzilla/src/css/main.css'
       )
     }
   },

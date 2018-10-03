@@ -70,7 +70,7 @@
   },
   "scripts": {
     "test": "karma start karma.conf.js",
-    "build": "NODE_ENV=development webpack -p --progress --profile --colors",
+    "build": "NODE_ENV=production webpack -p --progress --profile --colors",
     "watch": "webpack -p --progress --profile --colors --watch --watch-poll",
     "clean": "rm -r code/main/static/dist/*"
   },

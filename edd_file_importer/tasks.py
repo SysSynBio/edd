@@ -31,7 +31,7 @@ def mark_import_complete(self, import_uuid):
 @shared_task
 def mark_import_failed(request, exc, traceback, import_uuid):
     """
-        A simple task whose job is to  an import as FAILED on error.
+        A simple task whose job is to mark an import as FAILED on error.
      """
     logger.debug(f'Marking import {import_uuid} as failed')
     Import.objects.filter(uuid=import_uuid).update(status=Import.Status.FAILED)

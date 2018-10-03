@@ -22,6 +22,7 @@ class ImportCategoryForm(forms.ModelForm):
                                             label='Default measurement type',
                                             help_text=models.ImportCategory._meta.get_field(
                                                 'default_mtype_group').help_text)
+
     class Meta:
         model = models.ImportCategory
         fields = ('name', 'display_order', 'default_mtype_group', 'active', 'description')
