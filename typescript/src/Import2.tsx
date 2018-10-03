@@ -590,6 +590,7 @@ class Import extends React.Component<any, ImportState> {
             'category': category,
             'protocol': null,
         });
+        this.clearUploadErrors(true);
     }
 
     protocolSelected(protocol) {
@@ -601,6 +602,7 @@ class Import extends React.Component<any, ImportState> {
             'protocol': protocol,
             'format': null,
         });
+        this.clearUploadErrors(true);
     }
 
     formatSelected(format) {
@@ -610,6 +612,7 @@ class Import extends React.Component<any, ImportState> {
         this.setState({
             'format': format,
         });
+        this.clearUploadErrors(true);
     }
 
     uploadSuccess(result_json: any, textStatus: string, jqXHR: JQueryXHR): void {
@@ -684,6 +687,7 @@ class Import extends React.Component<any, ImportState> {
             'uploadWarnings': [],
         };
         if(removeFile) {
+            vals['uploadedFileName'] = null;
             vals['postUploadStep'] = 0;
         }
         this.setState(vals);
