@@ -7,6 +7,8 @@ import DropZone from "react-dropzone";
 import StepZilla from "react-stepzilla";
 import * as Utl from "../modules/Utl";
 
+declare function require(name: string): any;  // avoiding warnings for require calls below
+require("react-stepzilla.css");
 
 class HelpButton extends React.Component {
     render() {
