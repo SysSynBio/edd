@@ -252,13 +252,13 @@ class ImportFileHandler(ErrorAggregator):
 
             # if a file was already uploaded, get a ref to it so we can delete after replacing it
             old_file = None
-            try:
-                old_file = ImportFile.objects.get(import_ref__uuid=import_uuid)
-            except ImportFile.DoesNotExist:
-                pass
+            if import_uuid:
+                try:
+                    old_file = ImportFile.objects.get(import_ref__uuid=import_uuid)
+                except ImportFile.DoesNotExist:
+                    pass
 
             if not reprocessing_file:
-
                 # save the new file
                 file_model = ImportFile.objects.create(file=self.file)
             else:
@@ -561,7 +561,6 @@ def verify_assay_times(err_aggregator, assay_pks, parser, assay_time_meta_pk):
         None if they were consistently *not* found
     :raises EDDImportError: if time is inconsistently specified or overspecified
     """
-
     times_qs = Assay.objects.filter(pk__in=assay_pks, metadata__has_key=assay_time_meta_pk)
     times_qs_values = times_qs.values_list('pk', f'metadata__{assay_time_meta_pk}')
 

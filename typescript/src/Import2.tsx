@@ -224,6 +224,8 @@ export interface ImportContextProps {
     protocol: Protocol,
     format: Selectable,
     uploadedFileName: string,
+    submitSuccess: boolean,
+    submitWait: boolean,
 }
 
 // Displays user feedback re: import context selected in step 1 and file uploaded in step 2
@@ -326,10 +328,15 @@ class ErrCategoryAlert extends React.Component<ErrSequenceProps, any> {
 class Step2 extends React.Component<Step2Props, any> {
     render() {
         let tenMB: number = 1048576;
+        let disableDrop: boolean = (this.props.uploadWait || this.props.submitSuccess ||
+                                    this.props.submitWait);
         return <div className="stepDiv">
             <ContextFeedback category={this.props.category} protocol={this.props.protocol}
                              format={this.props.format}
-                             uploadedFileName={this.props.uploadedFileName}/>
+                             uploadedFileName={this.props.uploadedFileName}
+                             submitSuccess={this.props.submitSuccess}
+                             submitWait={this.props.submitWait}
+            />
             <UploadFeedback
                 errors={this.props.uploadErrors}
                 warnings={this.props.uploadWarnings}
@@ -338,7 +345,7 @@ class Step2 extends React.Component<Step2Props, any> {
                 postUploadStep={this.props.postUploadStep}/>
             <div>Click or click-and-drag to upload a file</div>
             <DropZone accept={this.props.acceptMimeTypes} multiple={false} maxSize={tenMB}
-                      onDrop={this.props.onDropCallback} disabled={this.props.uploadWait}/>
+                      onDrop={this.props.onDropCallback} disabled={disableDrop}/>
             </div>
     }
 
@@ -387,7 +394,10 @@ class StepPlaceHolder extends React.Component<ImportContextProps, any> {
                 <ContextFeedback category={this.props.category}
                              protocol={this.props.protocol}
                              format={this.props.format}
-                             uploadedFileName={this.props.uploadedFileName}/>
+                             uploadedFileName={this.props.uploadedFileName}
+                             submitSuccess={this.props.submitSuccess}
+                             submitWait={this.props.submitWait}
+                />
                 Not implemented yet
             </div>
     }
@@ -535,6 +545,8 @@ class Import extends React.Component<any, ImportState> {
                                  onDropCallback={this.onFileDrop.bind(this)}
                                  clearFeedbackFn={this.clearUploadErrors.bind(this)}
                                  submitCallback={this.submitImport.bind(this)}
+                                 submitSuccess={this.state.submitSuccess}
+                                 submitWait={this.state.submitWait}
                                  jumpToStep={null}/>
            },
            {
@@ -542,14 +554,18 @@ class Import extends React.Component<any, ImportState> {
                component: <StepPlaceHolder category={this.state.category}
                                            protocol={this.state.protocol}
                                            format={this.state.format}
-                                           uploadedFileName={this.state.uploadedFileName}/>
+                                           uploadedFileName={this.state.uploadedFileName}
+                                           submitSuccess={this.state.submitSuccess}
+                                           submitWait={this.state.submitWait}/>
            },
            {
                name: '4. Review',
                component: <StepPlaceHolder category={this.state.category}
                                            protocol={this.state.protocol}
                                            format={this.state.format}
-                                           uploadedFileName={this.state.uploadedFileName}/>
+                                           uploadedFileName={this.state.uploadedFileName}
+                                           submitSuccess={this.state.submitSuccess}
+                                           submitWait={this.state.submitWait}/>
            },
            {
                name: '5. Import',
@@ -747,7 +763,8 @@ class Import extends React.Component<any, ImportState> {
     onStepChange(stepIndex: number) {
         console.log("step index = " + stepIndex);
         if(stepIndex === 4 &&
-            (this.state.submitErrors.length === 0) && (!this.state.submitWait) &&
+            (this.state.errors && this.state.submitErrors.length === 0) &&
+            (!this.state.submitWait) &&
             (!this.state.submitSuccess)) {
             this.submitImport();
         }
