@@ -763,7 +763,7 @@ class Import extends React.Component<any, ImportState> {
     onStepChange(stepIndex: number) {
         console.log("step index = " + stepIndex);
         if(stepIndex === 4 &&
-            (this.state.errors && this.state.submitErrors.length === 0) &&
+            (this.state.submitErrors.length === 0) &&
             (!this.state.submitWait) &&
             (!this.state.submitSuccess)) {
             this.submitImport();
