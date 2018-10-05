@@ -41,6 +41,15 @@ if getattr(settings, 'EDD_ENABLE_GRAPHQL', False):
         path('graphql/', login_required(GraphQLView.as_view(graphiql=True))),
     ]
 
+if 'edd_file_importer' in settings.INSTALLED_APPS:
+    from edd_file_importer.views import ImportView as Import2View
+    urlpatterns += (
+        path('study/<int:pk>/import2/', login_required(Import2View.as_view()),
+             name='import2'),
+        path('s/<slug:slug>/', login_required(Import2View.as_view()),
+             name='import2'),
+    }
+
 if getattr(settings, 'DEBUG', False):
     import debug_toolbar
     urlpatterns += [
