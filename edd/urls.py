@@ -43,12 +43,14 @@ if getattr(settings, 'EDD_ENABLE_GRAPHQL', False):
 
 if 'edd_file_importer' in settings.INSTALLED_APPS:
     from edd_file_importer.views import ImportView as Import2View
+    import2_pattern = [
+        path('import2', login_required(Import2View.as_view()),
+             name='import2')
+    ]
     urlpatterns += (
-        path('study/<int:pk>/import2/', login_required(Import2View.as_view()),
-             name='import2'),
-        path('s/<slug:slug>/', login_required(Import2View.as_view()),
-             name='import2'),
-    }
+        path('study/<int:pk>/', include((import2_pattern, 'edd-pk'))),
+        path('s/<slug:slug>/', include(import2_pattern)),
+    )
 
 if getattr(settings, 'DEBUG', False):
     import debug_toolbar
