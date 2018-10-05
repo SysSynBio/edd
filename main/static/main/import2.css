@@ -1,6 +1,6 @@
 .helpButton {
     display: inline-block;
-    background-image: url("images/help.png");
+    /*background-image: url("images/help.png");*/
     width: 32px;
     height: 32px;
     background-size: contain;
