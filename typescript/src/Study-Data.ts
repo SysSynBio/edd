@@ -532,12 +532,12 @@ export class GenericFilterSection {
     tableRows: {[index: string]: HTMLTableRowElement};
 
     // References to HTML elements created by the filter
-    filterColumnDiv: Element;
+    filterColumnDiv: HTMLElement;
     clearIcons: JQuery;
-    plaintextTitleDiv: Element;
+    plaintextTitleDiv: HTMLElement;
     searchBox: HTMLInputElement;
-    searchBoxTitleDiv: Element;
-    scrollZoneDiv: Element;
+    searchBoxTitleDiv: HTMLElement;
+    scrollZoneDiv: HTMLElement;
     filteringTable: JQuery;
     tableBodyElement: HTMLTableElement;
 
