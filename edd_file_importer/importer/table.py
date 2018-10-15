@@ -8,18 +8,15 @@ from collections import OrderedDict
 from uuid import uuid4
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.db import transaction
-from django.db.models import FileField
 
 from ..codes import FileParseCodes, FileProcessingCodes
-from ..models import Import, ImportCategory, ImportFile, ImportFormat
+from ..models import Import, ImportFormat
 from ..utilities import ParseError, ImportTooLargeError
 from ..utilities import ErrorAggregator
+from edd.notify.backend import RedisBroker
 from main.models import (Assay, Line, GeneIdentifier, Measurement, MeasurementType,
-                         MeasurementUnit, Metabolite, MetadataType, Phosphor, ProteinIdentifier,
-                         Protocol)
+                         MeasurementUnit, Metabolite, MetadataType, Phosphor, ProteinIdentifier)
 from main.importer.parser import guess_extension, ImportFileTypeFlags
 from main.importer.table import ImportBroker
 
@@ -51,24 +48,15 @@ class ImportContext:
     import process and unlikely to change on the time scale of processing a single import-related
     request.
     """
-    def __init__(self, aggregator, user_pk, study_pk, category_pk, file_format_pk, protocol_pk,
-                 compartment=None, x_units=None, y_units=None):
+    def __init__(self, import_, aggregator, user):
         """
         :raises ObjectDoesNotExist if the specified format isn't found
         """
         # look up the database entries for each piece of (mostly user-specified) context from
         # step 1... Not strictly necessary when running synchronously, but we're building this code
         # for simple transition to Celery
-        User = get_user_model()
-        self.user = User.objects.get(pk=user_pk)
-        self.study_pk = study_pk
-        self.protocol = Protocol.objects.get(pk=protocol_pk)
-        self.category = ImportCategory.objects.get(pk=category_pk)
-        self.hour_units = MeasurementUnit.objects.get(unit_name='hours')
-        self.compartment = compartment
-
-        self.x_units = x_units if x_units else self.hour_units
-        self.y_units = y_units
+        self.user = user
+        self.import_ = import_
 
         self.assay_time_metatype = MetadataType.objects.filter(
             for_context=MetadataType.ASSAY).get(type_name='Time')
@@ -76,7 +64,6 @@ class ImportContext:
         ###########################################################################################
         # Look up the file parser class based on user input
         ###########################################################################################
-        self.file_format = ImportFormat.objects.get(pk=file_format_pk)
         self._get_parser_instance(aggregator)
 
         ###########################################################################################
@@ -93,7 +80,7 @@ class ImportContext:
         self.line_ids = True  # False = file contains assay ID's instead
 
     def _get_parser_instance(self, aggregator):
-        parser_class_name = self.file_format.parser_class
+        parser_class_name = self.import_.file_format.parser_class
 
         # split fully-qualified class name into module and class names
         i = parser_class_name.rfind('.')
@@ -114,56 +101,55 @@ class ImportContext:
             raise ParseError(self)
 
 
-# skeleton for Import 2.0, to be fleshed out later.  For now, we're just aggregating errors &
-# warnings as part of the early testing process.
 class ImportFileHandler(ErrorAggregator):
 
-    def __init__(self, import_id, user_pk, study_pk, category_pk, file_format_pk, protocol_pk,
-                 uploaded_file, compartment=None, x_units=None, y_units=None):
+    def __init__(self, notify, import_, user):
         """
 
         :raises: ObjectDoesNotExist if any of the provided primary keys don't match the database
         """
         super(ImportFileHandler, self).__init__()
-        self.import_uuid = import_id
-        self.cache = ImportContext(self, user_pk, study_pk, category_pk, file_format_pk,
-                                   protocol_pk, compartment=compartment)
-        self.file = uploaded_file
+        self.import_ = import_
+        self.cache = ImportContext(import_, self, user)
         self.latest_status = None
+        self.notify = notify
 
-    def process_file(self, reprocessing_file, encoding='utf8'):
+    # TODO: simplify
+    def process_file(self, initial_upload, encoding='utf8'):
         """
         Performs initial processing for an import file uploaded to EDD.  The main purpose of this
         method is to parse and resolve the content of the file against data in EDD's database and
         other partner databases, e.g. Uniprot, PubChem, etc. When this method runs to completion,
-        the file content has been parsed, staged in the database along with user entries that
-        control import context
+        the file content has been parsed & staged in the database along with user entries that
+        control import context. This method will either return, or raise an EDDImportError
 
         Basic steps of the process are:
         1.  Parse the file
         2.  Resolve line or assay names in the file against the study
-        3.  Resolve MeasurementUnit MeasurementType and identifiers
-        4. Identify any missing input required for import completion
+        3.  Resolve MeasurementUnit & MeasurementType and identifiers
+        4.  Identify any missing input required for import completion
+        5.  Cache the parsed data in Redis for imminent use
+        6.  Build JSON for display in the UI
 
-        # resolve external identifiers
-        # 1) If configurable / enforceable in EDD, enforce format for external ID's
-        # 2) units, internal measurement types  # TODO: resolve with MeasurementType.type_group
-        # 3) external databases (ICE, Uniprot, PubChem)
-        :return:
+        resolve external identifiers
+        1) If configurable / enforceable in EDD, enforce format for external ID's
+        2) units, internal measurement types
+        3) external databases (ICE, Uniprot, PubChem)
         """
         # TODO: as an enhancement, compute & use file hashes to prevent re-upload
         ###########################################################################################
         # Parse the file, raising an Exception if any parse / initial verification errors occur
         ###########################################################################################
         cache = self.cache
-        category = cache.category
-
-        file = self.file
-        mime_type = file.mime_type if isinstance(file, FileField) else file.content_type
+        import_ = self.cache.import_
+        notify = self.notify
+        file = self.import_.file.file
+        mime_type = self.import_.file.mime_type
         file_extension = guess_extension(mime_type)
+        study = import_.study
 
-        logger.info(f'Parsing import file {file.name} for study {cache.study_pk}, '
-                    f'user {cache.user.username}')
+        logger.info(f'Parsing import file {file.name} for study {study.pk} '
+                    f'({study.slug}), user {cache.user.username}')
 
         if file_extension not in (ImportFileTypeFlags.EXCEL, ImportFileTypeFlags.CSV):
             self.raise_error(FileParseCodes.UNSUPPORTED_FILE_TYPE, occurrence=file_extension)
@@ -180,12 +166,16 @@ class ImportFileHandler(ErrorAggregator):
         # for display, then just cache the inputs and return. arguably we don't have to even upload
         # the file until later, but the user has entered enough data to make restarting an
         # annoyance. Also this way we have a record for support purposes.
-        if not cache.file_format:
-            import_, _ = self._save_import_and_file(Import.Status.CREATED, reprocessing_file)
-            return {
-                'id': import_.uuid,
+        if not import_.file_format:
+            payload = {
+                'uuid': import_.uuid,
+                'status': import_.status,
                 'raw_data': parser.raw_data
             }
+            message = (f'Your import file, "{file.name}" has been saved, but file format input '
+                       f'is needed to process it')
+            notify.notify(message, tags=('import-status-update',), payload=payload)
+            return Import.Status.CREATED
 
         ###########################################################################################
         # Resolve line / assay names from file to the study
@@ -219,6 +209,12 @@ class ImportFileHandler(ErrorAggregator):
             assay_pks = self.cache.loa_name_to_pk.values()
             assay_time_pk = self.cache.assay_time_metatype.pk
             assay_pk_to_time = verify_assay_times(self, assay_pks, parser, assay_time_pk)
+
+        compartment = cache.import_.compartment
+        category = cache.import_.category
+        required_inputs = compute_required_context(category, compartment, parser, assay_pk_to_time)
+            assay_time_pk = self.cache.assay_time_metatype.pk
+            assay_pk_to_time = verify_assay_times(self, assay_pks, parser, assay_time_pk)
         required_inputs = compute_required_context(category, cache.compartment, parser,
                                                    assay_pk_to_time)
 
@@ -226,76 +222,27 @@ class ImportFileHandler(ErrorAggregator):
         # Since import content is now verified & has some value, save the file and context to
         # the database
         ###########################################################################################
-        logger.info('Saving parsed file and import context to the database')
-        import_status = Import.Status.READY if not required_inputs else Import.Status.RESOLVED
-        import_, initial_upload = self._save_import_and_file(import_status, reprocessing_file)
+        import_.status = Import.Status.READY if not required_inputs else Import.Status.RESOLVED
+        import_.save()
 
-        # cache the import in redis, but don't actually trigger the Celery task yet...that's the
-        # job of import step 5
+        # cache the import in redis, but don't actually trigger the import yet...that's
+        # typically the job of import step 5
         import_records = self.cache_resolved_import(import_.uuid, parser, matched_assays,
                                                     initial_upload)
 
         # build the json payload to send back to the UI for use in subsequent import steps
         unique_mtypes = cache.mtype_name_to_type.values()
-        return import_, build_step4_ui_json(import_, required_inputs, import_records,
-                                            unique_mtypes, cache.hour_units.pk)
+        payload = build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
+                                      import_.x_units_id)
 
-    def _save_import_and_file(self, import_status, reprocessing_file):
-        """
-
-        :param import_status:
-        :return: (import_model, initial_upload)
-        """
-        cache = self.cache
-        with transaction.atomic():
-            import_uuid = self.import_uuid
-
-            # if a file was already uploaded, get a ref to it so we can delete after replacing it
-            old_file = None
-            if import_uuid:
-                try:
-                    old_file = ImportFile.objects.get(import_ref__uuid=import_uuid)
-                except ImportFile.DoesNotExist:
-                    pass
-
-            if not reprocessing_file:
-                # save the new file
-                file_model = ImportFile.objects.create(file=self.file)
-            else:
-                file_model = self.file
-
-            # if this is the first upload attempt, assign a new uuid
-            self.import_uuid = self.import_uuid if self.import_uuid else uuid4()
-
-            import_context = {
-                'study_id': cache.study_pk,
-                'category_id': cache.category.pk,
-                'status': import_status,
-                'file_id': file_model.pk,
-                'file_format_id': cache.file_format.pk if cache.file_format else None,
-                'protocol_id': cache.protocol.pk,
-            }
-
-            # if provided by the client, save global unit specifiers, etc whose use is
-            # context-dependent
-            if self.cache.x_units:
-                import_context['x_units'] = self.cache.x_units
-
-            if self.cache.y_units:
-                import_context['y_units'] = self.cache.y_units
-
-            if self.cache.compartment:
-                import_context['compartment'] = self.cache.compartment
-
-            import_, initial_upload = Import.objects.update_or_create(
-                uuid=self.import_uuid,
-                defaults=import_context)
-
-            # delete old file now that foreign key constraint is satisfied
-            if old_file:
-                old_file.delete()
-
-            return import_, initial_upload
+        # TODO: remove workaround to cut out larger payload content
+        payload = {
+            'uuid': import_.uuid,
+            'pk': import_.pk,
+            'status': import_.status,
+        }
+        notify.notify(f'Your file "{file.name}" is ready to import', tags=['import-status-update'],
+                      payload=payload)
 
     def _verify_line_or_assay_match(self, line_or_assay_names, lines):
         """
@@ -303,14 +250,16 @@ class ImportFileHandler(ErrorAggregator):
         """
 
         context = self.cache
+        study_pk = context.import_.study_id
         extract_vals = ['name', 'pk']
         if lines:
-            qs = Line.objects.filter(study_id=context.study_pk,
+            qs = Line.objects.filter(study_id=study_pk,
                                      name__in=line_or_assay_names).values(*extract_vals)
         else:
-            qs = Assay.objects.filter(line__study_id=context.study_pk,
+            protocol_pk = context.import_.protocol_id
+            qs = Assay.objects.filter(line__study_id=study_pk,
                                       name__in=line_or_assay_names,
-                                      protocol_id=context.protocol.pk).values(*extract_vals)
+                                      protocol_id=protocol_pk).values(*extract_vals)
         found_count = len(qs)  # evaluate qs and get the # results
         if found_count:
             model = 'line' if lines else 'assay'
@@ -335,13 +284,13 @@ class ImportFileHandler(ErrorAggregator):
         # types of errors in linked applications (e.g. connection errors vs permissions errors
         # vs identifier verified not found...consider adding complexity / transparency)
 
-        category_name = self.cache.category.name
-        mtype_group = self.cache.category.default_mtype_group
+        category = self.cache.import_.category
+        mtype_group = category.default_mtype_group
         err_limit = getattr(settings, 'EDD_IMPORT_LOOKUP_ERR_LIMIT', 0)
         err_count = 0
 
         types = f': {parser.unique_mtypes}' if len(parser.unique_mtypes) <= 10 else ''
-        logger.debug(f'Verifying MeasurementTypes for category "{category_name}"=> '
+        logger.debug(f'Verifying MeasurementTypes for category "{category.name}"=> '
                      f'type "{mtype_group}"{types}')
 
         for mtype_id in parser.unique_mtypes:
@@ -698,7 +647,7 @@ def build_ui_payload_from_cache(import_):
                                hour_units.pk)
 
 
-def build_step4_ui_json(import_, required_inputs, import_records,  unique_mtypes, time_units_pk):
+def build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes, x_units_pk):
     """
     Build JSON to send to the new import front end, including some legacy data for easy
     display in the existing TS graphing code (which may get replaced later). Relative to the
@@ -744,7 +693,7 @@ def build_step4_ui_json(import_, required_inputs, import_records,  unique_mtypes
             'type': import_record['measurement_id'],
             'comp': import_record['compartment_id'],
             'format': format,
-            'x_units': time_units_pk,
+            'x_units': x_units_pk,
             'y_units': import_record['units_id'],
             'meta': {},
         })

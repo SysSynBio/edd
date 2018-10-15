@@ -49,7 +49,11 @@ class FileProcessingCodes(Enum):
     PHOSPHOR_NOT_FOUND = auto()
     METABOLITE_NOT_FOUND = auto()
 
+    COMMUNICATION_ERROR = auto()
+
     MEASUREMENT_UNIT_NOT_FOUND = auto()
+
+    ILLEGAL_STATE_TRANSITION = auto()
 
     MERGE_NOT_SUPPORTED = auto()
 
@@ -148,6 +152,11 @@ processing_code_to_ui_detail = {
     FileProcessingCodes.METABOLITE_NOT_FOUND: {
         'category': _('Identifiers not found'),
         'summary': _('Metabolites were not found by PubChem CID'),
+    },
+
+    FileProcessingCodes.ILLEGAL_STATE_TRANSITION: {
+        'category': _('Invalid Request'),
+        'summary': _('Illegal state transition'),
     },
 
     FileProcessingCodes.ASSAYS_MISSING_TIME: {

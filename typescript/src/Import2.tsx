@@ -6,6 +6,8 @@ import * as ReactDOM from "react-dom";
 import DropZone from "react-dropzone";
 import StepZilla from "react-stepzilla";
 import * as Utl from "../modules/Utl";
+import {Message} from "../modules/Notification";
+import {notificationSocket} from "./Common";
 
 declare function require(name: string): any;  // avoiding warnings for require calls below
 require("react-stepzilla.css");
@@ -67,6 +69,7 @@ class MultiButtonSelect<T extends Selectable> extends React.Component<SelectProp
 export interface Step2State extends ImportContextProps {
     acceptMimeTypes: string,
     uploadWait: boolean,
+    uploadProcessingWait: boolean,
     uploadedFileName: string,
     postUploadStep: number,
     uploadErrors: ErrorSummary[],
@@ -93,6 +96,8 @@ export interface ErrorSummary {
 }
 
 export interface UploadProps {
+    uploadWait: boolean,
+    uploadProcessingWait: boolean,
     errors: ErrorSummary[],
     warnings: ErrorSummary[],
     uploadedFileName: string,
@@ -133,6 +138,13 @@ function categorizeErrs(errors: ErrorSummary[]): ErrorSummary[][] {
 */
 class UploadFeedback extends React.Component<UploadProps, any> {
     render() {
+        if(this.props.uploadWait || this.props.uploadProcessingWait) {
+            return <div className="alert alert-info">
+                <h4>Processing file</h4>
+                Please hang tight while your file is processed...
+                <span className="wait step2-wait"/>
+            </div>
+        }
         if((!this.props.errors || !this.props.warnings) ||
            !(this.props.errors.length || this.props.warnings.length)) {
             if(this.props.postUploadStep) {
@@ -328,8 +340,8 @@ class ErrCategoryAlert extends React.Component<ErrSequenceProps, any> {
 class Step2 extends React.Component<Step2Props, any> {
     render() {
         let tenMB: number = 1048576;
-        let disableDrop: boolean = (this.props.uploadWait || this.props.submitSuccess ||
-                                    this.props.submitWait);
+        let disableDrop: boolean = (this.props.uploadWait || this.props.uploadProcessingWait ||
+                                    this.props.submitSuccess || this.props.submitWait);
         return <div className="stepDiv">
             <ContextFeedback category={this.props.category} protocol={this.props.protocol}
                              format={this.props.format}
@@ -338,6 +350,8 @@ class Step2 extends React.Component<Step2Props, any> {
                              submitWait={this.props.submitWait}
             />
             <UploadFeedback
+                uploadWait={this.props.uploadWait}
+                uploadProcessingWait={this.props.uploadProcessingWait}
                 errors={this.props.uploadErrors}
                 warnings={this.props.uploadWarnings}
                 clearFeedbackFn={this.props.clearFeedbackFn}
@@ -482,7 +496,7 @@ class Step1 extends React.Component<Step1Props, any> {
 export interface ImportState extends Step1State, Step2State, Step5State {
     nextButtonText: string,
     importPk: number,
-    importUUID: any,
+    importUUID: string,
 }
 
 // parent component for the import
@@ -507,6 +521,7 @@ class Import extends React.Component<any, ImportState> {
             acceptMimeTypes: mimeTypes,
             uploadedFileName: null,
             uploadWait: false,
+            uploadProcessingWait: false,
             postUploadStep: 0,
             uploadErrors: [],
             uploadWarnings: [],
@@ -514,7 +529,7 @@ class Import extends React.Component<any, ImportState> {
             /* Step 5 state */
             submitWait: false,
             submitSuccess: false,
-            submitErrors: null,
+            submitErrors: [],
         };
     }
 
@@ -537,6 +552,7 @@ class Import extends React.Component<any, ImportState> {
                                  protocol={this.state.protocol}
                                  format={this.state.format}
                                  uploadWait={this.state.uploadWait}
+                                 uploadProcessingWait={this.state.uploadProcessingWait}
                                  uploadedFileName={this.state.uploadedFileName}
                                  postUploadStep={this.state.postUploadStep}
                                  uploadErrors={this.state.uploadErrors}
@@ -633,22 +649,12 @@ class Import extends React.Component<any, ImportState> {
 
     uploadSuccess(result_json: any, textStatus: string, jqXHR: JQueryXHR): void {
         let json = JSON.parse(jqXHR.responseText);
-        let nextStep = 2;
-        let nextButtonText = 'Next';
-
-        if(json['status'] === 'Ready') {
-            nextStep = 4;
-            // doesn't seem to get updated by StepZilla until after it's pressed
-            nextButtonText = 'Submit Import';
-        }
-
         this.setState({
-            'uploadWait': false,
             'importPk': json['pk'],
             'importUUID': json['uuid'],
-            'postUploadStep': nextStep,
-            'uploadWarnings': json.warnings || [],
-            'nextButtonText': nextButtonText,
+            'uploadWait': false,
+            'uploadProcessingWait': true,
+
         });
     }
 
@@ -761,9 +767,8 @@ class Import extends React.Component<any, ImportState> {
     }
 
     onStepChange(stepIndex: number) {
-        console.log("step index = " + stepIndex);
         if(stepIndex === 4 &&
-            (this.state.submitErrors.length === 0) &&
+            (this.state.submitErrors && this.state.submitErrors.length === 0) &&
             (!this.state.submitWait) &&
             (!this.state.submitSuccess)) {
             this.submitImport();
@@ -799,7 +804,7 @@ class Import extends React.Component<any, ImportState> {
     submitSuccess(result_json: any, textStatus: string, jqXHR: JQueryXHR) {
         this.setState({
             'submitSuccess': true,
-            'submitErrors': null,
+            'submitErrors': [],
             'submitWait': false,
         });
     }
@@ -827,14 +832,58 @@ class Import extends React.Component<any, ImportState> {
         }
     }
 
+    importMessageReceived(message: Message) {
+        if(!message.hasOwnProperty("payload")) {
+            console.log("Skipping message that has no payload");
+            return;
+        }
+        let json = message.payload;
+        console.log('Processing import ' + json.uuid + ' message ' + message.uuid);
+
+        // skip notifications for other simultaneous imports by this user
+        if (json.uuid != this.state.importUUID) {
+            console.log('Ignoring status update for import' + json.uuid +
+                ', Looking for ' + this.state.importUUID);
+            return;
+        }
+
+        switch (message.payload.status) {
+            case 'CREATED':
+                // handled by the upload request
+                break;
+            case 'RESOLVED':
+                let nextStep = 2;
+                let nextButtonText = 'Next';
+                this.setState({
+                    'postUploadStep': 2,
+                    'uploadWait': false,
+                    'uploadProcessingWait': false,
+                    'uploadWarnings': json.warnings || [],
+                    'nextButtonText': nextButtonText,  // StepZilla bug?
+                });
+                break;
+            case  'READY':
+                this.setState({
+                    'postUploadStep': 4,
+                    'uploadWait': false,
+                    'uploadProcessingWait': false,
+                    'uploadWarnings': json.warnings || [],
+                    'nextButtonText': 'Submit Import',  // StepZilla bug?
+                });
+        }
+    }
+
     componentDidMount() {
+        notificationSocket.addTagAction('import-status-update',
+                                        this.importMessageReceived.bind(this));
+
         // send CSRF header on each AJAX request from this page
         $.ajaxSetup({
             beforeSend: function (xhr) {
                 var csrfToken = Utl.EDD.findCSRFToken();
                 xhr.setRequestHeader('X-CSRFToken', csrfToken);
             },
-    });
+        });
 
         // get categories and associated protocols, file formats
         $.ajax('/rest/import_categories/?ordering=display_order',

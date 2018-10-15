@@ -1,9 +1,10 @@
 # coding: utf-8
 import json
 import logging
+import uuid
 
-from celery import chain
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.db.models import Prefetch
 from django_filters import filters as django_filters
 from django.http import JsonResponse
@@ -13,12 +14,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import mixins, viewsets
 
 from .serializers import FileImportSerializer, ImportCategorySerializer
-from ..importer.table import ImportFileHandler
-from ..models import Import, ImportCategory, ImportFormat
-from ..tasks import mark_import_complete, mark_import_failed, mark_import_processing
+from ..models import Import, ImportCategory, ImportFormat, ImportFile
+from ..tasks import process_import_file
 from ..utilities import EDDImportError
-from main.tasks import import_table_task
+from main.models import Measurement, MeasurementUnit
 from edd.rest.views import EDDObjectFilter, StudyInternalsFilterMixin
+from edd.utilities import JSONEncoder
 from edd_file_importer import models
 from main.importer.table import ImportBroker
 
@@ -106,30 +107,40 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
 
         study_pk = self.kwargs['study_pk']
 
+        # unless required step 1 inputs or the file itself is missing, save the parameters
+        # to the database. Further verification will be done in the background task responsible for
+        # parsing / verification
         try:
-            upload_handler = ImportFileHandler(
-                    import_id=None,
-                    user_pk=request.user.pk,
-                    study_pk=study_pk,
-                    category_pk=request.data['category'],
-                    file_format_pk=request.data['file_format'],
-                    protocol_pk=request.data['protocol'],
-                    uploaded_file=request.data['file'],
-                    compartment=request.data.get('compartment', None),
-                    x_units=request.data.get('x_units', None),
-                    y_units=request.data.get('y_units', None),
-            )
-            import_, ui_payload = upload_handler.process_file(reprocessing_file=False,
-                                                              encoding=request.encoding or 'utf8')
+            # grab request parameters, causing a KeyError for any minimally required params
+            # missing in the request.
+            file = request.data['file']
+            time_units_pk = MeasurementUnit.objects.filter(unit_name='hours').values_list(
+                                'pk', flat=True).get()
 
-            # if client requested a status transition, in this case, likely to SUBMITTED, verify
-            # that import state is consistent with attempting it
-            response = self.attempt_status_transition(import_, request.data.get('status', None),
-                                                      request.user.pk)
-            if response:
-                return response
+            import_context = {
+                'study_id': study_pk,
+                'category_id': request.data['category'],
+                'protocol_id': request.data['protocol'],
+                'file_format_id': request.data['file_format'],
+                'status': Import.Status.CREATED,
+                'x_units_id': request.data.get('x_units', time_units_pk),
+                'y_units_id': request.data.get('y_units', None),
+                'compartment': request.data.get('compartment', Measurement.Compartment.UNKNOWN),
+            }
 
-            return JsonResponse(ui_payload, status=codes.ok, safe=False)
+            # save user inputs to the database for handoff to a Celery worker
+            with transaction.atomic():
+                file_model = ImportFile.objects.create(file=file)
+                import_context['file_id'] = file_model.pk
+                import_ = Import.objects.create(**import_context)
+
+            process_import_file.delay(import_.pk, request.user.pk,
+                                      request.data.get('status',  None),
+                                      request.encoding or 'utf8', initial_upload=True)
+
+            # return identifiers the clients (esp UI) can use to
+            payload = json.dumps({'uuid': import_.uuid, 'pk': import_.pk}, cls=JSONEncoder)
+            return JsonResponse(payload, status=codes.accepted, safe=False)
 
         except KeyError as k:
             logger.exception('Exception processing import upload')
@@ -137,14 +148,13 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
             return self._build_simple_err_response('Bad request', 'Missing required parameter',
                                                    status=codes.bad_request,
                                                    detail=missing_key)
-        except ObjectDoesNotExist:
+        except ObjectDoesNotExist as o:
             logger.exception('Exception processing import upload')
-            return JsonResponse({}, status=codes.bad_request)
-        except EDDImportError as p:
-            # TODO: differentiate more clearly between client & server errors after we've added
-            # detail re: which MeasurementType ID lookup errors occurred
-            logger.exception('Exception processing import upload')
-            return self._build_err_response(p.aggregator, codes.bad_request)
+            return self._build_simple_err_response(
+                'Bad request',
+                'Referenced a non-existent object',
+                status=codes.bad_request,
+                detail=o)
         except RuntimeError as r:
             logger.exception('Exception processing import upload')
             return self._build_simple_err_response(
@@ -153,6 +163,7 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                 status=codes.internal_server_error,
                 detail=r)
 
+    # TODO: simplify
     def partial_update(self, request, *args, **kwargs):
         """
         Handles HTTP PATCH requests, e.g. to adjust import parameters during multiple steps of
@@ -180,57 +191,73 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
             if process_file:
 
                 # get the file to parse. it could be one uploaded in an earlier request
-                file = request.data.get('file', None)
-                if not file:
-                    file = models.ImportFile.get(import_id=import_.pk)
+                if new_upload:
+                    file = ImportFile.objects.create(request.data['file'])
+                    import_.file=file
 
-                file_processor = ImportFileHandler(
-                    import_id=import_.uuid,
-                    user_pk=user_pk,
-                    study_pk=study_pk,
-                    category_pk=request.data.get('category', import_.category),
-                    file_format_pk=request.data.get('file_format', import_.file_format),
-                    protocol_pk=request.data.get('protocol', import_.protocol),
-                    uploaded_file=file,
-                    compartment=request.data.get('compartment', import_.compartment),
-                    x_units=request.data.get('x_units', None),
-                    y_units=request.data.get('y_units', None),
-                )
-                import_, ui_payload = file_processor.process_file(reprocessing_file=not new_upload)
+                # update all parameters from the request. Since this is a re-upload,
+                # and essentially the same as creating a new import, we'll allow
+                # redefinition of any user-editable parameter
+                import_.status = Import.Status.CREATED
+                import_.category_id = request.data.get('category', import_.category)
+                import_.file_format = request.data.get('file_format', import_.file_format)
+                import_.protocol = request.data.get('protocol', import_.protocol)
+                import_.compartment = request.data.get('compartment', import_.compartment)
+                import_.x_units = request.data.get('x_units', import_.x_units)
+                import_.y_units = request.data.get('y_units', import_.y_units)
+                import_.save()
+
+                # schedule a task to process the file, and submit the import if requested
+                process_import_file.delay(import_.pk, user_pk, request.get('status', None),
+                                          request.encoding or 'utf8', initial_upload=False)
+                ui_payload = json.dumps({
+                    'uuid': import_.uuid,
+                    'pk': import_.pk,
+                    'status': import_.status
+                })
+                return JsonResponse(ui_payload, status=codes.accepted, safe=False)
 
             # otherwise, save changes and determine any additional missing inputs
             else:
                 self._save_context(import_, request, study_pk, import_pk, user_pk)
 
-            # if client requested a status transition, verify it and try to fulfill.
-            response = self.attempt_status_transition(import_, request.data.get('status', None),
-                                                      user_pk)
-            if response:
-                return response
+                # if client requested a status transition, verify it and try to fulfill
+                # raises EddImportError if unable to fulfill a request
+                requested_status = request.data.get('status', None)
+                if requested_status:
+                        self.attempt_status_transition(import_, requested_status,
+                                                       self.request.user, None, asynch=True)
+                        return JsonResponse({}, status=codes.accepted)
 
             # if the file was parsed in an earlier request, e.g. in the first half of Step 3,
             # get cached parse results from Redis & from the EDD database, and return them to
             # the client.  This step requires re-querying EDD's DB for MeasurementTypes,
             # but needs less code and also skips potentially-expensive line/assay lookup and
             # external ID verification
-            if not process_file:
-                try:
-                    ui_payload = self._build_ui_payload_from_cache(import_)
-                except EDDImportError as e:
-                    return self._build_err_response(e.aggregator, codes.internal_server_error)
+            try:
+                ui_payload = self._build_ui_payload_from_cache(import_)
+            except EDDImportError as e:
+                return self._build_err_response(e.aggregator, codes.internal_server_error)
 
             return JsonResponse(ui_payload, status=codes.ok, safe=False)
 
-        # TODO: improve error handling here based on results of testing, esp initial testing of
-        # create()
-        except Exception as e:
-            logger.exception('Exception processing import')
+        except ObjectDoesNotExist as o:
+            logger.exception('Exception processing import upload')
+            return self._build_simple_err_response(
+                'Bad request',
+                'Referenced a non-existent object',
+                status=codes.bad_request,
+                detail=o)
+        except EDDImportError as e:
+            logger.exception('Exception processing import upload')
+            return self._build_err_response(e.aggregator, codes.bad_request)
+        except (celery.exceptions.OperationalError, CommunicationError, RuntimeError) as r:
+            logger.exception('Exception processing import upload')
             return self._build_simple_err_response(
                 'Error',
                 'An unexpected error occurred',
                 status=codes.internal_server_error,
-                detail=str(e)
-            )
+                detail=r)
 
     def retrieve(self, request, *args, **kwargs):
         pass   # TODO
@@ -259,18 +286,6 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
             context[param] = request.data[param]
         broker.set_context(import_.uuid, json.dumps(context))
 
-    def attempt_status_transition(self, import_, requested_status, user_pk):
-        if not requested_status:
-            return None
-
-        # if client suggested a status transition, verify that state is correct to perform it
-        err_response = self._verify_status_transition(import_, requested_status)
-        if err_response:
-            return err_response
-
-        if requested_status == Import.Status.SUBMITTED:
-            return self._submit_import_task(import_, user_pk)
-
     def _test_context_changed(self, request, import_):
         """
         Determines if client provided any Step 1 context that requires reprocessing the file,
@@ -284,84 +299,6 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                 return True
         return False
 
-    def _verify_status_transition(self, import_, requested_status):
-        if requested_status is None:
-            return
 
-        # clients may only directly request a status transition to SUBMITTED...and eventually
-        # ABORTED.  Reject all other status change requests.
-        if requested_status != Import.Status.SUBMITTED:
-            return self._build_simple_err_response(
-                'Invalid request',
-                'Illegal status transition',
-                detail=f'Clients may only request {Import.Status.SUBMITTED} status',
-                status=codes.bad_request)
 
-        elif import_.status not in (Import.Status.READY, Import.Status.ABORTED,
-                                    Import.Status.FAILED):
-            return self._build_simple_err_response(
-                'Invalid request',
-                'Illegal status transition',
-                detail=f'Transition from {import_.status} to {Import.Status.SUBMITTED} is not '
-                f'allowed or not yet supported', status=codes.bad_request)
 
-    def _submit_import_task(self, import_, user_pk):
-        """
-        Schedules a Celery task to do the heavy lifting to finish the import data cached in Redis
-        """
-        try:
-            # first mark the import as submitted to prevent a race condition with the chain of
-            # async Celery tasks we're about to submit
-            import_.status = Import.Status.SUBMITTED
-            import_.save()
-
-            logger.info(f'Submitting import to worker {import_.uuid}')
-
-            # run the legacy import task, layering on updates to import status stored in the
-            # database without modifying the legacy code
-            # TODO: use when refactoring legacy Celery task, do it all this in a single task and
-            # use apply_async() instead to use the import UUID as the task ID (supports
-            # cancellation)
-            uuid = import_.uuid
-            chain(mark_import_processing.si(uuid) |
-                  import_table_task.si(import_.study_id, user_pk, uuid).on_error(
-                      mark_import_failed.s(uuid)) |
-                  mark_import_complete.si(uuid)).delay()
-
-            return JsonResponse({}, status=codes.accepted)
-        except import_table_task.OperationalError as e:
-            import_.status = Import.Status.FAILED
-            import_.save()
-            logger.exception(f'Exception submitting import {import_.uuid}')
-            return self._build_simple_err_response(
-                'Error',
-                'An unexpected error occurred',
-                status=codes.internal_server_error,
-                detail=str(e))
-
-    def _build_err_response(self, aggregator, status=codes.bad_request):
-        # flatten errors & warnings into a single list to send to the UI. Each ImportErrorSummary
-        # may optionally contain multiple related errors grouped by subcategory
-        errs = []
-        for err_type_summary in aggregator.errors.values():
-            errs.extend(err_type_summary.to_json())
-
-        warns = []
-        for warn_type_summary in aggregator.warnings.values():
-            warns.extend(warn_type_summary.to_json())
-
-        return JsonResponse({
-            'errors': errs,
-            'warnings': warns,
-        }, status=status)
-
-    def _build_simple_err_response(self, category, summary,
-                                   status=codes.internal_server_error,
-                                   detail=None):
-        return JsonResponse({'errors': [{
-            'category': category,
-            'summary': summary,
-            'detail': detail,
-            'resolution': '',
-            'doc_url': '',
-        }]}, status=status)

@@ -106,6 +106,11 @@ class ErrorAggregator(object):
         if occurrence:
             errs.add_occurrence(occurrence=occurrence, subcategory=subcategory)
 
+    @staticmethod
+    def error_factory(err_type, subcategory, occurrence=None):
+        aggregator = ErrorAggregator()
+        aggregator.raise_error(err_type, subcategory, occurrence)
+
     def add_errors(self, err_type, subcategory=None, occurrences=None):
         logger.debug(f'add_errors called! {err_type}: {occurrences}')
         for detail in occurrences:
