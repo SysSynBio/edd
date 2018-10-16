@@ -842,7 +842,7 @@ class Import extends React.Component<any, ImportState> {
 
         // skip notifications for other simultaneous imports by this user
         if (json.uuid != this.state.importUUID) {
-            console.log('Ignoring status update for import' + json.uuid +
+            console.log('Ignoring status update for import ' + json.uuid +
                 ', Looking for ' + this.state.importUUID);
             return;
         }

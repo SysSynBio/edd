@@ -146,15 +146,14 @@ export class NotificationSocket {
             }
 
             // notify listeners for specific tags
-            for (let tagCallbacks of $.map(message.tags, tag => this.tagActions[tag])) {
+            for(let tag of message.tags) {
+                let tagCallbacks: TagAction[] = this.tagActions[tag];
+                if(!tagCallbacks) {
+                    continue;
+                }
+                // TODO: remove log
                 console.log('Executing ' + tagCallbacks.length + ' tag callbacks: ' + tagCallbacks);
-                $.map(tagCallbacks, (callback) => {callback(message);});
-
-                console.log('Executing ' + tagCallbacks.length + ' tag callbacks (for loop): ' + tagCallbacks);
-                tagCallbacks.forEach(callback => {
-                    callback(message);
-                });
-            }
+                $.map(tagCallbacks, (callback) => {callback(message)});
         }
         this.count = payload.unread;
     }
@@ -248,10 +247,15 @@ export class NotificationMenu {
         $('<span>').addClass('message-close glyphicon glyphicon-remove').appendTo(item);
 
         // inform all subscribers to any tag included in the message
-        for (let callbacks of $.map(message.tags, (tag) => this.tagActions[tag])) {
-            console.log('Callbacks: ' + callbacks);
+        for (let tag of message.tags) {
+            let tagActions: UITagAction[] =this.tagActions[tag];
+            console.log('Callbacks: ' + tagActions);
 
-            callbacks.forEach(callback => {
+            if(!tagActions) {
+                continue;
+            }
+
+            tagActions.forEach(callback => {
                 item = callback(message, item) || item;
             });
         }
