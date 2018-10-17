@@ -624,7 +624,7 @@ class Import extends React.Component<any, ImportState> {
         }
 
         let format = null;
-        if (category.file_formats && category.file_formats.length) {
+        if (category.file_formats && category.file_formats.length == 1) {
             format = category.file_formats[0];
         }
 
@@ -641,14 +641,9 @@ class Import extends React.Component<any, ImportState> {
             return;
         }
 
-        let format = null;
-        if (protocol.format && protocol.format.length) {
-            format = protocol.format[0];
-        }
-
         this.setState({
             'protocol': protocol,
-            'format': format,
+            'format': null,
         });
         this.clearUploadErrors(true);
     }
