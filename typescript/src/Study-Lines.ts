@@ -38,8 +38,8 @@ require('jquery-ui/ui/widgets/dialog');
 
 
 
-var linesActionPanelRefreshTimer: number;
-var positionActionsBarTimer: number;
+var linesActionPanelRefreshTimer: NodeJS.Timer;
+var positionActionsBarTimer: NodeJS.Timer
 var attachmentIDs: any;
 var attachmentsByID: any;
 var prevDescriptionEditElement: any;

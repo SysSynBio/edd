@@ -336,7 +336,7 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                 'Error',
                 'An unexpected error occurred',
                 status=codes.internal_server_error,
-                detail=e.message)
+                detail=str(e))
 
     def _build_err_response(self, aggregator, status=codes.bad_request):
         # flatten errors & warnings into a single list to send to the UI. Each ImportErrorSummary

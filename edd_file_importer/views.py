@@ -1,4 +1,4 @@
-from django.views import View, generic
+from django.views import generic
 
 from main.models.permission import StudyPermission
 from main.views import load_study, StudyObjectMixin

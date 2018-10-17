@@ -17,4 +17,3 @@ urlpatterns = [
     # REST views
     path('', include('edd_file_importer.rest.urls', namespace='edd_file_importer.rest')),
 ]
-
