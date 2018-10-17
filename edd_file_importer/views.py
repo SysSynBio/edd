@@ -11,8 +11,8 @@ class ImportView(StudyObjectMixin, generic.DetailView):
         # load study to enforce permissions check... permissions should also be checked by back end
         # during user attempt to create the lines, but better to identify permissions errors before
         # loading the form
-        pk = kwargs.get('pk')
-        slug = kwargs.get('slug')
+        pk = kwargs.get('pk', None)
+        slug = kwargs.get('slug', None)
         load_study(request, pk=pk, slug=slug, permission_type=StudyPermission.CAN_EDIT)
 
         # render the template
