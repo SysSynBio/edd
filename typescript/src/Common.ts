@@ -45,10 +45,10 @@ export function prepareIt() {
 
     // as a stopgap, silence menubar-level user notifications resulting from progression
     // through the steps of the import process.  These notifications will eventually be valuable
-    // once we have support for resumption of a work-in-progress import
-    // notificationMenu.addTagAction('import-status-update', (message, item) => {
-    //     notificationSocket.markRead(message.uuid);
-    // });
+    // once we have support for monitoring imports or resumption of a work-in-progress import
+    notificationSocket.addTagAction('import-status-update', (message) => {
+        notificationSocket.markRead(message.uuid);
+    });
 }
 
 // use JQuery ready event shortcut to call prepareIt when page is ready

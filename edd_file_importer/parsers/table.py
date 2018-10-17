@@ -117,7 +117,7 @@ class TableParser(object):
     def _build_unit_patterns(self):
         self._unit_patterns = {}
         for col, units in self.supported_units.items():
-            logger.debug(f'Building unit pattterns for column "{col}": {units}')
+            logger.debug(f'Building unit patterns for column "{col}": {units}')
             # note : maintaining case-sensitivity is important! SI units use case!
             vals = '|'.join([TableParser._process_label(unit) for unit in units])
             pat = re.compile(r'^\s*({vals})\s*$'.format(vals=vals))

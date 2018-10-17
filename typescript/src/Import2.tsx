@@ -342,13 +342,13 @@ class Step2 extends React.Component<Step2Props, any> {
         let tenMB: number = 1048576;
         let disableDrop: boolean = (this.props.uploadWait || this.props.uploadProcessingWait ||
                                     this.props.submitSuccess || this.props.submitWait);
+        let directions = (!disableDrop) && <div>Click or click-and-drag to upload a file</div>
         return <div className="stepDiv">
             <ContextFeedback category={this.props.category} protocol={this.props.protocol}
                              format={this.props.format}
                              uploadedFileName={this.props.uploadedFileName}
                              submitSuccess={this.props.submitSuccess}
-                             submitWait={this.props.submitWait}
-            />
+                             submitWait={this.props.submitWait} />
             <UploadFeedback
                 uploadWait={this.props.uploadWait}
                 uploadProcessingWait={this.props.uploadProcessingWait}
@@ -357,7 +357,7 @@ class Step2 extends React.Component<Step2Props, any> {
                 clearFeedbackFn={this.props.clearFeedbackFn}
                 uploadedFileName={this.props.uploadedFileName}
                 postUploadStep={this.props.postUploadStep}/>
-            <div>Click or click-and-drag to upload a file</div>
+            {directions}
             <DropZone accept={this.props.acceptMimeTypes} multiple={false} maxSize={tenMB}
                       onDrop={this.props.onDropCallback} disabled={disableDrop}/>
             </div>
@@ -618,9 +618,20 @@ class Import extends React.Component<any, ImportState> {
         if (category === this.state.category) {
             return;
         }
+        let protocol = null;
+        if (category && category.protocols.length == 1) {
+            protocol = category.protocols[0];
+        }
+
+        let format = null;
+        if (category.file_formats && category.file_formats.length) {
+            format = category.file_formats[0];
+        }
+
         this.setState({
             'category': category,
-            'protocol': null,
+            'protocol': protocol,
+            'format': format,
         });
         this.clearUploadErrors(true);
     }
@@ -630,9 +641,14 @@ class Import extends React.Component<any, ImportState> {
             return;
         }
 
+        let format = null;
+        if (protocol.format && protocol.format.length) {
+            format = protocol.format[0];
+        }
+
         this.setState({
             'protocol': protocol,
-            'format': null,
+            'format': format,
         });
         this.clearUploadErrors(true);
     }
@@ -648,10 +664,8 @@ class Import extends React.Component<any, ImportState> {
     }
 
     uploadSuccess(result_json: any, textStatus: string, jqXHR: JQueryXHR): void {
-        let json = JSON.parse(jqXHR.responseText);
         this.setState({
-            'importPk': json['pk'],
-            'importUUID': json['uuid'],
+            'importPk': JSON.parse(result_json).pk,
             'uploadWait': false,
             'uploadProcessingWait': true,
 
@@ -725,6 +739,7 @@ class Import extends React.Component<any, ImportState> {
             data.append('protocol', ""+ this.state.protocol.pk);
             data.append('file_format', ""+ this.state.format.pk);
             data.append('file', file);
+            data.append('uuid', this.state.importUUID);
 
             // if we're re-uploading a file after the import is created, but before
             // submission, avoid filling up the database with junk
@@ -848,10 +863,10 @@ class Import extends React.Component<any, ImportState> {
         }
 
         switch (message.payload.status) {
-            case 'CREATED':
+            case 'Created':
                 // handled by the upload request
                 break;
-            case 'RESOLVED':
+            case 'Resolved':
                 let nextStep = 2;
                 let nextButtonText = 'Next';
                 this.setState({
@@ -862,7 +877,7 @@ class Import extends React.Component<any, ImportState> {
                     'nextButtonText': nextButtonText,  // StepZilla bug?
                 });
                 break;
-            case  'READY':
+            case  'Ready':
                 this.setState({
                     'postUploadStep': 4,
                     'uploadWait': false,
@@ -874,8 +889,6 @@ class Import extends React.Component<any, ImportState> {
     }
 
     componentDidMount() {
-        notificationSocket.addTagAction('import-status-update',
-                                        this.importMessageReceived.bind(this));
 
         // send CSRF header on each AJAX request from this page
         $.ajaxSetup({
@@ -895,6 +908,15 @@ class Import extends React.Component<any, ImportState> {
                 error: this.categoriesLookupErr.bind(this),
             }
         );
+
+        // get UUID assigned by the server...we'll need this to compare against incoming
+        // notifications so we only display those for this import (e.g. for this tab)
+        let uuid: string = $('#importUUID').val();
+        console.log('Received UUID ' + uuid + ' on page load');
+        this.setState({'importUUID': uuid});
+
+        notificationSocket.addTagAction('import-status-update',
+                                        this.importMessageReceived.bind(this));
     }
 }
 

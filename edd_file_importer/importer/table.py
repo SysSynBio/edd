@@ -5,17 +5,14 @@ import json
 import logging
 import math
 from collections import OrderedDict
-from uuid import uuid4
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 
 from ..codes import FileParseCodes, FileProcessingCodes
-from ..models import Import, ImportFormat
-from ..utilities import ParseError, ImportTooLargeError
-from ..utilities import ErrorAggregator
-from edd.notify.backend import RedisBroker
-from main.models import (Assay, Line, GeneIdentifier, Measurement, MeasurementType,
+from ..models import Import
+from ..utilities import build_step4_ui_json, ErrorAggregator, ParseError, ImportTooLargeError
+from main.models import (Assay, Line, GeneIdentifier, MeasurementType,
                          MeasurementUnit, Metabolite, MetadataType, Phosphor, ProteinIdentifier)
 from main.importer.parser import guess_extension, ImportFileTypeFlags
 from main.importer.table import ImportBroker
@@ -147,9 +144,10 @@ class ImportFileHandler(ErrorAggregator):
         mime_type = self.import_.file.mime_type
         file_extension = guess_extension(mime_type)
         study = import_.study
+        file_name = self.import_.file.filename
 
-        logger.info(f'Parsing import file {file.name} for study {study.pk} '
-                    f'({study.slug}), user {cache.user.username}')
+        logger.info(f'Parsing import file {file_name} for study {study.pk} ({study.slug}), '
+                    f'user {cache.user.username}')
 
         if file_extension not in (ImportFileTypeFlags.EXCEL, ImportFileTypeFlags.CSV):
             self.raise_error(FileParseCodes.UNSUPPORTED_FILE_TYPE, occurrence=file_extension)
@@ -172,7 +170,7 @@ class ImportFileHandler(ErrorAggregator):
                 'status': import_.status,
                 'raw_data': parser.raw_data
             }
-            message = (f'Your import file, "{file.name}" has been saved, but file format input '
+            message = (f'Your import file, "{file_name}" has been saved, but file format input '
                        f'is needed to process it')
             notify.notify(message, tags=('import-status-update',), payload=payload)
             return Import.Status.CREATED
@@ -241,7 +239,7 @@ class ImportFileHandler(ErrorAggregator):
             'pk': import_.pk,
             'status': import_.status,
         }
-        notify.notify(f'Your file "{file.name}" is ready to import', tags=['import-status-update'],
+        notify.notify(f'Your file "{file_name}" is ready to import', tags=['import-status-update'],
                       payload=payload)
 
     def _verify_line_or_assay_match(self, line_or_assay_names, lines):
@@ -534,191 +532,6 @@ def verify_assay_times(err_aggregator, assay_pks, parser, assay_time_meta_pk):
         err_aggregator.raise_errors()
 
     return None
-
-
-class SeriesCacheParser:
-    """
-    A parser that reads import records from the legacy Redis cache and extracts relevant
-    data to return to the import UI without re-parsing and re-verifying the file content (e.g.
-    external database identifiers)
-    """
-    def __init__(self, master_time=None, master_units=None, master_compartment=None):
-        self.all_records_have_time = False
-        self.all_records_have_units = False
-        self.all_records_have_compartment = False
-        self.master_time = master_time
-        self.master_units = master_units
-        self.master_compartment = master_compartment
-        self.matched_assays = False
-        self.mtype_pks = set()
-        self.loa_pks = set()  # line or assay pks
-
-    def parse(self, import_uuid):
-
-        broker = ImportBroker()
-        cache_pages = broker.load_pages(import_uuid)
-
-        import_records = []
-
-        self.all_records_have_time = True
-        self.all_records_have_units = True
-        self.all_records_have_compartment = True
-        self.matched_assays = True
-        for page in cache_pages:
-            page_json = json.loads(page)
-            for import_record in page_json:
-                measurement_pk = import_record.get('measurement_id')
-                self.mtype_pks.add(measurement_pk)
-
-                if import_record.data[0] is None:
-                    self.all_records_have_time = False
-
-                if hasattr(import_record, 'line_id'):
-                    self._add_id(import_record['line_id'])
-                    self.matched_assays = False
-                else:
-                    self._add_id(import_record['assay_id'])
-
-            import_records.extend(page_json)
-
-        return import_records
-
-    def _add_id(self, val):
-        if val not in ('new', 'named_or_new'):  # ignore placeholders, just get real pks
-            self.loa_pks.add(val)
-
-    def has_all_times(self):
-        return self.master_time or self.all_records_have_time
-
-    def has_all_units(self):
-        return self.master_units or self.all_records_have_units
-
-    def has_all_compartments(self):
-        return self.master_compartment or self.all_records_have_compartment
-
-    @property
-    def mtypes(self):
-        return self.mtype_pks
-
-
-def build_ui_payload_from_cache(import_):
-    """
-    Loads existing import records from Redis cache and parses them in lieu of re-parsing the
-    file and re-resolving string-based line/assay/MeasurementType identifiers from the
-    uploaded file.  This method supports the transition from Step 3 -> Step 4 of the import,
-    and this implementation lets us leverage most of the same code to support the Step 3 -> 4
-    transition as we use for the Step 2 -> 4 transition.
-
-    :return: the UI JSON for Step 4 "Inspect"
-    """
-    logger.info(f"Building import {import_.pk}'s UI payload from cache.")
-    parser = SeriesCacheParser(master_units=import_.y_units)
-    import_records = parser.parse(import_.uuid)
-    aggregator = ErrorAggregator()
-
-    # look up MeasurementTypes referenced in the import so we can build JSON containing them.
-    # if we got this far, they'll be in EDD's database unless recently removed, which should
-    # be unlikely
-    category = import_.category
-    MTypeClass = MTYPE_GROUP_TO_CLASS[category.mtype_group]
-    unique_mtypes = MTypeClass.objects.filter(pk__in=parser.mtype_pks)
-
-    # get other context from the database
-    hour_units = MeasurementUnit.objects.get(unit_name='hours')
-    assay_time_meta_pk = MetadataType.objects.filter(type_name='Time',
-                                                     for_context=MetadataType.ASSAY)
-    found_count = len(unique_mtypes)
-
-    if found_count != len(parser.mtype_pks):
-        missing_pks = {mtype.pk for mtype in unique_mtypes} - parser.mtype_pks
-        aggregator.raise_errors(FileProcessingCodes.MEASUREMENT_TYPE_NOT_FOUND,
-                                occurrences=missing_pks)
-
-    # TODO: fold assay times into UI payload to give user helpful feedback as in UI mockup
-    assay_pk_to_time = None
-    if parser.matched_assays:
-        assay_pks = parser.loa_pks
-        assay_pk_to_time = verify_assay_times(aggregator, assay_pks, parser,
-                                              assay_time_meta_pk)
-    required_inputs = compute_required_context(category, import_.compartment, parser,
-                                               assay_pk_to_time)
-
-    return build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
-                               hour_units.pk)
-
-
-def build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes, x_units_pk):
-    """
-    Build JSON to send to the new import front end, including some legacy data for easy
-    display in the existing TS graphing code (which may get replaced later). Relative to the
-    import JSON, x and y elements are further broken down into separate lists. Note that JSON
-    generated here should match that produced by the /s/{study_slug}/measurements/ view
-    TODO: address PR comment re: code organization
-    https://repo.jbei.org/projects/EDD/repos/edd-django/pull-requests/425/overview?commentId=3073
-    """
-    logger.debug('Building UI JSON for user inspection')
-
-    assay_id_to_meas_count = {}
-
-    measures = []
-    data = {}
-    for index, import_record in enumerate(import_records):
-        import_data = import_record['data']
-
-        # if this import is creating new assays, assign temporary IDs to them for pre-import
-        # display and possible deactivation in step 4.  If the import is updating existing
-        # assays, use their real pk's.
-        assay_id = import_record['assay_id']
-        assay_id = assay_id if assay_id not in ('new', 'named_or_new') else index
-
-        mcount = assay_id_to_meas_count.get(assay_id, 0)
-        mcount += 1
-        assay_id_to_meas_count[assay_id] = mcount
-
-        # TODO: file format, content, and protocol should all likely be considerations here.
-        # Once supported by the Celery task, consider moving this determination up to the
-        # parsing step  where the information is all available on a per-measurement basis.
-        format = Measurement.Format.SCALAR
-        if len(import_data) > 2:
-            format = Measurement.Format.VECTOR
-
-        measures.append({
-            # assign temporary measurement ID's.
-            # TODO: revisit when implementing collision detection/merge similar to assays
-            # above. Likely need detection/tracking earlier in the process to do this with
-            # measurements.
-            'id': index,
-
-            'assay': assay_id,
-            'type': import_record['measurement_id'],
-            'comp': import_record['compartment_id'],
-            'format': format,
-            'x_units': x_units_pk,
-            'y_units': import_record['units_id'],
-            'meta': {},
-        })
-
-        # repackage data from the import into the format used by the legacy study data UI
-        # Note: assuming based on initial example that it's broken up into separate arrays
-        # along x and y measurements...correct if that's not born out by other examples (maybe
-        # it's just an array per element)
-        measurement_vals = []
-        data[str(index)] = measurement_vals
-        for imported_timepoint in import_data:
-            display_timepoint = [[imported_timepoint[0]]]  # x-value
-            display_timepoint.append(imported_timepoint[1:])  # y-value(s)
-            measurement_vals.append(display_timepoint)
-
-    return {
-        'pk': f'{import_.pk}',
-        'uuid': f'{import_.uuid}',
-        'status': import_.status,
-        'total_measures': assay_id_to_meas_count,
-        'required_values': required_inputs,
-        'types': {str(mtype.id): mtype.to_json() for mtype in unique_mtypes},
-        'measures': measures,
-        'data': data,
-    }
 
 
 def compute_required_context(category, compartment, parser, assay_meta_times):

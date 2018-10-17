@@ -86,7 +86,8 @@ class ImportTests(EddApiTestCaseMixin, APITestCase):
         upload = self._build_file_upload(file_path)
 
         response = self.client.post(
-            reverse('edd.rest:study-imports-list', kwargs={'study_pk': self.user_write_study.pk}),
+            reverse('edd.rest:study-imports-list',
+                    kwargs={'study_pk': self.user_write_study.pk}),
             data={'file': upload, **form_data},
             format='multipart',
         )

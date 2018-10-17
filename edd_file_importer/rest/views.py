@@ -12,11 +12,12 @@ from requests import codes
 from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import mixins, viewsets
+import celery
 
 from .serializers import FileImportSerializer, ImportCategorySerializer
 from ..models import Import, ImportCategory, ImportFormat, ImportFile
-from ..tasks import process_import_file
-from ..utilities import EDDImportError
+from ..tasks import attempt_status_transition, process_import_file
+from ..utilities import CommunicationError, EDDImportError
 from main.models import Measurement, MeasurementUnit
 from edd.rest.views import EDDObjectFilter, StudyInternalsFilterMixin
 from edd.utilities import JSONEncoder
@@ -118,6 +119,7 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                                 'pk', flat=True).get()
 
             import_context = {
+                'uuid': request.data['uuid'],
                 'study_id': study_pk,
                 'category_id': request.data['category'],
                 'protocol_id': request.data['protocol'],
@@ -133,6 +135,9 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                 file_model = ImportFile.objects.create(file=file)
                 import_context['file_id'] = file_model.pk
                 import_ = Import.objects.create(**import_context)
+
+            if not str(import_.uuid) == request.data['uuid']:
+                logger.error('Saved UUID does NOT match input')
 
             process_import_file.delay(import_.pk, request.user.pk,
                                       request.data.get('status',  None),
@@ -181,9 +186,8 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
 
             # reject changes if the import is already submitted
             if import_.status in (Import.Status.SUBMITTED, Import.Status.COMPLETED):
-                return self._build_simple_err_response('Invalid state',
-                                                       'Modifications are not allowed once '
-                                                       f'imports reach the {import_.status} state',
+                msg = 'Modifications are not allowed once imports reach the {import_.status} state'
+                return self._build_simple_err_response('Invalid state', msg,
                                                        codes.internal_server_error)
 
             # if file is changed or content needs post-processing, (re)parse and (re)process it
@@ -193,7 +197,7 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                 # get the file to parse. it could be one uploaded in an earlier request
                 if new_upload:
                     file = ImportFile.objects.create(request.data['file'])
-                    import_.file=file
+                    import_.file = file
 
                 # update all parameters from the request. Since this is a re-upload,
                 # and essentially the same as creating a new import, we'll allow
@@ -225,8 +229,8 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                 # raises EddImportError if unable to fulfill a request
                 requested_status = request.data.get('status', None)
                 if requested_status:
-                        self.attempt_status_transition(import_, requested_status,
-                                                       self.request.user, None, asynch=True)
+                        attempt_status_transition(import_, requested_status, self.request.user,
+                                                  asynch=True)
                         return JsonResponse({}, status=codes.accepted)
 
             # if the file was parsed in an earlier request, e.g. in the first half of Step 3,
@@ -298,7 +302,3 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
             if key in request.data and request.data[key] != getattr(import_, key):
                 return True
         return False
-
-
-
-

@@ -148,12 +148,15 @@ export class NotificationSocket {
             // notify listeners for specific tags
             for(let tag of message.tags) {
                 let tagCallbacks: TagAction[] = this.tagActions[tag];
-                if(!tagCallbacks) {
+                if (!tagCallbacks) {
                     continue;
                 }
                 // TODO: remove log
                 console.log('Executing ' + tagCallbacks.length + ' tag callbacks: ' + tagCallbacks);
-                $.map(tagCallbacks, (callback) => {callback(message)});
+                $.map(tagCallbacks, (callback) => {
+                    callback(message)
+                });
+            }
         }
         this.count = payload.unread;
     }

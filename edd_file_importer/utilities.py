@@ -3,6 +3,7 @@ import logging
 from collections import defaultdict
 
 from .codes import get_ui_summary
+from main.models import Measurement
 
 logger = logging.getLogger(__name__)
 
@@ -127,3 +128,77 @@ class ErrorAggregator(object):
 
         if self.errors:
             raise EDDImportError(self)
+
+
+def build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes, x_units_pk):
+    """
+    Build JSON to send to the new import front end, including some legacy data for easy
+    display in the existing TS graphing code (which may get replaced later). Relative to the
+    import JSON, x and y elements are further broken down into separate lists. Note that JSON
+    generated here should match that produced by the /s/{study_slug}/measurements/ view
+    TODO: address PR comment re: code organization
+    https://repo.jbei.org/projects/EDD/repos/edd-django/pull-requests/425/overview?commentId=3073
+    """
+    logger.debug('Building UI JSON for user inspection')
+
+    assay_id_to_meas_count = {}
+
+    measures = []
+    data = {}
+    for index, import_record in enumerate(import_records):
+        import_data = import_record['data']
+
+        # if this import is creating new assays, assign temporary IDs to them for pre-import
+        # display and possible deactivation in step 4.  If the import is updating existing
+        # assays, use their real pk's.
+        assay_id = import_record['assay_id']
+        assay_id = assay_id if assay_id not in ('new', 'named_or_new') else index
+
+        mcount = assay_id_to_meas_count.get(assay_id, 0)
+        mcount += 1
+        assay_id_to_meas_count[assay_id] = mcount
+
+        # TODO: file format, content, and protocol should all likely be considerations here.
+        # Once supported by the Celery task, consider moving this determination up to the
+        # parsing step  where the information is all available on a per-measurement basis.
+        format = Measurement.Format.SCALAR
+        if len(import_data) > 2:
+            format = Measurement.Format.VECTOR
+
+        measures.append({
+            # assign temporary measurement ID's.
+            # TODO: revisit when implementing collision detection/merge similar to assays
+            # above. Likely need detection/tracking earlier in the process to do this with
+            # measurements.
+            'id': index,
+
+            'assay': assay_id,
+            'type': import_record['measurement_id'],
+            'comp': import_record['compartment_id'],
+            'format': format,
+            'x_units': x_units_pk,
+            'y_units': import_record['units_id'],
+            'meta': {},
+        })
+
+        # repackage data from the import into the format used by the legacy study data UI
+        # Note: assuming based on initial example that it's broken up into separate arrays
+        # along x and y measurements...correct if that's not born out by other examples (maybe
+        # it's just an array per element)
+        measurement_vals = []
+        data[str(index)] = measurement_vals
+        for imported_timepoint in import_data:
+            display_timepoint = [[imported_timepoint[0]]]  # x-value
+            display_timepoint.append(imported_timepoint[1:])  # y-value(s)
+            measurement_vals.append(display_timepoint)
+
+    return {
+        'pk': f'{import_.pk}',
+        'uuid': f'{import_.uuid}',
+        'status': import_.status,
+        'total_measures': assay_id_to_meas_count,
+        'required_values': required_inputs,
+        'types': {str(mtype.id): mtype.to_json() for mtype in unique_mtypes},
+        'measures': measures,
+        'data': data,
+    }
