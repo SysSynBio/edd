@@ -50,8 +50,9 @@ def update_import_status(status, import_uuid, user_pk, notify=None):
 def process_import_file(import_pk, user_pk, requested_status, encoding, initial_upload):
     """
     The back end Celery task supporting import Step 2, "Upload", and also single-request
-    imports made via the REST API.  Parses and verifies the file Format and content.  This
-    includes verifying identifiers with external databases (e.g. PubChem, UnipProt).
+    imports made via the REST API.  Parses and verifies the file format and content,
+    then proceeds to additional phases if requested / allowed.
+    This includes verifying identifiers with external databases (e.g. PubChem, UnipProt).
     """
     import_ = None
     notify = None
@@ -74,21 +75,36 @@ def process_import_file(import_pk, user_pk, requested_status, encoding, initial_
                                   aggregator=handler)
 
     except (EDDImportError, ObjectDoesNotExist, RuntimeError) as e:
-        file_name = import_.file.file.name if import_ else ''
-        study_url = reverse('main:overview', kwargs={'slug': import_.slug}) if import_ else ''
+        file_name = import_.file.filename if import_ else ''
+        study_url = reverse('main:overview', kwargs={'slug': import_.study.slug}) if import_ \
+            else ''
         logger.exception(f'Exception processing import upload for file "{file_name}".  '
                          f'Study is {study_url}')
         if import_:
+            # delete the cached import, which isn't valuable
             if import_.status == Import.Status.CREATED:
                 import_.delete()  # cascades to file
 
+            payload = build_err_response(handler, import_) if handler else {}
+            if not isinstance(e, EDDImportError):
+                if 'errors' in payload:
+                    payload['errors'].append(str(e))
+                else:
+                    payload['errors'] = [str(e)]
+            payload['pk'] = import_pk
+            payload['uuid'] = import_.uuid if import_ else None
+            payload['status'] = Import.Status.FAILED
+
             if notify:
-                payload = build_err_response(handler, import_) if handler else {}
-                payload['pk'] = import_pk
-                payload['uuid'] = import_.uuid if import_ else None
-                payload['status'] = Import.Status.FAILED
                 notify.notify(f'Processing for your import file "{file_name}" has failed',
                               tags=['import-status-update'], payload=payload)
+
+        # if this was a predicted error encountered during normal processing, the task has
+        # succeeded
+        if isinstance(e, EDDImportError):
+            logger.info('Predicted error during import processing')
+            return
+
         raise e
 
 

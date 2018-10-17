@@ -325,8 +325,9 @@ class ErrCategoryAlert extends React.Component<ErrSequenceProps, any> {
             if(!err.detail) {
                 return <div className="errorMessageContent">{summarySpan}</div>;
             }
+            let detail = err.detail ? ": " + err.detail : "";
             return <div className="errorMessageContent">
-                {summarySpan}{": " + err.detail}
+                {summarySpan}{detail}
                 </div>;
         });
     }
@@ -879,6 +880,14 @@ class Import extends React.Component<any, ImportState> {
                     'uploadProcessingWait': false,
                     'uploadWarnings': json.warnings || [],
                     'nextButtonText': 'Submit Import',  // StepZilla bug?
+                });
+                break;
+            case 'Failed':
+                this.setState({
+                    'uploadWait': false,
+                    'uploadProcessingWait': false,
+                    'uploadErrors': json.errors || [],
+                    'uploadWarnings': json.warnings || [],
                 });
         }
     }

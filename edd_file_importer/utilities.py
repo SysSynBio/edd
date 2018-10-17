@@ -54,7 +54,7 @@ class ImportErrorSummary(object):
         self._occurrence_details = defaultdict(list)  # maps subcategory => occurrences
 
     def add_occurrence(self, occurrence, subcategory=None):
-        detail_str = str(occurrence)
+        detail_str = str(occurrence) if occurrence is not None else None
         subcategory = subcategory if subcategory else 'default'
         self._occurrence_details[subcategory].append(detail_str)
 
@@ -104,8 +104,7 @@ class ErrorAggregator(object):
         if not errs:
             errs = ImportErrorSummary(type_id)
             dest[type_id] = errs
-        if occurrence:
-            errs.add_occurrence(occurrence=occurrence, subcategory=subcategory)
+        errs.add_occurrence(occurrence=occurrence, subcategory=subcategory)
 
     @staticmethod
     def error_factory(err_type, subcategory, occurrence=None):
