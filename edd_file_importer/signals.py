@@ -20,7 +20,7 @@ def set_file_info_wrapper(sender, instance, raw, using, **kwargs):
 # deletes files from the filesystem when import FileFields get deleted.  We only ever want to keep
 # the latest file for each import.
 @receiver(post_delete, sender=models.ImportFile)
-def remove_from_filesystem(sender, instance, raw, using, **kwargs):
+def remove_from_filesystem(sender, instance, using, **kwargs):
     instance.file.delete(False)  # False avoids saving the model instance
 
 

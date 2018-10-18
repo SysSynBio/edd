@@ -548,7 +548,11 @@ class Import extends React.Component<any, ImportState> {
     }
 
     categoriesLookupSuccess(result_json: any, textStatus: string, jqXHR: JQueryXHR): void {
-        this.setState({'categories': result_json.results});
+        // filter out any categories that don't have sufficient configuration to make them useful
+        let configuredCategories = result_json.results.filter(category => {
+            return (category.protocols.length > 0) && (category.file_formats.length > 0);
+        });
+        this.setState({'categories': configuredCategories});
     }
 
     categoriesLookupErr(jqXHR: JQueryXHR, textStatus: string, errorThrown: string): void {
