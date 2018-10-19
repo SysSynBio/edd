@@ -191,8 +191,8 @@ class SubmitFeedback extends React.Component<SubmitStatusProps, any> {
            !(this.props.errors.length || this.props.warnings.length)) {
                 return <div>
                     <h4>Import Submitted</h4>
-                    Your import has been submitted for processing.  You'll get a notification at
-                    top right in the menu bar when it's complete.
+                    Your import has been submitted for processing.  You'll get a notification in
+                    the menu bar at top right when it's complete.
                 </div>
         }
 
@@ -608,7 +608,27 @@ class Import extends React.Component<any, ImportState> {
         let configuredCategories = result_json.results.filter(category => {
             return (category.protocols.length > 0) && (category.file_formats.length > 0);
         });
-        this.setState({'categories': configuredCategories});
+
+        // auto-select the category if there's only one
+        let state = {'categories': configuredCategories};
+        if(configuredCategories.length == 1) {
+            let category = configuredCategories[0];
+            state['category'] = category;
+            this.autoSelectProtocolAndFormat(category, state);
+        }
+        this.setState(state);
+    }
+
+    autoSelectProtocolAndFormat(category: Category, state: any) {
+        let protocol = null;
+        if (category && category.protocols.length == 1) {
+            state['protocol'] = category.protocols[0];
+        }
+
+        let format = null;
+        if (category.file_formats && category.file_formats.length == 1) {
+            state['format'] = category.file_formats[0];
+        }
     }
 
     categoriesLookupErr(jqXHR: JQueryXHR, textStatus: string, errorThrown: string): void {
@@ -619,21 +639,10 @@ class Import extends React.Component<any, ImportState> {
         if (category === this.state.category) {
             return;
         }
-        let protocol = null;
-        if (category && category.protocols.length == 1) {
-            protocol = category.protocols[0];
-        }
+        let state = { 'category': category };
+        this.autoSelectProtocolAndFormat(category, state);
 
-        let format = null;
-        if (category.file_formats && category.file_formats.length == 1) {
-            format = category.file_formats[0];
-        }
-
-        this.setState({
-            'category': category,
-            'protocol': protocol,
-            'format': format,
-        });
+        this.setState(state);
         this.clearUploadErrors(true);
     }
 
