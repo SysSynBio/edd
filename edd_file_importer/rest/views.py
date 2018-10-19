@@ -180,7 +180,6 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
         import_pk = self.kwargs['pk']
 
         try:
-            ui_payload = None
             new_upload = 'file' in request.data
             import_ = models.Import.objects.get(pk=import_pk)
 
@@ -229,8 +228,8 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                 # raises EddImportError if unable to fulfill a request
                 requested_status = request.data.get('status', None)
                 if requested_status:
-                        attempt_status_transition(import_, requested_status, self.request.user,
-                                                  asynch=True)
+                        attempt_status_transition(import_, requested_status,
+                                                  self.request.user, asynch=True)
                         return JsonResponse({}, status=codes.accepted)
 
             # if the file was parsed in an earlier request, e.g. in the first half of Step 3,
@@ -238,12 +237,8 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
             # the client.  This step requires re-querying EDD's DB for MeasurementTypes,
             # but needs less code and also skips potentially-expensive line/assay lookup and
             # external ID verification
-            try:
-                ui_payload = self._build_ui_payload_from_cache(import_)
-            except EDDImportError as e:
-                return self._build_err_response(e.aggregator, codes.internal_server_error)
-
-            return JsonResponse(ui_payload, status=codes.ok, safe=False)
+            self._build_ui_payload_from_cache.delay(import_, user_pk)
+            return JsonResponse({}, status=codes.accepted)
 
         except ObjectDoesNotExist as o:
             logger.exception('Exception processing import upload')

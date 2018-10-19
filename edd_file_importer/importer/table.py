@@ -11,22 +11,14 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 
 from ..codes import FileParseCodes, FileProcessingCodes
 from ..models import Import
-from ..utilities import build_step4_ui_json, ErrorAggregator, ParseError, ImportTooLargeError
-from main.models import (Assay, Line, GeneIdentifier, MeasurementType,
-                         MeasurementUnit, Metabolite, MetadataType, Phosphor, ProteinIdentifier)
+from ..utilities import (build_step4_ui_json, compute_required_context, ErrorAggregator,
+                         ParseError, ImportTooLargeError, verify_assay_times)
+from main.models import (Assay, Line, MeasurementType, MeasurementUnit, Metabolite, MetadataType)
 from main.importer.parser import guess_extension, ImportFileTypeFlags
 from main.importer.table import ImportBroker
 
 logger = logging.getLogger(__name__)
 
-
-MTYPE_GROUP_TO_CLASS = {
-    MeasurementType.Group.GENERIC: MeasurementType,
-    MeasurementType.Group.METABOLITE: Metabolite,
-    MeasurementType.Group.GENEID: GeneIdentifier,
-    MeasurementType.Group.PROTEINID: ProteinIdentifier,
-    MeasurementType.Group.PHOSPHOR: Phosphor,
-}
 
 # maps mtype group to error identifiers for failed lookup
 MTYPE_GROUP_TO_ID_ERR = {
@@ -211,10 +203,6 @@ class ImportFileHandler(ErrorAggregator):
         compartment = cache.import_.compartment
         category = cache.import_.category
         required_inputs = compute_required_context(category, compartment, parser, assay_pk_to_time)
-            assay_time_pk = self.cache.assay_time_metatype.pk
-            assay_pk_to_time = verify_assay_times(self, assay_pks, parser, assay_time_pk)
-        required_inputs = compute_required_context(category, cache.compartment, parser,
-                                                   assay_pk_to_time)
 
         ###########################################################################################
         # Since import content is now verified & has some value, save the file and context to
@@ -351,7 +339,7 @@ class ImportFileHandler(ErrorAggregator):
         logger.debug(f'Caching resolved import data to Redis: {import_id}')
 
         cache = self.cache
-        protocol = self.cache.protocol
+        protocol = self.cache.import_.protocol
 
         broker = ImportBroker()
         if not initial_upload:
@@ -498,54 +486,3 @@ class ImportFileHandler(ErrorAggregator):
                         f'({loa_name}: {mtype.type_name}, T={import_time})',
                         occurrences=occurrences)
         return True
-
-
-def verify_assay_times(err_aggregator, assay_pks, parser, assay_time_meta_pk):
-    """
-    Checks existing assays ID'd in the import file for time metadata, and verifies that they
-    all either have time metadata (or don't).
-    :return: a dict that maps assay pk => time if assay times were consistently found,
-        None if they were consistently *not* found
-    :raises EDDImportError: if time is inconsistently specified or overspecified
-    """
-    times_qs = Assay.objects.filter(pk__in=assay_pks, metadata__has_key=assay_time_meta_pk)
-    times_qs_values = times_qs.values_list('pk', f'metadata__{assay_time_meta_pk}')
-
-    times_count = times_qs.count()
-
-    if times_count == len(assay_pks):
-        if parser.has_all_times:
-            err_aggregator.add_error(
-                FileProcessingCodes.DUPLICATE_DATA_ENTRY,
-                occurrence='Time is provided both in the file and in assay metadata'
-            )
-            err_aggregator.raise_errors()
-
-        return dict(times_qs_values)
-
-    elif times_count != 0:
-        missing_pks = Assay.objects.filter(pk__in=assay_pks)
-        missing_pks = missing_pks.exclude(metadata__has_key=assay_time_meta_pk)
-        missing_pks = missing_pks.values_list('pk', flat=True)
-        err_aggregator.add_errors(FileProcessingCodes.ASSAYS_MISSING_TIME,
-                                  occurrences=missing_pks)
-        err_aggregator.raise_errors()
-
-    return None
-
-
-def compute_required_context(category, compartment, parser, assay_meta_times):
-    required_inputs = []
-
-    # TODO: verify assumptions here re: auto-selected compartment.
-    # status quo is that its only needed for metabolomics, but should be configured in protocol
-    if category.name == 'Metabolomics' and not compartment:
-        required_inputs.append('compartment')
-
-    if not (assay_meta_times or parser.has_all_times):
-        required_inputs.append('time')
-
-    if not parser.has_all_units:
-        required_inputs.append('units')
-
-    return required_inputs

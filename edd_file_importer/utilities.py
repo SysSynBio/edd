@@ -2,10 +2,20 @@
 import logging
 from collections import defaultdict
 
-from .codes import get_ui_summary
-from main.models import Measurement
+from .codes import get_ui_summary, FileProcessingCodes
+from main.models import (Assay, GeneIdentifier, Measurement, MeasurementType, Metabolite,
+                         Phosphor, ProteinIdentifier)
 
 logger = logging.getLogger(__name__)
+
+
+MTYPE_GROUP_TO_CLASS = {
+    MeasurementType.Group.GENERIC: MeasurementType,
+    MeasurementType.Group.METABOLITE: Metabolite,
+    MeasurementType.Group.GENEID: GeneIdentifier,
+    MeasurementType.Group.PROTEINID: ProteinIdentifier,
+    MeasurementType.Group.PHOSPHOR: Phosphor,
+}
 
 
 class EDDImportError(Exception):
@@ -201,3 +211,55 @@ def build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
         'measures': measures,
         'data': data,
     }
+
+
+def verify_assay_times(err_aggregator, assay_pks, parser, assay_time_mtype):
+    """
+    Checks existing assays ID'd in the import file for time metadata, and verifies that they
+    all either have time metadata (or don't).
+    :return: a dict that maps assay pk => time if assay times were consistently found,
+    None if they were consistently *not* found
+    :raises ImportError if time is inconsistently specified or overspecified
+    """
+
+    assay_time_key = f'{assay_time_mtype.pk}'
+    has_time_qs = Assay.objects.filter(pk__in=assay_pks, meta_store__has_key=assay_time_key)
+
+    times_count = len(has_time_qs)
+
+    if times_count == len(assay_pks):
+        if parser.has_all_times:
+            err_aggregator.add_error(
+                FileProcessingCodes.DUPLICATE_DATA_ENTRY,
+                occurrence='Time is provided both in the file and in assay metadata'
+            )
+            err_aggregator.raise_errors()
+
+        return {assay.pk: assay.metadata_get(assay_time_key) for assay in has_time_qs}
+
+    elif times_count != 0:
+        missing_pks = Assay.objects.filter(pk__in=assay_pks)
+        missing_pks = missing_pks.exclude(meta_store__has_key=assay_time_mtype.pk)
+        missing_pks = missing_pks.values_list('pk', flat=True)
+        err_aggregator.add_errors(FileProcessingCodes.ASSAYS_MISSING_TIME,
+                                  occurrences=missing_pks)
+        err_aggregator.raise_errors()
+
+    return None
+
+
+def compute_required_context(category, compartment, parser, assay_meta_times):
+    required_inputs = []
+
+    # TODO: verify assumptions here re: auto-selected compartment.
+    # status quo is that its only needed for metabolomics, but should be configured in protocol
+    if category.name == 'Metabolomics' and not compartment:
+        required_inputs.append('compartment')
+
+    if not (assay_meta_times or parser.has_all_times):
+        required_inputs.append('time')
+
+    if not parser.has_all_units:
+        required_inputs.append('units')
+
+    return required_inputs

@@ -13,6 +13,14 @@ from main.signals.core import ensure_updates, ensure_uuid, log_update, set_file_
 from main.signals.dispatcher import receiver
 
 
+has_uuid = [
+    models.Import,
+    models.ImportCategory,
+    models.ImportFormat,
+]
+has_update = has_uuid + []
+
+
 @receiver(pre_save, sender=models.ImportFile)
 def set_file_info_wrapper(sender, instance, raw, using, **kwargs):
     set_file_info(sender, instance, raw, using, **kwargs)
@@ -24,13 +32,6 @@ def set_file_info_wrapper(sender, instance, raw, using, **kwargs):
 def remove_from_filesystem(sender, instance, using, **kwargs):
     # False avoids saving the model instance
     connection.on_commit(instance.file.delete(False))
-
-has_uuid = [
-    models.Import,
-    models.ImportCategory,
-    models.ImportFormat,
-]
-has_update = has_uuid + []
 
 
 @receiver(pre_save, sender=has_uuid)

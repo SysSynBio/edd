@@ -1,3 +1,5 @@
+# coding: utf-8
+import json
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
@@ -9,12 +11,13 @@ import celery
 from .codes import FileProcessingCodes
 from .importer.table import ImportFileHandler
 from .models import Import
-from .utilities import build_step4_ui_json, EDDImportError, ErrorAggregator
+from .utilities import (build_step4_ui_json, compute_required_context, EDDImportError,
+                        ErrorAggregator, MTYPE_GROUP_TO_CLASS, verify_assay_times)
 from edd.notify.backend import RedisBroker
+from main.importer.table import ImportBroker
+from main.models import MeasurementUnit, MetadataType
 from main.tasks import import_table_task
 
-
-app.autodiscover_tasks('edd_file_importer')
 
 logger = get_task_logger(__name__)
 
@@ -85,7 +88,7 @@ def process_import_file(import_pk, user_pk, requested_status, encoding, initial_
             if import_.status == Import.Status.CREATED:
                 import_.delete()  # cascades to file
 
-            payload = build_err_response(handler, import_) if handler else {}
+            payload = _build_err_payload(handler, import_) if handler else {}
             if not isinstance(e, EDDImportError):
                 if 'errors' in payload:
                     payload['errors'].append(str(e))
@@ -128,7 +131,7 @@ def attempt_status_transition(import_, requested_status, user, asynch, notify=No
     _verify_status_transition(aggregator, import_, requested_status, user, notify, asynch)
 
     if requested_status == Import.Status.SUBMITTED:
-        return submit_import(import_, user.pk, notify, aggregator, asynch)
+        return _submit_import(import_, user.pk, notify, aggregator, asynch)
 
 
 def _verify_status_transition(aggregator, import_, requested_status, user, notify, asynch):
@@ -149,7 +152,7 @@ def _verify_status_transition(aggregator, import_, requested_status, user, notif
         return aggregator.raise_error(FileProcessingCodes.ILLEGAL_STATE_TRANSITION, occurrence=msg)
 
 
-def submit_import(import_, user_pk, notify, aggregator, asynch):
+def _submit_import(import_, user_pk, notify, aggregator, asynch):
     """
     Schedules a Celery task to do the heavy lifting to finish the import data cached in Redis
     """
@@ -191,7 +194,7 @@ def submit_import(import_, user_pk, notify, aggregator, asynch):
         aggregator.raise_error(FileProcessingCodes.COMMUNICATION_ERROR, occurrence=str(e))
 
 
-def build_err_response(aggregator, import_):
+def _build_err_payload(aggregator, import_):
     """
     Builds a JSON error response to return as a WS client notification.
     """
@@ -213,7 +216,7 @@ def build_err_response(aggregator, import_):
 
 
 @shared_task
-def build_ui_payload_from_cache(import_pk):
+def build_ui_payload_from_cache(import_pk, user_pk):
     """
     Loads existing import records from Redis cache and parses them in lieu of re-parsing the
     file and re-resolving string-based line/assay/MeasurementType identifiers from the
@@ -257,8 +260,9 @@ def build_ui_payload_from_cache(import_pk):
     required_inputs = compute_required_context(category, import_.compartment, parser,
                                                assay_pk_to_time)
 
-    return build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
-                               hour_units.pk)
+    # TODO: notify UI with payload after diagnosing messeging issues
+    payload = build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
+                                  hour_units.pk)
 
 
 class SeriesCacheParser:
@@ -324,4 +328,3 @@ class SeriesCacheParser:
     @property
     def mtypes(self):
         return self.mtype_pks
-
