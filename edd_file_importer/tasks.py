@@ -3,9 +3,6 @@ from celery.utils.log import get_task_logger
 
 from .models import Import
 from celery import shared_task
-from edd.celery import app
-
-app.autodiscover_tasks('edd_file_importer')
 
 logger = get_task_logger(__name__)
 
