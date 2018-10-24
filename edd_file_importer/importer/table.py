@@ -439,7 +439,7 @@ class ImportFileHandler(ErrorAggregator):
             # 'hint': None,
 
             'measurement_id': mtype.pk,
-            'compartment_id': self.cache.compartment,
+            'compartment_id': self.cache.import_.compartment,
             'units_id': unit.pk,
             'data': [parse_record.data],
             'src_ids': []  # ids for where the data came from, e.g. row #s in an Excel file

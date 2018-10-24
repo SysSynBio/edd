@@ -344,6 +344,7 @@ class Step2 extends React.Component<Step2Props, any> {
         let disableDrop: boolean = (this.props.uploadWait || this.props.uploadProcessingWait ||
                                     this.props.submitSuccess || this.props.submitWait);
         let directions = (!disableDrop) && <div>Click or click-and-drag to upload a file</div>
+
         return <div className="stepDiv">
             <ContextFeedback category={this.props.category} protocol={this.props.protocol}
                              format={this.props.format}
@@ -358,9 +359,12 @@ class Step2 extends React.Component<Step2Props, any> {
                 clearFeedbackFn={this.props.clearFeedbackFn}
                 uploadedFileName={this.props.uploadedFileName}
                 postUploadStep={this.props.postUploadStep}/>
-            {directions}
             <DropZone accept={this.props.acceptMimeTypes} multiple={false} maxSize={tenMB}
-                      onDrop={this.props.onDropCallback} disabled={disableDrop}/>
+                      onDrop={this.props.onDropCallback} disabled={disableDrop}
+                      className="overviewDropZone dropzone fd-zone excel dz-clickable"
+                      acceptClassName="dz-drag-hover">
+                {directions}
+            </DropZone>
             </div>
     }
 
@@ -750,10 +754,6 @@ class Import extends React.Component<any, ImportState> {
             // submission, avoid filling up the database with junk
             let method = 'POST';
             let url = '/rest/studies/' + EDDData.currentStudyID + '/imports/';
-            if(this.state.importPk) {
-                method = 'PATCH';
-                url += this.state.importPk + '/'
-            }
 
             this.setState({
                 'uploadWait': true,

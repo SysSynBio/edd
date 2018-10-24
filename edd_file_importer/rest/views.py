@@ -159,14 +159,14 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                 'Bad request',
                 'Referenced a non-existent object',
                 status=codes.bad_request,
-                detail=o)
+                detail=str(o))
         except RuntimeError as r:
             logger.exception('Exception processing import upload')
             return self._build_simple_err_response(
                 'Error',
                 'An unexpected error occurred',
                 status=codes.internal_server_error,
-                detail=r)
+                detail=str(r))
 
     # TODO: simplify
     def partial_update(self, request, *args, **kwargs):
@@ -297,3 +297,14 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
             if key in request.data and request.data[key] != getattr(import_, key):
                 return True
         return False
+
+    def _build_simple_err_response(self, category, summary,
+                                   status=codes.internal_server_error,
+                                   detail=None):
+        return JsonResponse({'errors': [{
+            'category': category,
+            'summary': summary,
+            'detail': detail,
+            'resolution': '',
+            'doc_url': '',
+        }]}, status=status)
