@@ -3,8 +3,8 @@
 import * as $ from "jquery";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import StepZilla from "react-stepzilla";
 import DropZone from "react-dropzone";
+import StepZilla from "react-stepzilla";
 import * as Utl from "../modules/Utl";
 
 declare function require(name: string): any;  // avoiding warnings for require calls below
