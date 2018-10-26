@@ -14,6 +14,7 @@ from .models import Import
 from .utilities import (build_step4_ui_json, compute_required_context, EDDImportError,
                         ErrorAggregator, MTYPE_GROUP_TO_CLASS, verify_assay_times)
 from edd.notify.backend import RedisBroker
+from edd.utilities import JSONEncoder
 from main.importer.table import ImportBroker
 from main.models import MeasurementUnit, MetadataType
 from main.tasks import import_table_task
@@ -84,11 +85,10 @@ def process_import_file(import_pk, user_pk, requested_status, encoding, initial_
         logger.exception(f'Exception processing import upload for file "{file_name}".  '
                          f'Study is {study_url}')
         if import_:
-            # delete the cached import, which isn't valuable
-            if import_.status == Import.Status.CREATED:
-                import_.delete()  # cascades to file
-
+            # build a payload including any earlier errors
             payload = _build_err_payload(handler, import_) if handler else {}
+
+            # add this error to the payload
             if not isinstance(e, EDDImportError):
                 if 'errors' in payload:
                     payload['errors'].append(str(e))

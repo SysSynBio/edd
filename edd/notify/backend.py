@@ -114,12 +114,13 @@ class BaseBroker(object):
     def notify(self, message, tags=None, payload=None, uuid=None):
         logger.debug(f'Notify: {message} tags: {tags} uuid={uuid}, payload={payload}')
 
-        note = Notification(message, tags=tags, uuid=uuid)
+        note = Notification(message, tags=tags, payload=payload, uuid=uuid)
         # _store notification to self
         self._store(note)
         # send notification to Channel Groups
         self.send_to_groups(
-            {"type": "notification", "notice": JSONEncoder.dumps(note.prepare())}
+            {"type": "notification",
+             "notice": JSONEncoder.dumps(note.prepare())}
         )
 
     def send_to_groups(self, payload):

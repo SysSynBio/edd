@@ -92,14 +92,16 @@ export interface ErrorSummary {
     doc_url?: string;
 }
 
-export interface UploadProps {
-    uploadWait: boolean;
-    uploadProcessingWait: boolean;
+export interface BgProcessingProps extends SuccessProps {
+    synchRequestWait: boolean;
+    asynchProcessingWait: boolean;
     errors: ErrorSummary[];
     warnings: ErrorSummary[];
     uploadedFileName: string;
-    postUploadStep: number;
+    processingComplete: boolean;
     clearFeedbackFn: any;
+    waitTitle: string;
+    waitMsg: string;
 }
 
 /*
@@ -133,20 +135,21 @@ function categorizeErrs(errors: ErrorSummary[]): ErrorSummary[][] {
 /*
 *  Displays file upload feedback for either success or error.
 */
-class UploadFeedback extends React.Component<UploadProps, any> {
+class BgTaskFeedback extends React.Component<BgProcessingProps, any> {
     render() {
-        if (this.props.uploadWait || this.props.uploadProcessingWait) {
+        if (this.props.synchRequestWait || this.props.asynchProcessingWait) {
             return <div className="alert alert-info">
-                        <h4>Processing file</h4>
-                        Please hang tight while your file is processed...
+                        <h4>{this.props.waitTitle}</h4>
+                        { this.props.waitMsg }
                         <span className="wait step2-wait"/>
                         </div>;
         }
         if ((!this.props.errors || !this.props.warnings) ||
             !(this.props.errors.length || this.props.warnings.length)) {
-            if (this.props.postUploadStep) {
-                return <UploadSuccessAlert postUploadStep={this.props.postUploadStep}
-                                           uploadedFileName={this.props.uploadedFileName}/>;
+            if (this.props.processingComplete) {
+                return <SuccessAlert successTitle={this.props.successTitle}
+                                     successMsg={this.props.successMsg}
+                                     uploadedFileName={this.props.uploadedFileName}/>;
             }
             return <div/>;
         }
@@ -182,45 +185,6 @@ export interface SubmitStatusProps {
     errors: ErrorSummary[];
     warnings: ErrorSummary[];
     clearFeedbackFn?: any;
-}
-
-// Displays user feedback re: import submission
-class SubmitFeedback extends React.Component<SubmitStatusProps, any> {
-    render() {
-        if ((!this.props.errors || !this.props.warnings) ||
-            !(this.props.errors.length || this.props.warnings.length)) {
-            return <div>
-                        <h4>Import Submitted</h4>
-                        Your import has been submitted for processing. You'll get a notification in
-                        the menu bar at top right when it's complete.
-                        </div>;
-        }
-
-        const total: number = this.props.errors.length + this.props.warnings.length;
-
-        // show errors, if any
-        const errsByCategory: ErrorSummary[][] = categorizeErrs(this.props.errors);
-        const errorAlerts = errsByCategory.map((categoryErrors: ErrorSummary[]) => {
-            return <ErrCategoryAlert errs={categoryErrors} alertClass="alert alert-danger"/>;
-        });
-
-        // show warnings, if any
-        const warningsByCategory: ErrorSummary[][] = categorizeErrs(this.props.warnings);
-        const warningAlerts = warningsByCategory.map(
-            (categoryWarnings: ErrorSummary[]) => {
-                return <ErrCategoryAlert errs={categoryWarnings}
-                                         alertClass="alert alert-warning"/>;
-            });
-
-        return <div>
-                    { total > 4 &&
-                        <button className="btn btn-info"
-                            onClick={this.props.clearFeedbackFn(false)}>Dismiss
-                        </button>
-                    }
-                    {errorAlerts}{warningAlerts}
-                    </div>;
-    }
 }
 
 export interface ErrSequenceProps {
@@ -266,19 +230,19 @@ class ContextFeedback extends React.Component<ImportContextProps, any> {
     }
 }
 
-export interface UploadSuccessProps {
-    postUploadStep: number;
+export interface SuccessProps {
     uploadedFileName: string;
+    successTitle: string;
+    successMsg: string;
 }
 
-class UploadSuccessAlert extends React.Component<UploadSuccessProps, any> {
+class SuccessAlert extends React.Component<SuccessProps, any> {
     render() {
-        return this.props.postUploadStep && <div className="alert alert-success">
-            <h4>File accepted</h4>
-            Your file has been accepted for import. Press "Next" to complete your import.
-            </div>;
+        return <div className="alert alert-success">
+                    <h4>{this.props.successTitle}</h4>
+                    {this.props.successMsg}
+                    </div>;
     }
-
 }
 
 /*
@@ -310,7 +274,7 @@ class ErrCategoryAlert extends React.Component<ErrSequenceProps, any> {
 
         return ((!this.state.hide) && this.props.errs.length &&
             <div className={this.props.alertClass}>
-                <a href="#" className="close" onClick={this.hide}>&times;</a>
+                <a href="#" className="close" onClick={this.hide.bind(this)}>&times;</a>
                 <h4 className="alertSubject">{this.props.errs[0].category}</h4>
                 {content}
             </div>
@@ -355,14 +319,18 @@ class Step2 extends React.Component<Step2Props, any> {
                                      uploadedFileName={this.props.uploadedFileName}
                                      submitSuccess={this.props.submitSuccess}
                                      submitWait={this.props.submitWait}/>
-                    <UploadFeedback
-                        uploadWait={this.props.uploadWait}
-                        uploadProcessingWait={this.props.uploadProcessingWait}
+                    <BgTaskFeedback
+                        synchRequestWait={this.props.uploadWait}
+                        asynchProcessingWait={this.props.uploadProcessingWait}
                         errors={this.props.uploadErrors}
                         warnings={this.props.uploadWarnings}
                         clearFeedbackFn={this.props.clearFeedbackFn}
                         uploadedFileName={this.props.uploadedFileName}
-                        postUploadStep={this.props.postUploadStep}/>
+                        processingComplete={this.props.postUploadStep !== 0}
+                        waitTitle="Processing file"
+                        waitMsg="Please hang tight while your file is processed..."
+                        successTitle="File accepted"
+                        successMsg='Your file has been accepted for import. Press "Next" to complete your import.'/>
                     <DropZone accept={this.props.acceptMimeTypes} multiple={false} maxSize={tenMB}
                               onDrop={this.props.onDropCallback} disabled={disableDrop}
                               className="overviewDropZone dropzone fd-zone excel dz-clickable"
@@ -393,20 +361,33 @@ class Step2 extends React.Component<Step2Props, any> {
 
 export interface Step5State extends ImportContextProps {
     submitWait: boolean;
+    submitProcessingWait: boolean;
     submitSuccess: boolean;
-    submitErrors: any;
+    submitErrors: ErrorSummary[];
+    submitWarnings: ErrorSummary[];
 }
 
 export interface Step5Props extends Step5State {
     submitCallback: any;
+    clearFeedbackFn: any;
 }
 
 class Step5 extends React.Component<Step5Props, any> {
     render() {
-        const wait = this.props.submitWait && <div>Submitting your import...please wait.</div>;
-        const outcome = ((this.props.submitSuccess || this.props.submitErrors) &&
-            <SubmitFeedback errors={this.props.submitErrors} warnings={[]}/>);
-        return <div className="stepDiv">{wait}{outcome}</div>;
+        const waitMsg = ("You can wait here to monitor its progress, or continue using EDD." +
+                         "You'll get a message at top right when your import is finished.");
+        return <BgTaskFeedback
+                        synchRequestWait={this.props.submitWait}
+                        asynchProcessingWait={this.props.submitProcessingWait}
+                        errors={this.props.submitErrors}
+                        warnings={this.props.submitWarnings}
+                        clearFeedbackFn={this.props.clearFeedbackFn}
+                        uploadedFileName={this.props.uploadedFileName}
+                        processingComplete={this.props.submitSuccess}
+                        waitTitle="Processing import"
+                        waitMsg={waitMsg}
+                        successTitle="Import complete"
+                        successMsg=""/>
     }
 }
 
@@ -538,8 +519,10 @@ class Import extends React.Component<any, ImportState> {
 
             /* Step 5 state */
             submitWait: false,
+            submitProcessingWait: false,
             submitSuccess: false,
             submitErrors: [],
+            submitWarnings: [],
         };
     }
 
@@ -602,8 +585,11 @@ class Import extends React.Component<any, ImportState> {
                                       uploadedFileName={this.state.uploadedFileName}
                                       submitCallback={this.submitImport.bind(this)}
                                       submitWait={this.state.submitWait}
+                                      submitProcessingWait={this.state.submitProcessingWait}
                                       submitSuccess={this.state.submitSuccess}
-                                      submitErrors={this.state.submitErrors}/>,
+                                      submitErrors={this.state.submitErrors}
+                                      submitWarnings={this.state.submitWarnings}
+                                      clearFeedbackFn={this.clearSubmitErrors.bind(this)}/>,
                 },
             ];
         return <StepZilla steps={steps}
@@ -620,7 +606,7 @@ class Import extends React.Component<any, ImportState> {
         });
 
         // auto-select the category if there's only one
-        const state = {categories: configuredCategories};
+        const state = {"categories": configuredCategories} as any;
         if (configuredCategories.length === 1) {
             const category = configuredCategories[0];
             state.category = category;
@@ -692,7 +678,7 @@ class Import extends React.Component<any, ImportState> {
             uploadWait: false,
             uploadWarnings: [],
             postUploadStep: 0,
-        };
+        } as any;
 
         if (jqXHR.status === 504) {
             // TODO: need a workaround for large file uploads that take longer to process, e.g.
@@ -701,7 +687,7 @@ class Import extends React.Component<any, ImportState> {
                 category: "Upload Error",
                 summary: "Request timed out",
                 detail: ["Please retry your upload or contact system administrators"],
-            }];
+            } as ErrorSummary];
             this.setState(vals);
         } else if (jqXHR.status === 413) {
             vals.uploadErrors = [{
@@ -734,12 +720,19 @@ class Import extends React.Component<any, ImportState> {
         const vals = {
             uploadErrors: [],
             uploadWarnings: [],
-        };
+        } as any;
         if (removeFile) {
             vals.uploadedFileName = null;
             vals.postUploadStep = 0;
         }
         this.setState(vals);
+    }
+
+    clearSubmitErrors() {
+        this.setState({
+            submitErrors: [],
+            submitWarnings: [],
+        });
     }
 
     onFileDrop(acceptedFiles, rejectedFiles) {
@@ -755,9 +748,13 @@ class Import extends React.Component<any, ImportState> {
             data.append('uuid', this.state.importUUID);
 
             // if we're re-uploading a file after the import is created, but before
-            // submission, avoid filling up the database with junk
-            const method = 'POST';
-            const url = '/rest/studies/' + EDDData.currentStudyID + '/imports/';
+            // submission, creating new DB records for re-uploads
+            let method = 'POST';
+            let url = '/rest/studies/' + EDDData.currentStudyID + '/imports/';
+            if(this.state.importPk) {
+                method = 'PATCH';
+                url += this.state.importPk + '/'
+            }
 
             this.setState({
                 uploadWait: true,
@@ -807,6 +804,8 @@ class Import extends React.Component<any, ImportState> {
         this.setState({
             submitWait: true,
             submitSuccess: false,
+            submitWarnings: [],
+            submitErrors: [],
         });
         $.ajax('/rest/studies/' + EDDData.currentStudyID + '/imports/' + this.state.importPk + '/',
             {
@@ -837,7 +836,7 @@ class Import extends React.Component<any, ImportState> {
 
         const vals = {
             submitWait: false,
-        };
+        } as any;
 
         if (contentType === 'application/json') {
             const json = JSON.parse(jqXHR.responseText);
@@ -850,7 +849,7 @@ class Import extends React.Component<any, ImportState> {
                 summary: "There was an unexpected error submitting your import. Please try" +
                     " again.  If your upload still fails, please contact" +
                     " system administrators to confirm that they're aware of this problem.",
-            }];
+            } as ErrorSummary];
             this.setState(vals);
         }
     }
@@ -893,11 +892,27 @@ class Import extends React.Component<any, ImportState> {
                 });
                 break;
             case 'Failed':
-                this.setState({
+                let state = {
                     uploadWait: false,
                     uploadProcessingWait: false,
-                    uploadErrors: json.errors || [],
-                    uploadWarnings: json.warnings || [],
+                } as any;
+
+                if (this.state.uploadWait || this.state.uploadProcessingWait) {
+                    state.uploadErrors = json.errors || [];
+                    state.uploadWarnings = json.warnings || [];
+                } else {
+                    state.submitErrors = json.errors || [];
+                    state.submitWarnings = json.warnings || [];
+                }
+                this.setState(state);
+                break;
+            case 'Complete':
+                this.setState({
+                    submitSuccess: true,
+                    submitErrors: json.errors || [],
+                    submitWarnings: json.warnings || [],
+                    submitWait: false,
+
                 });
         }
     }
@@ -929,6 +944,9 @@ class Import extends React.Component<any, ImportState> {
 
         notificationSocket.addTagAction('import-status-update',
             this.importMessageReceived.bind(this));
+
+        // TODO: register for user-facing message from legacy import...mark the message as read
+        // if it's for this import
     }
 }
 

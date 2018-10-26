@@ -193,31 +193,40 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
             process_file = new_upload or self._test_context_changed(request, import_)
             if process_file:
 
-                # get the file to parse. it could be one uploaded in an earlier request
-                if new_upload:
-                    file = ImportFile.objects.create(request.data['file'])
-                    import_.file = file
+                with transaction.atomic():
+                    # update all parameters from the request. Since this is a re-upload,
+                    # and essentially the same as creating a new import, we'll allow
+                    # redefinition of any user-editable parameter
+                    import_context = {
+                        'status': Import.Status.CREATED,
+                        'category_id': request.data.get('category', import_.category_id),
+                        'file_format_id': request.data.get('file_format', import_.file_format_id),
+                        'protocol_id': request.data.get('protocol', import_.protocol.pk),
+                        'compartment': request.data.get('compartment', import_.compartment),
+                        'x_units_id': request.data.get('x_units', import_.x_units_id),
+                        'y_units_id': request.data.get('y_units', import_.y_units_id),
+                    }
 
-                # update all parameters from the request. Since this is a re-upload,
-                # and essentially the same as creating a new import, we'll allow
-                # redefinition of any user-editable parameter
-                import_.status = Import.Status.CREATED
-                import_.category_id = request.data.get('category', import_.category)
-                import_.file_format = request.data.get('file_format', import_.file_format)
-                import_.protocol = request.data.get('protocol', import_.protocol)
-                import_.compartment = request.data.get('compartment', import_.compartment)
-                import_.x_units = request.data.get('x_units', import_.x_units)
-                import_.y_units = request.data.get('y_units', import_.y_units)
-                import_.save()
+                    # get the file to parse. it could be one uploaded in an earlier request
+                    old_file = None
+                    if new_upload:
+                        file = ImportFile.objects.create(file=request.data['file'])
+                        import_context['file_id'] = file.pk
+                        old_file = import_.file
+                    import_, _ = Import.objects.update_or_create(uuid=import_.uuid,
+                                                                 defaults=import_context)
+                    if old_file:
+                        logger.debug(f'Deleting file {old_file}')
+                        old_file.delete()
 
                 # schedule a task to process the file, and submit the import if requested
-                process_import_file.delay(import_.pk, user_pk, request.get('status', None),
+                process_import_file.delay(import_.pk, user_pk, request.data.get('status', None),
                                           request.encoding or 'utf8', initial_upload=False)
                 ui_payload = json.dumps({
                     'uuid': import_.uuid,
                     'pk': import_.pk,
                     'status': import_.status
-                })
+                }, cls=JSONEncoder)
                 return JsonResponse(ui_payload, status=codes.accepted, safe=False)
 
             # otherwise, save changes and determine any additional missing inputs
