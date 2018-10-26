@@ -445,7 +445,7 @@ class ImportFileHandler(ErrorAggregator):
             'src_ids': []  # ids for where the data came from, e.g. row #s in an Excel file
         }
 
-        protocol = self.cache.protocol
+        protocol = self.cache.import_.protocol
 
         if matched_assays:
             import_record['assay_id'] = assay_or_line_pk
