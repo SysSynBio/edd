@@ -78,10 +78,13 @@ class ImportErrorSummary(object):
                 **ui_summary,
                 'resolution': self.resolution,
                 'doc_url': self.doc_url,
-                'detail': ', '.join(occurrences)
             }
             if subcategory != 'default':
                 summary['subcategory'] = subcategory
+
+            nonempty_occurrences = [detail for detail in occurrences if detail]
+            if nonempty_occurrences:
+                summary['detail'] = ', '.join(nonempty_occurrences)
             results.append(summary)
 
         return results
