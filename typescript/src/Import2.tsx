@@ -312,6 +312,8 @@ class Step2 extends React.Component<Step2Props, any> {
         const disableDrop: boolean = (this.props.uploadWait || this.props.uploadProcessingWait ||
             this.props.submitSuccess || this.props.submitWait);
         const directions = (!disableDrop) && <div>Click or click-and-drag to upload a file</div>;
+        const successMsg = 'Your file has been accepted for import. Press "Next" to complete' +
+                           ' your import.';
 
         return <div className="stepDiv">
                     <ContextFeedback category={this.props.category} protocol={this.props.protocol}
@@ -330,7 +332,7 @@ class Step2 extends React.Component<Step2Props, any> {
                         waitTitle="Processing file"
                         waitMsg="Please hang tight while your file is processed..."
                         successTitle="File accepted"
-                        successMsg='Your file has been accepted for import. Press "Next" to complete your import.'/>
+                        successMsg={successMsg}/>
                     <DropZone accept={this.props.acceptMimeTypes} multiple={false} maxSize={tenMB}
                               onDrop={this.props.onDropCallback} disabled={disableDrop}
                               className="overviewDropZone dropzone fd-zone excel dz-clickable"

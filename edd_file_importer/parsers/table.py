@@ -310,7 +310,7 @@ class TableParser(object):
         if obs_required_cols:
             missing_cols = req_cols_set.difference(obs_required_cols)
             logger.debug(f'Required column headers missing: {missing_cols}')
-            importer.add_errors(FileParseCodes.MISSING_REQ_COL_HEADER, occurrences=missing_cols)
+            importer.raise_errors(FileParseCodes.MISSING_REQ_COL_HEADER, occurrences=missing_cols)
         else:
             importer.add_warnings(FileParseCodes.IGNORED_VALUE_BEFORE_HEADERS, non_header_values)
 

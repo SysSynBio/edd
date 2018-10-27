@@ -260,7 +260,7 @@ def build_ui_payload_from_cache(import_pk, user_pk):
     required_inputs = compute_required_context(category, import_.compartment, parser,
                                                assay_pk_to_time)
 
-    # TODO: notify UI with payload after diagnosing messeging issues
+    # TODO: notify UI with payload after diagnosing messaging issues
     payload = build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
                                   hour_units.pk)
 
