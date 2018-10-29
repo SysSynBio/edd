@@ -246,7 +246,6 @@ if [ ! -x /code/manage.py ]; then
     if [ ! -z "$LOCAL_PY" ]; then
         cp "$LOCAL_PY" /code/edd/settings/local.py
     fi
-    ensure_dir_owner "/usr/local/edd" "edduser"
 else
     output "Running with mounted copy of code …"
 fi
@@ -365,16 +364,6 @@ fi
 
 # Wait for rabbitmq to become available
 service_wait rabbitmq 5672
-
-# fix file permissions
-if [ ! -f /usr/share/nginx/html/uploads ]; then
-    mkdir -p -v /usr/share/nginx/html/uploads
-fi
-if [ ! -f /var/www/uploads ]; then
-    mkdir -p -v /var/www/uploads
-fi
-chown -R edduser:edduser /usr/share/nginx/html/uploads
-chown -R edduser:edduser /var/www/uploads
 
 # Start up the command
 case "$COMMAND" in

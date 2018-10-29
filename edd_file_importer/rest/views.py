@@ -1,7 +1,6 @@
 # coding: utf-8
 import json
 import logging
-import uuid
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
@@ -130,20 +129,17 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin,
                 'compartment': request.data.get('compartment', Measurement.Compartment.UNKNOWN),
             }
 
-            # save user inputs to the database for handoff to a Celery worker
+            # save user inputs to the database for hand off to a Celery worker
             with transaction.atomic():
                 file_model = ImportFile.objects.create(file=file)
                 import_context['file_id'] = file_model.pk
                 import_ = Import.objects.create(**import_context)
 
-            if not str(import_.uuid) == request.data['uuid']:
-                logger.error('Saved UUID does NOT match input')
-
             process_import_file.delay(import_.pk, request.user.pk,
                                       request.data.get('status',  None),
                                       request.encoding or 'utf8', initial_upload=True)
 
-            # return identifiers the clients (esp UI) can use to
+            # return identifiers the clients (esp UI) can use to monitor progress
             payload = json.dumps({'uuid': import_.uuid, 'pk': import_.pk}, cls=JSONEncoder)
             return JsonResponse(payload, status=codes.accepted, safe=False)
 

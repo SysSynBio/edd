@@ -14,7 +14,6 @@ from .models import Import
 from .utilities import (build_step4_ui_json, compute_required_context, EDDImportError,
                         ErrorAggregator, MTYPE_GROUP_TO_CLASS, verify_assay_times)
 from edd.notify.backend import RedisBroker
-from edd.utilities import JSONEncoder
 from main.importer.table import ImportBroker
 from main.models import MeasurementUnit, MetadataType
 from main.tasks import import_table_task
@@ -90,10 +89,7 @@ def process_import_file(import_pk, user_pk, requested_status, encoding, initial_
 
             # add this error to the payload
             if not isinstance(e, EDDImportError):
-                if 'errors' in payload:
-                    payload['errors'].append(str(e))
-                else:
-                    payload['errors'] = [str(e)]
+                payload['errors'].append(str(e))
             payload['pk'] = import_pk
             payload['uuid'] = import_.uuid if import_ else None
             payload['status'] = Import.Status.FAILED
@@ -103,7 +99,7 @@ def process_import_file(import_pk, user_pk, requested_status, encoding, initial_
                               tags=['import-status-update'], payload=payload)
 
         # if this was a predicted error encountered during normal processing, the task has
-        # succeeded
+        # succeeded...also Celery will have trouble serializing the Exception
         if isinstance(e, EDDImportError):
             logger.info('Predicted error during import processing')
             return
@@ -227,6 +223,8 @@ def build_ui_payload_from_cache(import_pk, user_pk):
     :return: the UI JSON for Step 4 "Inspect"
     """
     import_ = Import.objects.get(import_pk)
+    User = get_user_model()
+    user = User.objects.get(pk=user_pk)
 
     logger.info(f"Building import {import_.pk}'s UI payload from cache.")
     parser = SeriesCacheParser(master_units=import_.y_units)
@@ -259,10 +257,10 @@ def build_ui_payload_from_cache(import_pk, user_pk):
                                               assay_time_meta_pk)
     required_inputs = compute_required_context(category, import_.compartment, parser,
                                                assay_pk_to_time)
-
-    # TODO: notify UI with payload after diagnosing messaging issues
     payload = build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
                                   hour_units.pk)
+    notify = RedisBroker(user)
+    not notify(f'Your file "" is ready to import', tags='import-status-update', payload=payload)
 
 
 class SeriesCacheParser:

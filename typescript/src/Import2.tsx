@@ -946,9 +946,6 @@ class Import extends React.Component<any, ImportState> {
 
         notificationSocket.addTagAction('import-status-update',
             this.importMessageReceived.bind(this));
-
-        // TODO: register for user-facing message from legacy import...mark the message as read
-        // if it's for this import
     }
 }
 

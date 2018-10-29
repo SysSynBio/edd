@@ -12,7 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from ..codes import FileParseCodes, FileProcessingCodes
 from ..models import Import
 from ..utilities import (build_step4_ui_json, compute_required_context, ErrorAggregator,
-                         ParseError, ImportTooLargeError, verify_assay_times)
+                         ImportTooLargeError, MTYPE_GROUP_TO_CLASS, ParseError, verify_assay_times)
 from main.models import (Assay, Line, MeasurementType, MeasurementUnit, Metabolite, MetadataType)
 from main.importer.parser import guess_extension, ImportFileTypeFlags
 from main.importer.table import ImportBroker
@@ -220,13 +220,6 @@ class ImportFileHandler(ErrorAggregator):
         unique_mtypes = cache.mtype_name_to_type.values()
         payload = build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
                                       import_.x_units_id)
-
-        # TODO: remove workaround to cut out larger payload content
-        payload = {
-            'uuid': import_.uuid,
-            'pk': import_.pk,
-            'status': import_.status,
-        }
         notify.notify(f'Your file "{file_name}" is ready to import', tags=['import-status-update'],
                       payload=payload)
 
