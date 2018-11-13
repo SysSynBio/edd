@@ -47,7 +47,7 @@ class ImportCategorySerializer(BaseImportObjectSerializer):
         )
 
 
-class FileImportSerializer(BaseImportObjectSerializer):
+class ImportSerializer(BaseImportObjectSerializer):
 
     class Meta:
         model = models.Import

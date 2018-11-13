@@ -245,7 +245,7 @@ def import_table_task(self, study_id, user_id, import_id):
             # send configured error notifications
             send_import_failure_email(study, user, import_id, import_params, start)
             message = _(
-                f'Failed import to {study}, EDD encountered this problem: {ex}'
+                f'Failed import to {study}, EDD encountered this problem: {e}'
             ).format(study=study.name, ex=e)
             notifications.notify(message)
             notifications.mark_read(self.request.id)

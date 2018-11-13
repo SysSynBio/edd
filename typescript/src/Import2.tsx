@@ -664,9 +664,9 @@ class Import extends React.Component<any, ImportState> {
         this.clearUploadErrors(true);
     }
 
-    uploadSuccess(result_json: any, textStatus: string, jqXHR: JQueryXHR): void {
+    uploadSuccess(result: any, textStatus: string, jqXHR: JQueryXHR): void {
         this.setState({
-            importPk: JSON.parse(result_json).pk,
+            importPk: result.pk,
             uploadWait: false,
             uploadProcessingWait: true,
 

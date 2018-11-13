@@ -107,9 +107,10 @@ class BaseBroker(object):
     def mark_read(self, uuid):
         self._remove(uuid)
         # send update to Channel Group
-        self.send_to_groups(
-            {"type": "notification.dismiss", "uuid": JSONEncoder.dumps(uuid)}
-        )
+        self.send_to_groups({
+            'type': 'notification.dismiss',
+            'uuid': JSONEncoder.dumps(uuid),
+        })
 
     def notify(self, message, tags=None, payload=None, uuid=None):
         logger.debug(f'Notify: {message} tags: {tags} uuid={uuid}, payload={payload}')
@@ -118,10 +119,10 @@ class BaseBroker(object):
         # _store notification to self
         self._store(note)
         # send notification to Channel Groups
-        self.send_to_groups(
-            {"type": "notification",
-             "notice": JSONEncoder.dumps(note.prepare())}
-        )
+        self.send_to_groups({
+            'type': 'notification',
+            'notice': JSONEncoder.dumps(note.prepare()),
+        })
 
     def send_to_groups(self, payload):
         for group in self.group_names():

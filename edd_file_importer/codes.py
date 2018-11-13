@@ -35,6 +35,8 @@ class FileProcessingCodes(Enum):
     # missing study ids
     UNMATCHED_ASSAY_NAME = auto()
     UNMATCHED_LINE_NAME = auto()
+    DUPLICATE_ASSAY_NAME = auto()
+    DUPLICATE_LINE_NAME = auto()
     UNNMATCHED_STUDY_INTERNALS = auto()
 
     # communication errors... current model load_or_create methods don't support differentiating
@@ -69,8 +71,8 @@ parse_code_to_ui_detail = {
         'summary': _('Unsupported file type'),
     },
     FileParseCodes.EMPTY_FILE: {
-        'category': _('Empty file'),
-        'summary': _(''),
+        'category': _('Invalid file'),
+        'summary': _('File is empty'),
     },
 
     # file format errors
@@ -122,13 +124,23 @@ processing_code_to_ui_detail = {
     },
 
     FileProcessingCodes.UNMATCHED_ASSAY_NAME: {
-        'category': _('Unmatched assay names'),
-        'summary': _(),
+        'category': _("File doesn't match study"),
+        'summary': _('Assay names in file not found in study'),
     },
 
     FileProcessingCodes.UNMATCHED_LINE_NAME: {
-        'category': _('Unmatched line names'),
-        'summary': _(),
+        'category': _("File doesn't match study"),
+        'summary': _('Line names in file not found in study'),
+    },
+
+    FileProcessingCodes.DUPLICATE_ASSAY_NAME: {
+        'category': _('Cannot resolve assay names'),
+        'summary': _('Study has duplicate assay names'),
+    },
+
+    FileProcessingCodes.DUPLICATE_LINE_NAME: {
+        'category': _('Cannot resolve line names'),
+        'summary': _('Study has duplicate line names'),
     },
 
     FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS: {
@@ -138,7 +150,7 @@ processing_code_to_ui_detail = {
     },
     FileProcessingCodes.MEASUREMENT_TYPE_NOT_FOUND: {
         'category': _('Measurement identifiers not found'),
-        'summary': _(''),
+        'summary': _('Missing IDs'),
     },
 
     FileProcessingCodes.PROTEIN_ID_NOT_FOUND: {
@@ -160,8 +172,8 @@ processing_code_to_ui_detail = {
     },
 
     FileProcessingCodes.ASSAYS_MISSING_TIME: {
-        'category': _('Incomplete time data'),
-        'summary': _(''),
+        'category': _('Incomplete study configuration'),
+        'summary': _('Assays missing time metadata'),
     },
 
     FileProcessingCodes.MEASUREMENT_COLLISION: {

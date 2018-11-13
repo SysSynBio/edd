@@ -8,6 +8,7 @@ from collections import OrderedDict
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db.models import Count
 
 from ..codes import FileParseCodes, FileProcessingCodes
 from ..models import Import
@@ -157,14 +158,7 @@ class ImportFileHandler(ErrorAggregator):
         # the file until later, but the user has entered enough data to make restarting an
         # annoyance. Also this way we have a record for support purposes.
         if not import_.file_format:
-            payload = {
-                'uuid': import_.uuid,
-                'status': import_.status,
-                'raw_data': parser.raw_data
-            }
-            message = (f'Your import file, "{file_name}" has been saved, but file format input '
-                       f'is needed to process it')
-            notify.notify(message, tags=('import-status-update',), payload=payload)
+            self._notify_format_required(parser, import_, file_name)
             return Import.Status.CREATED
 
         ###########################################################################################
@@ -180,8 +174,8 @@ class ImportFileHandler(ErrorAggregator):
         if not matched_assays:
             matched_lines = self._verify_line_or_assay_match(line_or_assay_names, lines=True)
             if not matched_lines:
-                self.raise_errors(FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS,
-                                  occurrences=line_or_assay_names)
+                self.add_errors(FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS,
+                                occurrences=line_or_assay_names)
 
         ###########################################################################################
         # Resolve MeasurementType and MeasurementUnit identifiers from local and/or remote sources
@@ -223,6 +217,16 @@ class ImportFileHandler(ErrorAggregator):
         notify.notify(f'Your file "{file_name}" is ready to import', tags=['import-status-update'],
                       payload=payload)
 
+    def _notify_format_required(self, parser, import_, file_name):
+        payload = {
+            'uuid': import_.uuid,
+            'status': import_.status,
+            'raw_data': parser.raw_data
+        }
+        message = (f'Your import file, "{file_name}" has been saved, but file format input '
+                   f'is needed to process it')
+        self.notify.notify(message, tags=('import-status-update',), payload=payload)
+
     def _verify_line_or_assay_match(self, line_or_assay_names, lines):
         """
         @:return the number of items in line_or_assay_names that match items in the study
@@ -233,25 +237,41 @@ class ImportFileHandler(ErrorAggregator):
         extract_vals = ['name', 'pk']
         if lines:
             qs = Line.objects.filter(study_id=study_pk,
-                                     name__in=line_or_assay_names).values(*extract_vals)
+                                     name__in=line_or_assay_names,
+                                     active=True).values(*extract_vals)
         else:
             protocol_pk = context.import_.protocol_id
             qs = Assay.objects.filter(line__study_id=study_pk,
                                       name__in=line_or_assay_names,
-                                      protocol_id=protocol_pk).values(*extract_vals)
+                                      protocol_id=protocol_pk,
+                                      active=True).values(*extract_vals)
         found_count = len(qs)  # evaluate qs and get the # results
         if found_count:
             model = 'line' if lines else 'assay'
-            logger.debug(f'Matched {found_count} of {len(line_or_assay_names)} {model} names '
+            input_count = len(line_or_assay_names)
+            logger.debug(f'Matched {found_count} of {input_count} {model} names '
                          f'from the file')
             context.loa_name_to_pk = {result['name']: result['pk'] for result in qs}
 
-            if found_count != len(line_or_assay_names):
-                missing_names = line_or_assay_names - context.loa_name_to_pk.keys()
-                err_code = (FileProcessingCodes.UNMATCHED_LINE_NAME if lines else
-                            FileProcessingCodes.UNMATCHED_ASSAY_NAME)
-                self.add_errors(err_code, occurrences=missing_names)
-                self.raise_errors()
+            if found_count != input_count:
+                if found_count < input_count:
+                    names = list(line_or_assay_names - context.loa_name_to_pk.keys())
+                    err_code = (FileProcessingCodes.UNMATCHED_LINE_NAME if lines else
+                                FileProcessingCodes.UNMATCHED_ASSAY_NAME)
+                else:  # found_count > input_count...find duplicate line names in the study
+                    names_qs = (Line.objects.filter(study_id=study_pk)
+                                    .values('name')
+                                    .annotate(count=Count('name'))
+                                    .filter(count__gt=1)
+                                    .order_by('name')
+                                    .values_list('name', flat=True)
+                                )
+                    logger.debug(names_qs)  # TODO: remove
+                    names = [name for name in names_qs]
+                    err_code = (FileProcessingCodes.DUPLICATE_LINE_NAME if lines else
+                                FileProcessingCodes.DUPLICATE_ASSAY_NAME)
+                logger.debug(f'raising errors: {err_code}: {names})')  # TODO: remove
+                self.add_errors(err_code, occurrences=names)
 
         return bool(found_count)
 
@@ -414,6 +434,9 @@ class ImportFileHandler(ErrorAggregator):
         }
 
         broker.set_context(import_id, json.dumps(context))
+
+        print('Context: ')
+        print(json.dumps(context))
 
         for page in import_cache_pages:
             broker.add_page(import_id, json.dumps(page))

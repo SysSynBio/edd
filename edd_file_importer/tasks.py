@@ -11,9 +11,10 @@ import celery
 from .codes import FileProcessingCodes
 from .importer.table import ImportFileHandler
 from .models import Import
-from .utilities import (build_step4_ui_json, compute_required_context, EDDImportError,
-                        ErrorAggregator, MTYPE_GROUP_TO_CLASS, verify_assay_times)
+from .utilities import (build_err_payload, build_step4_ui_json, compute_required_context,
+                        EDDImportError, ErrorAggregator, MTYPE_GROUP_TO_CLASS, verify_assay_times)
 from edd.notify.backend import RedisBroker
+from edd.utilities import JSONEncoder
 from main.importer.table import ImportBroker
 from main.models import MeasurementUnit, MetadataType
 from main.tasks import import_table_task
@@ -79,20 +80,20 @@ def process_import_file(import_pk, user_pk, requested_status, encoding, initial_
 
     except (EDDImportError, ObjectDoesNotExist, RuntimeError) as e:
         file_name = import_.file.filename if import_ else ''
-        study_url = reverse('main:overview', kwargs={'slug': import_.study.slug}) if import_ \
-            else ''
+        study_url = (reverse('main:overview', kwargs={'slug': import_.study.slug}) if import_
+                     else '')
         logger.exception(f'Exception processing import upload for file "{file_name}".  '
                          f'Study is {study_url}')
         if import_:
+            import_.status = Import.Status.FAILED
+            import_.save()
+
             # build a payload including any earlier errors
-            payload = _build_err_payload(handler, import_) if handler else {}
+            payload = build_err_payload(handler, import_) if handler else {}
 
             # add this error to the payload
             if not isinstance(e, EDDImportError):
                 payload['errors'].append(str(e))
-            payload['pk'] = import_pk
-            payload['uuid'] = import_.uuid if import_ else None
-            payload['status'] = Import.Status.FAILED
 
             if notify:
                 notify.notify(f'Processing for your import file "{file_name}" has failed',
@@ -127,7 +128,7 @@ def attempt_status_transition(import_, requested_status, user, asynch, notify=No
     _verify_status_transition(aggregator, import_, requested_status, user, notify, asynch)
 
     if requested_status == Import.Status.SUBMITTED:
-        return _submit_import(import_, user.pk, notify, aggregator, asynch)
+        return submit_import(import_, user.pk, aggregator, notify, asynch)
 
 
 def _verify_status_transition(aggregator, import_, requested_status, user, notify, asynch):
@@ -148,15 +149,14 @@ def _verify_status_transition(aggregator, import_, requested_status, user, notif
         return aggregator.raise_error(FileProcessingCodes.ILLEGAL_STATE_TRANSITION, occurrence=msg)
 
 
-def _submit_import(import_, user_pk, notify, aggregator, asynch):
+def submit_import(import_, user_pk, aggregator, notify, asynch):
     """
     Schedules a Celery task to do the heavy lifting to finish the import data cached in Redis
     """
     try:
-        if asynch:
-            # use the celery task code to mark the import SUBMITTED, but run it synchronously
-            # here so import status gets updated before any remote tasks are launched
-            update_import_status(Import.Status.SUBMITTED, import_.uuid, user_pk, notify)
+        # use the celery task code to mark the import SUBMITTED, but run it synchronously
+        # here so import status gets updated before any remote tasks are launched
+        update_import_status(Import.Status.SUBMITTED, import_.uuid, user_pk, notify)
 
         # build up signatures for tasks to be executed in a chain
         uuid = import_.uuid
@@ -190,27 +190,6 @@ def _submit_import(import_, user_pk, notify, aggregator, asynch):
         aggregator.raise_error(FileProcessingCodes.COMMUNICATION_ERROR, occurrence=str(e))
 
 
-def _build_err_payload(aggregator, import_):
-    """
-    Builds a JSON error response to return as a WS client notification.
-    """
-    # flatten errors & warnings into a single list to send to the UI. Each ImportErrorSummary
-    # may optionally contain multiple related errors grouped by subcategory
-    errs = []
-    for err_type_summary in aggregator.errors.values():
-        errs.extend(err_type_summary.to_json())
-
-    warns = []
-    for warn_type_summary in aggregator.warnings.values():
-        warns.extend(warn_type_summary.to_json())
-
-    return {
-        'status': import_.status,
-        'errors': errs,
-        'warnings': warns,
-    }
-
-
 @shared_task
 def build_ui_payload_from_cache(import_pk, user_pk):
     """
@@ -222,7 +201,7 @@ def build_ui_payload_from_cache(import_pk, user_pk):
 
     :return: the UI JSON for Step 4 "Inspect"
     """
-    import_ = Import.objects.get(import_pk)
+    import_ = Import.objects.filter(pk=import_pk).select_related('file').get()
     User = get_user_model()
     user = User.objects.get(pk=user_pk)
 
@@ -260,7 +239,9 @@ def build_ui_payload_from_cache(import_pk, user_pk):
     payload = build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
                                   hour_units.pk)
     notify = RedisBroker(user)
-    not notify(f'Your file "" is ready to import', tags='import-status-update', payload=payload)
+    file_name = import_.file.filename
+    notify.notify(f'Your file "{file_name}" is ready to import', tags='import-status-update',
+                  payload=payload)
 
 
 class SeriesCacheParser:

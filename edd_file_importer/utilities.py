@@ -1,5 +1,6 @@
 # coding: utf-8
 import logging
+import json
 from collections import defaultdict
 
 from .codes import get_ui_summary, FileProcessingCodes
@@ -128,10 +129,14 @@ class ErrorAggregator(object):
         logger.debug(f'add_errors called! {err_type}: {occurrences}')
         for detail in occurrences:
             self.add_error(err_type, subcategory=subcategory, occurrence=detail)
+        if not occurrences:
+            self.add_error(err_type, subcategory=subcategory, occurrence=None)
 
     def add_warnings(self, warn_type, occurrences):
         for detail in occurrences:
             self.add_warning(warn_type, occurrence=detail)
+        if not occurrences:
+            self.add_warning(warn_type)
 
     # TODO: add / enforce a limit so we aren't adding an unbounded list
     def raise_errors(self, err_type=None, subcategory=None, occurrences=None):
@@ -165,10 +170,11 @@ def build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
         # assays, use their real pk's.
         assay_id = import_record['assay_id']
         assay_id = assay_id if assay_id not in ('new', 'named_or_new') else index
+        assay_id_str = str(assay_id)
 
-        mcount = assay_id_to_meas_count.get(assay_id, 0)
+        mcount = assay_id_to_meas_count.get(assay_id_str, 0)
         mcount += 1
-        assay_id_to_meas_count[assay_id] = mcount
+        assay_id_to_meas_count[assay_id_str] = mcount
 
         # TODO: file format, content, and protocol should all likely be considerations here.
         # Once supported by the Celery task, consider moving this determination up to the
@@ -206,13 +212,36 @@ def build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
 
     return {
         'pk': f'{import_.pk}',
-        'uuid': f'{import_.uuid}',
+        'uuid': import_.uuid,
         'status': import_.status,
         'total_measures': assay_id_to_meas_count,
         'required_values': required_inputs,
         'types': {str(mtype.id): mtype.to_json() for mtype in unique_mtypes},
         'measures': measures,
         'data': data,
+    }
+
+
+def build_err_payload(aggregator, import_):
+    """
+    Builds a JSON error response to return as a WS client notification.
+    """
+    # flatten errors & warnings into a single list to send to the UI. Each ImportErrorSummary
+    # may optionally contain multiple related errors grouped by subcategory
+    errs = []
+    for err_type_summary in aggregator.errors.values():
+        errs.extend(err_type_summary.to_json())
+
+    warns = []
+    for warn_type_summary in aggregator.warnings.values():
+        warns.extend(warn_type_summary.to_json())
+
+    return {
+        'pk': import_.pk,
+        'uuid': import_.uuid,
+        'status': import_.status,
+        'errors': errs,
+        'warnings': warns
     }
 
 
