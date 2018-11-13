@@ -147,21 +147,15 @@ class ErrorAggregator(object):
             raise EDDImportError(self)
 
 
-def build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes, x_units_pk):
+def build_summary_json(import_, required_inputs, import_records, unique_mtypes, x_units_pk):
     """
-    Build JSON to send to the new import front end, including some legacy data for easy
-    display in the existing TS graphing code (which may get replaced later). Relative to the
-    import JSON, x and y elements are further broken down into separate lists. Note that JSON
-    generated here should match that produced by the /s/{study_slug}/measurements/ view
-    TODO: address PR comment re: code organization
-    https://repo.jbei.org/projects/EDD/repos/edd-django/pull-requests/425/overview?commentId=3073
+    Build some summary JSON to send to the new import front end
     """
     logger.debug('Building UI JSON for user inspection')
 
     assay_id_to_meas_count = {}
 
     measures = []
-    data = {}
     for index, import_record in enumerate(import_records):
         import_data = import_record['data']
 
@@ -189,7 +183,6 @@ def build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
             # above. Likely need detection/tracking earlier in the process to do this with
             # measurements.
             'id': index,
-
             'assay': assay_id,
             'type': import_record['measurement_id'],
             'comp': import_record['compartment_id'],
@@ -199,17 +192,6 @@ def build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
             'meta': {},
         })
 
-        # repackage data from the import into the format used by the legacy study data UI
-        # Note: assuming based on initial example that it's broken up into separate arrays
-        # along x and y measurements...correct if that's not born out by other examples (maybe
-        # it's just an array per element)
-        measurement_vals = []
-        data[str(index)] = measurement_vals
-        for imported_timepoint in import_data:
-            display_timepoint = [[imported_timepoint[0]]]  # x-value
-            display_timepoint.append(imported_timepoint[1:])  # y-value(s)
-            measurement_vals.append(display_timepoint)
-
     return {
         'pk': f'{import_.pk}',
         'uuid': import_.uuid,
@@ -218,7 +200,6 @@ def build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
         'required_values': required_inputs,
         'types': {str(mtype.id): mtype.to_json() for mtype in unique_mtypes},
         'measures': measures,
-        'data': data,
     }
 
 

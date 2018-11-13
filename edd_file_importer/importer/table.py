@@ -12,7 +12,7 @@ from django.db.models import Count
 
 from ..codes import FileParseCodes, FileProcessingCodes
 from ..models import Import
-from ..utilities import (build_step4_ui_json, compute_required_context, ErrorAggregator,
+from ..utilities import (build_summary_json, compute_required_context, ErrorAggregator,
                          ImportTooLargeError, MTYPE_GROUP_TO_CLASS, ParseError, verify_assay_times)
 from main.models import (Assay, Line, MeasurementType, MeasurementUnit, Metabolite, MetadataType)
 from main.importer.parser import guess_extension, ImportFileTypeFlags
@@ -212,8 +212,8 @@ class ImportFileHandler(ErrorAggregator):
 
         # build the json payload to send back to the UI for use in subsequent import steps
         unique_mtypes = cache.mtype_name_to_type.values()
-        payload = build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
-                                      import_.x_units_id)
+        payload = build_summary_json(import_, required_inputs, import_records, unique_mtypes,
+                                     import_.x_units_id)
         notify.notify(f'Your file "{file_name}" is ready to import', tags=['import-status-update'],
                       payload=payload)
 

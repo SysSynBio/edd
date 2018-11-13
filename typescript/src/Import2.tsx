@@ -571,16 +571,7 @@ class Import extends React.Component<any, ImportState> {
                                                 submitWait={this.state.submitWait}/>,
                 },
                 {
-                    name: '4. Review',
-                    component: <StepPlaceHolder category={this.state.category}
-                                                protocol={this.state.protocol}
-                                                format={this.state.format}
-                                                uploadedFileName={this.state.uploadedFileName}
-                                                submitSuccess={this.state.submitSuccess}
-                                                submitWait={this.state.submitWait}/>,
-                },
-                {
-                    name: '5. Import',
+                    name: '4. Import',
                     component: <Step5 category={this.state.category}
                                       protocol={this.state.protocol}
                                       format={this.state.format}
@@ -789,7 +780,7 @@ class Import extends React.Component<any, ImportState> {
     }
 
     onStepChange(stepIndex: number) {
-        if (stepIndex === 4 &&
+        if (stepIndex === 3 &&
             (this.state.submitErrors && this.state.submitErrors.length === 0) &&
             (!this.state.submitWait) &&
             (!this.state.submitSuccess)) {
@@ -886,7 +877,7 @@ class Import extends React.Component<any, ImportState> {
                 break;
             case  'Ready':
                 this.setState({
-                    postUploadStep: 4,
+                    postUploadStep: 3,
                     uploadWait: false,
                     uploadProcessingWait: false,
                     uploadWarnings: json.warnings || [],

@@ -11,7 +11,7 @@ import celery
 from .codes import FileProcessingCodes
 from .importer.table import ImportFileHandler
 from .models import Import
-from .utilities import (build_err_payload, build_step4_ui_json, compute_required_context,
+from .utilities import (build_err_payload, build_summary_json, compute_required_context,
                         EDDImportError, ErrorAggregator, MTYPE_GROUP_TO_CLASS, verify_assay_times)
 from edd.notify.backend import RedisBroker
 from edd.utilities import JSONEncoder
@@ -236,8 +236,8 @@ def build_ui_payload_from_cache(import_pk, user_pk):
                                               assay_time_meta_pk)
     required_inputs = compute_required_context(category, import_.compartment, parser,
                                                assay_pk_to_time)
-    payload = build_step4_ui_json(import_, required_inputs, import_records, unique_mtypes,
-                                  hour_units.pk)
+    payload = build_summary_json(import_, required_inputs, import_records, unique_mtypes,
+                                 hour_units.pk)
     notify = RedisBroker(user)
     file_name = import_.file.filename
     notify.notify(f'Your file "{file_name}" is ready to import', tags='import-status-update',
