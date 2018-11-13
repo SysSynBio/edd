@@ -17,7 +17,6 @@ from rest_framework.test import APITestCase
 
 from . import factory
 from . test_utils import CONTEXT_PATH
-from ..models import Import
 from edd.rest.tests import EddApiTestCaseMixin
 from edd.utilities import JSONDecoder
 from main import models as edd_models
