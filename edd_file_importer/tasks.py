@@ -14,7 +14,6 @@ from .models import Import
 from .utilities import (build_err_payload, build_summary_json, compute_required_context,
                         EDDImportError, ErrorAggregator, MTYPE_GROUP_TO_CLASS, verify_assay_times)
 from edd.notify.backend import RedisBroker
-from edd.utilities import JSONEncoder
 from main.importer.table import ImportBroker
 from main.models import MeasurementUnit, MetadataType
 from main.tasks import import_table_task

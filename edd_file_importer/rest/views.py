@@ -2,7 +2,6 @@
 import celery
 import json
 import logging
-import traceback
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
@@ -17,7 +16,7 @@ from rest_framework import mixins, viewsets
 
 from .serializers import ImportSerializer, ImportCategorySerializer
 from ..models import Import, ImportCategory, ImportFormat, ImportFile
-from ..tasks import attempt_status_transition, process_import_file
+from ..tasks import attempt_status_transition, build_ui_payload_from_cache, process_import_file
 from ..utilities import build_err_payload, CommunicationError, EDDImportError
 from main.models import Measurement, MeasurementUnit, Study, StudyPermission
 from main.views import load_study
@@ -252,7 +251,7 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin, mixins.Upd
             # but needs less code and also skips potentially-expensive line/assay lookup and
             # external ID verification
             logger.debug('Building UI payload from cache')
-            self._build_ui_payload_from_cache.delay(import_, user_pk)
+            build_ui_payload_from_cache.delay(import_, user_pk)
             return JsonResponse({}, status=codes.accepted)
 
         except ObjectDoesNotExist as o:
@@ -279,8 +278,7 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin, mixins.Upd
             return None
 
         msg = 'Modifications are not allowed once imports reach the {import_.status} state'
-        return _build_simple_err_response('Invalid state', msg,
-                                               codes.internal_server_error)
+        return _build_simple_err_response('Invalid state', msg, codes.internal_server_error)
 
     def _reprocess_file(self, import_, request, reupload, user_pk):
         process_file = reupload or self._test_context_changed(request, import_)

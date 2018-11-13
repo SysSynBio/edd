@@ -1,6 +1,5 @@
 # coding: utf-8
 import logging
-import json
 from collections import defaultdict
 
 from .codes import get_ui_summary, FileProcessingCodes
