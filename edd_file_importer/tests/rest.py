@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import copy
 import json
 import logging
 import os
@@ -59,8 +60,7 @@ class ImportPatchTests(EddApiTestCaseMixin, APITestCase):
         cls.write_user = User.objects.create(username='study.writer.user')
         cls.unprivileged_user = User.objects.create(username='unprivileged_user')
 
-        # create a study only writeable by a single user
-        cls.user_write_study = edd_models.Study.objects.get(pk=10)
+        cls.user_write_study = main_factory.StudyFactory(name='User-writeable study')
         permissions = cls.user_write_study.userpermission_set
         permissions.update_or_create(permission_type=edd_models.UserPermission.WRITE,
                                      user=cls.write_user)
@@ -73,6 +73,10 @@ class ImportPatchTests(EddApiTestCaseMixin, APITestCase):
         )
 
     def test_modify_privileges(self):
+        # TODO: eventually add more detail to permissions checks here.  Requires a lot more
+        # complexity in the fixture, and we should be covered by more rigorous checks on
+        # uploads
+
         # send the submit request to actually perform the import
         self.client.force_login(ImportPatchTests.unprivileged_user)
         response = self.client.patch(
@@ -85,13 +89,16 @@ class ImportPatchTests(EddApiTestCaseMixin, APITestCase):
     def test_final_submit(self):
         """
         Does a simple test that submits a "Ready" import defined in the fixture
-        :return:
         """
+        # load expected Redis context data from file
         with factory.load_test_file(CONTEXT_PATH) as file:
             context_str = file.read()
 
+        # mock the notification broker
         with patch('edd_file_importer.tasks.RedisBroker') as MockNotify:
             notify = MockNotify.return_value
+
+            # mock the import broker
             with patch('edd_file_importer.rest.views.ImportBroker') as MockBroker:
                 broker = MockBroker.return_value
                 broker.load_context.return_value = context_str
@@ -104,7 +111,7 @@ class ImportPatchTests(EddApiTestCaseMixin, APITestCase):
                 # mock the method that executes the final celery chain to performs the import
                 with patch('celery.chain.delay') as submit_import:
 
-                    # send the submit request to actually perform the import
+                    # send the request to actually submit the import
                     self.client.force_login(self.write_user)
                     response = self.client.patch(
                         ImportPatchTests.url,
@@ -133,22 +140,18 @@ class ImportPatchTests(EddApiTestCaseMixin, APITestCase):
 
 class ImportUploadTests(EddApiTestCaseMixin, APITestCase):
     """
-    Sets of tests to exercise the Experiment Description view.
+    Sets of tests to exercise the import upload step
     """
-    # TODO: remove "basic" fixture if unused
     fixtures = ['edd/rest/study_permissions']
 
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
 
-        # TODO: clean up unused models
+        # get models from the fixture for studies with varying permission levels
         User = get_user_model()
-
-        cls.grp_read_study = edd_models.Study.objects.get(pk=23)  # "Group read study"
         cls.superuser = User.objects.get(username='superuser')
         cls.staffuser = User.objects.get(username='staff.user')
-
         # not doing this in fixture because it requires knowing the IDs, which can vary per deploy
         cls.staffuser.user_permissions.add(
             *load_permissions(edd_models.Study, 'add_study', 'change_study', 'delete_study')
@@ -158,58 +161,53 @@ class ImportUploadTests(EddApiTestCaseMixin, APITestCase):
         cls.write_user = User.objects.get(username='study.writer.user')
         cls.write_group_user = User.objects.get(username='study.writer.group.user')
 
-        # create a study only writeable by a single user
+        # create another study with write permissions by only a single user
         cls.user_write_study = main_factory.StudyFactory(name='User-writeable study')
         permissions = cls.user_write_study.userpermission_set
         permissions.update_or_create(permission_type=edd_models.UserPermission.WRITE,
                                      user=cls.write_user)
-        edd_models.Line.objects.create(name='A', study=cls.user_write_study)
-        edd_models.Line.objects.create(name='B', study=cls.user_write_study)
-
-        # get or create some commonly-used measurement types referenced in the test,
-        # but not included in the bootstrap fixture.
-        edd_models.Metabolite.objects.get_or_create(type_name='R-Mevalonate', type_group='m',
-                                                    molecular_formula='C6H11O4', molar_mass=0,
-                                                    charge=0, pubchem_cid=5288798)
-        edd_models.Metabolite.objects.get_or_create(type_name='Limonene', type_group='m',
-                                                    molecular_formula='C10H16',
-                                                    molar_mass=136.24000, charge=0,
-                                                    pubchem_cid=440917)
 
     def setUp(self):
         super().setUp()
 
-    def _upload_import_file(self, file_path, form_data, user, exp_status=codes.accepted,
+    def _upload_import_file(self, study_pk, file_path, form_data, user, exp_status=codes.accepted,
                             initial_upload=True):
         upload = self._build_file_upload(file_path)
 
-        self.client.force_login(user)
+        if user:
+            self.client.force_login(user)
+        else:
+            self.client.logout()
 
+        # mock the celery task so we're testing just the view
         with patch('edd_file_importer.tasks.process_import_file.delay') as mock_task:
-            with patch('celery.result.AsyncResult') as MockResult:
-                mock_result = MockResult.return_value
-                mock_result.id = '00000000-0000-0000-0000-000000000001'
-                mock_task.return_value = mock_result
 
+            # mock the cache so we can test writes to it
+            with patch('edd_file_importer.tasks.RedisBroker') as MockNotify:
+                notify = MockNotify.return_value
                 url = reverse('edd.rest:study-imports-list',
-                              kwargs={'study_pk': self.user_write_study.pk})
+                              kwargs={'study_pk': study_pk})
                 response = self.client.post(
                     url,
                     data={'file': upload, **form_data},
                     format='multipart',
                 )
 
-                # test the results of the upload request...this is normally the synchronous part
+                # test the results of the synchronous upload request
                 self.assertEqual(response.status_code, exp_status)
                 response_json = json.loads(response.content, cls=JSONDecoder)
-                print(response_json)  # TODO: remove
 
+                # if upload was accepted, test that the file processing task was called as
+                # expected
                 if response.status_code == codes.accepted:
                     self.assertEqual(response_json['uuid'], form_data['uuid'])
                     import_pk = response_json['pk']
                     requested_status = form_data.get('status', None)
                     mock_task.assert_called_with(import_pk, user.pk, requested_status, 'utf-8',
                                                  initial_upload=initial_upload)
+                else:
+                    mock_task.assert_not_called()
+                notify.notify.assert_not_called()
         return response_json
 
     def _build_file_upload(self, file_path):
@@ -219,30 +217,47 @@ class ImportUploadTests(EddApiTestCaseMixin, APITestCase):
         upload.content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         return upload
 
-    def test_create_privileges(self):
-        # load & process a generic-format version of the tutorial FBA OD data
-        file_path = factory.test_file_path('generic_import', 'FBA-OD-generic.xlsx')
-        with patch('edd_file_importer.tasks.RedisBroker') as MockNotify:
-            notify = MockNotify.return_value
-            self._upload_import_file(file_path, _FBA_UPLOAD_PAYLOAD,
-                                     ImportUploadTests.unprivileged_user,
-                                     codes.not_found)
-            notify.notify.assert_not_called()
-
-    def test_file_upload(self):
+    def test_upload_failure(self):
         """
-        Tests successful upload of a valid file, corresponding to step 2 of the import
+        Tests that disallowed users aren't able to create an import on others' studies
         """
-
-        # load & process a generic-format version of the tutorial FBA OD data
         file_path = factory.test_file_path('generic_import', 'FBA-OD-generic.xlsx')
-        with patch('edd_file_importer.tasks.RedisBroker') as MockNotify:
-            notify = MockNotify.return_value
-            self._upload_import_file(file_path, _FBA_UPLOAD_PAYLOAD, ImportUploadTests.write_user,
-                                     codes.accepted)
-            notify.notify.assert_not_called()
+        study_pk = self.user_write_study.pk
+
+        # use an unprivileged account to upload a file (should fail)
+        disallowed_users = {
+            None: study_pk,
+            ImportUploadTests.unprivileged_user: study_pk,
+            ImportUploadTests.readonly_user: study_pk,
+            ImportUploadTests.staffuser: study_pk,
+        }
+        for user, study_pk in disallowed_users.items():
+            exp_status = codes.not_found if user else codes.forbidden
+            self._upload_import_file(study_pk, file_path, _FBA_UPLOAD_PAYLOAD, user, exp_status)
+
+    def test_upload_success(self):
+        """
+        Tests that allowed users are able to create an import on studies they have access to
+        """
+        file_path = factory.test_file_path('generic_import', 'FBA-OD-generic.xlsx')
+        allowed_users = {
+            ImportUploadTests.write_group_user: 22,  # group write study
+            ImportUploadTests.write_user: ImportUploadTests.user_write_study.pk,
+            ImportUploadTests.superuser: ImportUploadTests.user_write_study.pk,
+            ImportUploadTests.unprivileged_user: 21,  # everyone write study
+        }
+
+        for user, study_pk in allowed_users.items():
+            # create a new UUID for each import so they don't conflict
+            payload = copy.copy(_FBA_UPLOAD_PAYLOAD)
+            payload['uuid'] = str(uuid.uuid4())
+
+            self._upload_import_file(study_pk, file_path, payload, user, codes.accepted)
 
     def test_categories(self):
+        """
+        Tests the categories returned by the rest back end
+        """
         url = reverse('edd.rest:import_categories-list')
         self.client.force_login(ImportUploadTests.unprivileged_user)
         response = self.client.get(url, data={'ordering': 'display_order'})

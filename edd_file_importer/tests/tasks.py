@@ -1,6 +1,5 @@
 # coding: utf-8
 
-
 import json
 import os
 import uuid
@@ -35,6 +34,9 @@ _TEST_FILES_DIR = os.path.join(os.path.dirname(
 # use example files as the basis for DB records created by the fixture
 @override_settings(MEDIA_ROOT=_TEST_FILES_DIR)
 class FileProcessingTests(EddApiTestCaseMixin, ImportTestsMixin, APITestCase):
+    """
+    Tests the file processing step of the import (step 2), as well as single-request imports
+    """
     fixtures = [
         'edd_file_importer/import_models',
     ]
@@ -67,14 +69,13 @@ class FileProcessingTests(EddApiTestCaseMixin, ImportTestsMixin, APITestCase):
                                          ready_msg, page_count=2,)
 
     def _test_successful_processing(self, import_pk, context_path, series_path,
-                                    notify_path, ready_msg, page_count, submitted_msg=None):
+                                    ready_payload_path, ready_msg, page_count, submitted_msg=None):
         # mock notifications so we can tests for required ones, as well as avoid actually
         # sending any
         with patch('edd_file_importer.tasks.RedisBroker') as MockNotification:
             notify = MockNotification.return_value
 
-            # mock the Redis broker so that stored data is just cached in memory during the
-            # test
+            # mock the Redis broker so we can test cache entries created by the task
             with patch('edd_file_importer.importer.table.ImportBroker') as MockBroker:
                 broker = MockBroker.return_value
 
@@ -83,70 +84,90 @@ class FileProcessingTests(EddApiTestCaseMixin, ImportTestsMixin, APITestCase):
                 write_user = FileProcessingTests.write_user
                 requested_status = Import.Status.SUBMITTED if submitted_msg else None
 
-                # run the celery task synchronously in the test so there's no need to have Celery
-                # itself running
-                with patch('celery.chain.delay') as mock_delay:
-                    with patch('celery.chain.apply') as mock_apply:
-                        # mock_chain = MockChain.return_value
-                        tasks.process_import_file(import_pk, write_user.pk, requested_status,
-                                                  'utf-8', True)
+                # celery chain, which may be called to invoke the legacy import task
+                with patch('celery.chain.apply') as mock_apply:
 
-                        with factory.load_test_file(context_path, 'rt') as context_file:
-                            context_str = context_file.read()
-                            import_uuid = uuid.UUID(json.loads(context_str)['importId'])
+                    # process the file synchronously to stay within this DB transaction
+                    tasks.process_import_file(import_pk, write_user.pk, requested_status,
+                                              'utf-8', True)
 
-                        # load series data, slicing it up into pages to match settings
-                        series_pages = self._slice_series_pages(series_path, page_count,
-                                                                settings.EDD_IMPORT_PAGE_SIZE)
+                    # load expected context and series cache data from file
+                    import_uuid, context_str = self._load_context_file(context_path)
+                    series_pages = self._slice_series_pages(series_path, page_count,
+                                                            settings.EDD_IMPORT_PAGE_SIZE)
+                    # TODO: remove
+                    print(f'series_pages ({len(series_pages)}): {series_pages}')
 
-                        print(f'series_pages ({len(series_pages)}): {series_pages}')
+                    # test that expected cache entries were made
+                    broker.clear_pages.assert_not_called()
+                    broker.set_context.assert_called_once_with(import_uuid, context_str)
+                    broker.add_page.assert_has_calls([call(import_uuid, page) for page in
+                                                      series_pages])
 
-                        broker.clear_pages.assert_not_called()
-                        broker.set_context.assert_called_once_with(import_uuid, context_str)
-                        broker.add_page.assert_has_calls([call(import_uuid, page) for page in
-                                                          series_pages])
+                    self._test_success_notification(import_pk, import_uuid, notify,
+                                                    mock_apply, ready_payload_path, submitted_msg,
+                                                    ready_msg)
 
-                        # convert UUID strings to UUIDs for comparison
-                        ready_payload_json = factory.load_test_json(notify_path)
-                        ready_payload_json['uuid'] = uuid.UUID(ready_payload_json['uuid'])
-                        for type_id, type in ready_payload_json['types'].items():
-                            uuid_str = ready_payload_json['types'][type_id]['uuid']
-                            ready_payload_json['types'][type_id]['uuid'] = uuid.UUID(uuid_str)
+    def _test_success_notification(self, import_pk, import_uuid, notify, mock_apply,
+                                   ready_payload_path, submitted_msg, ready_msg):
+        """
+        Tests for expected notifications from successfully processing a user-uploaded file. Note
+        that this may include fully processing the import, if requested.
+        """
+        # load expected notification payload from file
+        ready_payload_json = self._load_ready_payload_json(ready_payload_path)
 
-                        # test expected notification payload
-                        if not submitted_msg:
-                            # ready notification
-                            notify.notify.assert_called_once_with(
-                                ready_msg,
-                                tags=['import-status-update'],
-                                payload=ready_payload_json,
-                            )
-                            mock_apply.assert_not_called()
-                            mock_delay.assert_not_called()
-                        else:
-                            mock_delay.assert_not_called()
-                            mock_apply.assert_called_once()
-                            self.maxDiff = None
-                            notify.notify.assert_has_calls(
-                                # ready notification
-                                call(
-                                    ready_msg,
-                                    tags=['import-status-update'],
-                                    payload=ready_payload_json,
-                                ),
-                                # submitted notification
-                                call(
-                                    submitted_msg,
-                                    tags=['import-status-update'],
-                                    payload={
-                                        'status': 'Submitted',
-                                        'pk': import_pk,
-                                        'uuid': import_uuid
-                                    }
-                                ),
-                                # TODO: after replacing background task, also check for completion
-                                # notification
-                            )
+        # test expected notification payloads, depending on whether the import was
+        # submitted, or just uploaded and initially processed
+        if not submitted_msg:
+            # ready notification
+            notify.notify.assert_called_once_with(
+                ready_msg,
+                tags=['import-status-update'],
+                payload=ready_payload_json,
+            )
+            mock_apply.assert_not_called()
+        else:
+            mock_apply.assert_called_once()
+            notify.notify.assert_has_calls(
+                # ready notification
+                call(
+                    ready_msg,
+                    tags=['import-status-update'],
+                    payload=ready_payload_json,
+                ),
+                # submitted notification
+                call(
+                    submitted_msg,
+                    tags=['import-status-update'],
+                    payload={
+                        'status': 'Submitted',
+                        'pk': import_pk,
+                        'uuid': import_uuid
+                    }
+                ),
+                # TODO: after replacing the legacy background task, also check for completion
+                # notification. For now, because of the way we're wrapping the legacy task,
+                # the submission notification doesn't get generated during the test.  It should be
+                # integrated into the replacement task, and then tested here
+            )
+
+    def _load_ready_payload_json(self, notify_path):
+        ready_payload_json = factory.load_test_json(notify_path)
+
+        # convert UUID's stored as strings into UUID's for comparison with actual cache method
+        # calls
+        ready_payload_json['uuid'] = uuid.UUID(ready_payload_json['uuid'])
+        for type_id, type in ready_payload_json['types'].items():
+            uuid_str = ready_payload_json['types'][type_id]['uuid']
+            ready_payload_json['types'][type_id]['uuid'] = uuid.UUID(uuid_str)
+        return ready_payload_json
+
+    def _load_context_file(self, context_path):
+        with factory.load_test_file(context_path, 'rt') as context_file:
+            context_str = context_file.read()
+            import_uuid = uuid.UUID(json.loads(context_str)['importId'])
+        return import_uuid, context_str
 
     # future proof the test against local settings changes
     @override_settings(EDD_IMPORT_PAGE_SIZE=1, EDD_IMPORT_CACHE_LENGTH=5)
@@ -156,7 +177,7 @@ class FileProcessingTests(EddApiTestCaseMixin, ImportTestsMixin, APITestCase):
         _test_successful_processing(), except that we also expect the import to be submitted for
         final processing.
         """
-        ready_msg = 'Your import for file "FBA-OD-genenic.xlsx" is ready'
+        ready_msg = 'Your import for file "FBA-OD-generic.xlsx" is ready'
         submitted_msg = 'Your import for file "FBA-OD-generic.xlsx" is submitted'
         notify_path = 'generic_import/FBA-OD-generic.xlsx.ws-ready-payload.json'
         self._test_successful_processing(13, CONTEXT_PATH, SERIES_PATH, notify_path,

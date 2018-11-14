@@ -205,7 +205,6 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin, mixins.Upd
                 status=codes.internal_server_error,
                 detail=str(r))
 
-    # TODO: simplify
     def partial_update(self, request, *args, **kwargs):
         """
         Handles HTTP PATCH requests, e.g. to adjust import parameters during multiple steps of
@@ -221,7 +220,7 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin, mixins.Upd
         load_study(self.request, pk=study_pk, permission_type=StudyPermission.CAN_EDIT)
 
         try:
-            reupload = 'file' in request.data
+            re_upload = 'file' in request.data
             import_ = models.Import.objects.get(pk=import_pk)
 
             # reject changes if the import is already submitted
@@ -230,14 +229,14 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin, mixins.Upd
                 return response
 
             # if file is changed or content needs post-processing, (re)parse and (re)process it
-            response = self._reprocess_file(import_, request, reupload, user_pk)
+            response = self._reprocess_file(import_, request, re_upload, user_pk)
             if response:
                 return response
 
             # otherwise, save changes and determine any additional missing inputs
             self._save_context(import_, request, study_pk, import_pk, user_pk)
 
-            # if client requested a status transition, verify it and try to fulfill
+            # if client requested a status transition, verify it and try to fulfill.
             # raises EddImportError if unable to fulfill a request
             requested_status = request.data.get('status', None)
             if requested_status:

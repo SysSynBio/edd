@@ -104,14 +104,14 @@ class ImportFileHandler(ErrorAggregator):
         self.latest_status = None
         self.notify = notify
 
-    # TODO: simplify
     def process_file(self, initial_upload, encoding='utf8'):
         """
         Performs initial processing for an import file uploaded to EDD.  The main purpose of this
         method is to parse and resolve the content of the file against data in EDD's database and
         other partner databases, e.g. Uniprot, PubChem, etc. When this method runs to completion,
-        the file content has been parsed & staged in the database along with user entries that
-        control import context. This method will either return, or raise an EDDImportError
+        the file content has been parsed & staged in the database and Redis cache, along with user
+        entries that control import context. This method will either return, or raise an
+        EDDImportError.
 
         Basic steps of the process are:
         1.  Parse the file
@@ -119,44 +119,21 @@ class ImportFileHandler(ErrorAggregator):
         3.  Resolve MeasurementUnit & MeasurementType and identifiers
         4.  Identify any missing input required for import completion
         5.  Cache the parsed data in Redis for imminent use
-        6.  Build JSON for display in the UI
-
-        resolve external identifiers
-        1) If configurable / enforceable in EDD, enforce format for external ID's
-        2) units, internal measurement types
-        3) external databases (ICE, Uniprot, PubChem)
+        6.  Build summary JSON for display in the UI
         """
         # TODO: as an enhancement, compute & use file hashes to prevent re-upload
+
+        cache = self.cache
+        import_ = self.cache.import_
+        file_name = self.import_.file.filename
+
         ###########################################################################################
         # Parse the file, raising an Exception if any parse / initial verification errors occur
         ###########################################################################################
-        cache = self.cache
-        import_ = self.cache.import_
-        notify = self.notify
-        file = self.import_.file.file
-        mime_type = self.import_.file.mime_type
-        file_extension = guess_extension(mime_type)
-        study = import_.study
-        file_name = self.import_.file.filename
-
-        logger.info(f'Parsing import file {file_name} for study {study.pk} ({study.slug}), '
-                    f'user {cache.user.username}')
-
-        if file_extension not in (ImportFileTypeFlags.EXCEL, ImportFileTypeFlags.CSV):
-            self.raise_error(FileParseCodes.UNSUPPORTED_FILE_TYPE, occurrence=file_extension)
-
-        parser = cache.parser
-        if file_extension == ImportFileTypeFlags.EXCEL:
-            parser.parse_excel(file)
-        else:
-            reader = codecs.getreader(encoding)
-            rows = reader(file).readlines()
-            parser.parse_csv(rows)
+        parser = self._parse_file(encoding)
 
         # if file format is unknown and parsing so far has only returned row/column data to the UI
-        # for display, then just cache the inputs and return. arguably we don't have to even upload
-        # the file until later, but the user has entered enough data to make restarting an
-        # annoyance. Also this way we have a record for support purposes.
+        # for display, then just cache the inputs and return
         if not import_.file_format:
             self._notify_format_required(parser, import_, file_name)
             return Import.Status.CREATED
@@ -165,17 +142,7 @@ class ImportFileHandler(ErrorAggregator):
         # Resolve line / assay names from file to the study
         ###########################################################################################
         logger.info('Resolving identifiers against EDD and reference databases')
-        # first try assay names, since some workflows will use them to resolve times (e.g.
-        # Proteomics)
-        line_or_assay_names = parser.unique_line_or_assay_names
-
-        logger.info(f'Searching for {len(line_or_assay_names)} study internals')
-        matched_assays = self._verify_line_or_assay_match(line_or_assay_names, lines=False)
-        if not matched_assays:
-            matched_lines = self._verify_line_or_assay_match(line_or_assay_names, lines=True)
-            if not matched_lines:
-                self.add_errors(FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS,
-                                occurrences=line_or_assay_names)
+        matched_assays = self._verify_line_or_assay_names(parser)
 
         ###########################################################################################
         # Resolve MeasurementType and MeasurementUnit identifiers from local and/or remote sources
@@ -187,12 +154,10 @@ class ImportFileHandler(ErrorAggregator):
         ###########################################################################################
         # Determine any additional data not present in the file that must be entered by the user
         ###########################################################################################
-        # Detect preexisting assay time metadata, if present. E.g. in the proteomics workflow
         assay_pk_to_time = False
         if matched_assays:
-            assay_pks = self.cache.loa_name_to_pk.values()
-            assay_time_pk = self.cache.assay_time_metatype.pk
-            assay_pk_to_time = verify_assay_times(self, assay_pks, parser, assay_time_pk)
+            # Detect preexisting assay time metadata, if present. E.g. in the proteomics workflow
+            assay_pk_to_time = self._verify_assay_times(parser)
 
         compartment = cache.import_.compartment
         category = cache.import_.category
@@ -205,8 +170,7 @@ class ImportFileHandler(ErrorAggregator):
         import_.status = Import.Status.READY if not required_inputs else Import.Status.RESOLVED
         import_.save()
 
-        # cache the import in redis, but don't actually trigger the import yet...that's
-        # typically the job of import step 5
+        # cache the import in redis for later use
         import_records = self.cache_resolved_import(import_.uuid, parser, matched_assays,
                                                     initial_upload)
 
@@ -214,8 +178,36 @@ class ImportFileHandler(ErrorAggregator):
         unique_mtypes = cache.mtype_name_to_type.values()
         payload = build_summary_json(import_, required_inputs, import_records, unique_mtypes,
                                      import_.x_units_id)
-        notify.notify(f'Your file "{file_name}" is ready to import', tags=['import-status-update'],
-                      payload=payload)
+        self.notify.notify(f'Your file "{file_name}" is ready to import',
+                           tags=['import-status-update'],
+                           payload=payload)
+
+    def _parse_file(self, encoding):
+        file = self.import_.file.file
+        mime_type = self.import_.file.mime_type
+        file_extension = guess_extension(mime_type)
+        file_name = self.import_.file.filename
+        study = self.import_.study
+        logger.info(f'Parsing import file {file_name} for study {study.pk} ({study.slug}), '
+                    f'user {self.cache.user.username}')
+
+        if file_extension not in (ImportFileTypeFlags.EXCEL, ImportFileTypeFlags.CSV):
+            self.raise_error(FileParseCodes.UNSUPPORTED_FILE_TYPE, occurrence=file_extension)
+
+        parser = self.cache.parser
+        if file_extension == ImportFileTypeFlags.EXCEL:
+            parser.parse_excel(file)
+        else:
+            reader = codecs.getreader(encoding)
+            rows = reader(file).readlines()
+            parser.parse_csv(rows)
+
+        return parser
+
+    def _verify_assay_times(self, parser):
+        assay_pks = self.cache.loa_name_to_pk.values()
+        assay_time_pk = self.cache.assay_time_metatype.pk
+        return verify_assay_times(self, assay_pks, parser, assay_time_pk)
 
     def _notify_format_required(self, parser, import_, file_name):
         payload = {
@@ -226,6 +218,20 @@ class ImportFileHandler(ErrorAggregator):
         message = (f'Your import file, "{file_name}" has been saved, but file format input '
                    f'is needed to process it')
         self.notify.notify(message, tags=('import-status-update',), payload=payload)
+
+    def _verify_line_or_assay_names(self, parser):
+        line_or_assay_names = parser.unique_line_or_assay_names
+        logger.info(f'Searching for {len(line_or_assay_names)} study internals')
+
+        # first try assay names, since some workflows will use them to resolve times (e.g.
+        # Proteomics)
+        matched_assays = self._verify_line_or_assay_match(line_or_assay_names, lines=False)
+        if not matched_assays:
+            matched_lines = self._verify_line_or_assay_match(line_or_assay_names, lines=True)
+            if not matched_lines:
+                self.add_errors(FileProcessingCodes.UNNMATCHED_STUDY_INTERNALS,
+                                occurrences=line_or_assay_names)
+        return matched_assays
 
     def _verify_line_or_assay_match(self, line_or_assay_names, lines):
         """
@@ -276,10 +282,7 @@ class ImportFileHandler(ErrorAggregator):
         return bool(found_count)
 
     def _verify_measurement_types(self, parser):
-        # TODO: in some cases, we can significantly improve user experience here by aggregating
-        # lookup errors... though at the risk of more expensive failures.. maybe a good compromise
-        # is to wait for a small handful of errors before failing?
-        # TODO: also current model implementations don't allow us to distinguish between different
+        # TODO: current model implementations don't allow us to distinguish between different
         # types of errors in linked applications (e.g. connection errors vs permissions errors
         # vs identifier verified not found...consider adding complexity / transparency)
 
@@ -300,6 +303,9 @@ class ImportFileHandler(ErrorAggregator):
                 logger.exception(f'Exception verifying MeasurementType id {mtype_id}')
                 err_type = MTYPE_GROUP_TO_ID_ERR.get(mtype_group)
                 self.add_error(err_type, occurrence=mtype_id)
+
+                # to maintain responsiveness, stop looking up measurement types after a reasonable
+                # number of errors
                 err_count += 1
                 if err_count == err_limit:
                     break
@@ -343,7 +349,6 @@ class ImportFileHandler(ErrorAggregator):
             mtype_class = MTYPE_GROUP_TO_CLASS[mtype_group]
             return mtype_class.load_or_create(mtype_id, self.cache.user)
 
-    # TODO: reduce complexity
     def cache_resolved_import(self, import_id, parser, matched_assays, initial_upload):
         """
         Converts MeasurementParseRecords into JSON to send to the legacy import Celery task.
