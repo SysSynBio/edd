@@ -255,7 +255,7 @@ class ImportFileHandler(ErrorAggregator):
         if found_count:
             model = 'line' if lines else 'assay'
             input_count = len(line_or_assay_names)
-            logger.debug(f'Matched {found_count} of {input_count} {model} names '
+            logger.info(f'Matched {found_count} of {input_count} {model} names '
                          f'from the file')
             context.loa_name_to_pk = {result['name']: result['pk'] for result in qs}
 
@@ -272,11 +272,9 @@ class ImportFileHandler(ErrorAggregator):
                                     .order_by('name')
                                     .values_list('name', flat=True)
                                 )
-                    logger.debug(names_qs)  # TODO: remove
                     names = [name for name in names_qs]
                     err_code = (FileProcessingCodes.DUPLICATE_LINE_NAME if lines else
                                 FileProcessingCodes.DUPLICATE_ASSAY_NAME)
-                logger.debug(f'raising errors: {err_code}: {names})')  # TODO: remove
                 self.add_errors(err_code, occurrences=names)
 
         return bool(found_count)
@@ -290,8 +288,8 @@ class ImportFileHandler(ErrorAggregator):
         mtype_group = category.default_mtype_group
         err_limit = getattr(settings, 'EDD_IMPORT_LOOKUP_ERR_LIMIT', 0)
         err_count = 0
-
-        types = f': {parser.unique_mtypes}' if len(parser.unique_mtypes) <= 10 else ''
+        types_count = len(parser.unique_mtypes)
+        types = f': {parser.unique_mtypes}' if types_count <= 10 else f'{types_count} types'
         logger.debug(f'Verifying MeasurementTypes for category "{category.name}"=> '
                      f'type "{mtype_group}"{types}')
 
@@ -439,9 +437,6 @@ class ImportFileHandler(ErrorAggregator):
         }
 
         broker.set_context(import_id, json.dumps(context))
-
-        print('Context: ')
-        print(json.dumps(context))
 
         for page in import_cache_pages:
             broker.add_page(import_id, json.dumps(page))

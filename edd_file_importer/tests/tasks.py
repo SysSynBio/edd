@@ -66,7 +66,7 @@ class FileProcessingTests(EddApiTestCaseMixin, ImportTestsMixin, APITestCase):
         notify_path = 'generic_import/FBA-OD-generic.xlsx.ws-ready-payload.json'
         ready_msg = 'Your file "FBA-OD-generic.xlsx" is ready to import'
         self._test_successful_processing(13, CONTEXT_PATH, SERIES_PATH, notify_path,
-                                         ready_msg, page_count=2,)
+                                         ready_msg, page_count=2)
 
     def _test_successful_processing(self, import_pk, context_path, series_path,
                                     ready_payload_path, ready_msg, page_count, submitted_msg=None):
@@ -95,8 +95,6 @@ class FileProcessingTests(EddApiTestCaseMixin, ImportTestsMixin, APITestCase):
                     import_uuid, context_str = self._load_context_file(context_path)
                     series_pages = self._slice_series_pages(series_path, page_count,
                                                             settings.EDD_IMPORT_PAGE_SIZE)
-                    # TODO: remove
-                    print(f'series_pages ({len(series_pages)}): {series_pages}')
 
                     # test that expected cache entries were made
                     broker.clear_pages.assert_not_called()
@@ -128,29 +126,58 @@ class FileProcessingTests(EddApiTestCaseMixin, ImportTestsMixin, APITestCase):
             )
             mock_apply.assert_not_called()
         else:
-            mock_apply.assert_called_once()
-            notify.notify.assert_has_calls(
-                # ready notification
-                call(
-                    ready_msg,
-                    tags=['import-status-update'],
-                    payload=ready_payload_json,
-                ),
-                # submitted notification
-                call(
-                    submitted_msg,
-                    tags=['import-status-update'],
-                    payload={
+            # manually deconstruct test args and test those...for some reason just using
+            # assert_has_calls() doesn't seem to work here...possible dict order, but other case
+            # above works with the same data & apparent same code path...??
+
+            # test ready notification
+            # call(
+            #     ready_msg,
+            #     tags=['import-status-update'],
+            #     payload=ready_payload_json
+            # ),
+            args, kwargs = notify.notify.call_args_list[0]
+            self.assertEqual(args[0], ready_msg)
+            self.assertEqual(kwargs['tags'], ['import-status-update'])
+            self.assertDictEqual(kwargs['payload'], ready_payload_json)
+            self.assertEqual(kwargs['payload'], ready_payload_json)
+            self.assertEqual(len(args), 1)
+            self.assertEqual(len(kwargs), 2)
+
+            # test submitted notification
+            # call(
+            #     submitted_msg,
+            #     tags=['import-status-update'],
+            #     payload={
+            #         'status': 'Submitted',
+            #         'pk': import_pk,
+            #         'uuid': import_uuid
+            #     }
+            # ),
+            args, kwargs = notify.notify.call_args_list[1]
+            self.assertEqual(args[0], submitted_msg)
+            self.assertEqual(kwargs['tags'], ['import-status-update'])
+            self.assertDictEqual(kwargs['payload'], {
                         'status': 'Submitted',
                         'pk': import_pk,
                         'uuid': import_uuid
-                    }
-                ),
-                # TODO: after replacing the legacy background task, also check for completion
-                # notification. For now, because of the way we're wrapping the legacy task,
-                # the submission notification doesn't get generated during the test.  It should be
-                # integrated into the replacement task, and then tested here
-            )
+                    })
+            self.assertEqual(kwargs['payload'], {
+                'status': 'Submitted',
+                'pk': import_pk,
+                'uuid': import_uuid
+            })
+            self.assertEqual(len(args), 1)
+            self.assertEqual(len(kwargs), 2)
+
+            self.assertEqual(len(notify.notify.call_args_list), 2)
+
+            # TODO: after replacing the legacy background task, also check for
+            # processing/completion
+            # notifications. For now, because of the way we're wrapping the legacy task,
+            # the submission notification doesn't get generated during the test.  It should be
+            # integrated into the replacement task, and then tested here
+            mock_apply.assert_called_once()
 
     def _load_ready_payload_json(self, notify_path):
         ready_payload_json = factory.load_test_json(notify_path)
@@ -158,9 +185,8 @@ class FileProcessingTests(EddApiTestCaseMixin, ImportTestsMixin, APITestCase):
         # convert UUID's stored as strings into UUID's for comparison with actual cache method
         # calls
         ready_payload_json['uuid'] = uuid.UUID(ready_payload_json['uuid'])
-        for type_id, type in ready_payload_json['types'].items():
-            uuid_str = ready_payload_json['types'][type_id]['uuid']
-            ready_payload_json['types'][type_id]['uuid'] = uuid.UUID(uuid_str)
+        for type in ready_payload_json['types'].values():
+            type['uuid'] = uuid.UUID(type['uuid'])
         return ready_payload_json
 
     def _load_context_file(self, context_path):
@@ -177,7 +203,7 @@ class FileProcessingTests(EddApiTestCaseMixin, ImportTestsMixin, APITestCase):
         _test_successful_processing(), except that we also expect the import to be submitted for
         final processing.
         """
-        ready_msg = 'Your import for file "FBA-OD-generic.xlsx" is ready'
+        ready_msg = 'Your file "FBA-OD-generic.xlsx" is ready to import'
         submitted_msg = 'Your import for file "FBA-OD-generic.xlsx" is submitted'
         notify_path = 'generic_import/FBA-OD-generic.xlsx.ws-ready-payload.json'
         self._test_successful_processing(13, CONTEXT_PATH, SERIES_PATH, notify_path,
