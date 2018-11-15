@@ -29,18 +29,16 @@ export function prepareIt() {
     // Add a handler to auto-download messages with the "download" tag
     // This handler is somewhat special in that it uses the browser to parse the HTML message
     // content to extract the download link
-    menu.addTagAction('download', (message, item) => {
-        console.log('Received download tag');
+    notificationSocket.addTagAction('download', (message) => {
         // only acting if the current document is active and focused
         if (document.hasFocus()) {
-            let downloadLink = item.find('a.download').attr('href');
+            let downloadLink = message.payload.url;
             // and only act if a link is found
             if (downloadLink) {
                 notificationSocket.markRead(message.uuid);
                 window.location.replace(downloadLink);
             }
         }
-        return item;
     });
 
     // as a stopgap, silence menubar-level user notifications resulting from progression

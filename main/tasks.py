@@ -97,7 +97,7 @@ def export_table_task(self, user_id, param_path):
                 'Your export for "{name}" is ready. '
                 '<a href="{url}" class="download">Download the file here</a>.'
             ).format(name=export_name, url=url)
-            notifications.notify(message, tags=('download', ))
+            notifications.notify(message, tags=('download', ), payload={'url': url})
         except Exception as e:
             logger.exception('Failure in export_table_task: %s', e)
             message = _(
@@ -152,7 +152,7 @@ def export_worklist_task(self, user_id, param_path):
                 'Your worklist for "{name}" is ready. '
                 '<a href="{url}" class="download">Download the file here</a>.'
             ).format(name=export_name, url=url)
-            notifications.notify(message, tags=('download', ))
+            notifications.notify(message, tags=('download', ), payload={'url': url})
         except Exception as e:
             logger.exception(f'Failure in export_worklist_task: {e}')
             message = _(

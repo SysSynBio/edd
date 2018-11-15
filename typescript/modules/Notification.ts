@@ -30,7 +30,7 @@ export interface TagAction {
     (message: Message): void;
 }
 
-export interface UITagAction {
+export interface MenuTagAction {
     /**
      * Callback interface for actions to take on a message display item based on its set tags.
      */
@@ -186,7 +186,7 @@ export class NotificationMenu {
     messageList: JQuery;
     emptyMessage: JQuery;
     socket: NotificationSocket;
-    tagActions: {[tag: string]: UITagAction[]};
+    tagActions: {[tag: string]: MenuTagAction[]};
 
     constructor(element: Element, socket: NotificationSocket) {
         let menu = $(element);
@@ -233,8 +233,8 @@ export class NotificationMenu {
         return false;
     }
 
-    addTagAction(tag: string, callback: UITagAction): void {
-        let actions: UITagAction[] = [];
+    addTagAction(tag: string, callback: MenuTagAction): void {
+        let actions: MenuTagAction[] = [];
         if(this.tagActions.hasOwnProperty(tag)) {
             actions = this.tagActions[tag];
         } else {
@@ -251,7 +251,7 @@ export class NotificationMenu {
 
         // inform all subscribers to any tag included in the message
         for (let tag of message.tags) {
-            let tagActions: UITagAction[] =this.tagActions[tag];
+            let tagActions: MenuTagAction[] =this.tagActions[tag];
             console.log('Callbacks: ' + tagActions);
 
             if(!tagActions) {
