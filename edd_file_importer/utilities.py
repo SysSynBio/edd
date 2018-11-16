@@ -68,6 +68,12 @@ class ImportErrorSummary(object):
         subcategory = subcategory if subcategory else 'default'
         self._occurrence_details[subcategory].append(detail_str)
 
+    @staticmethod
+    def json_of(err_type, occurrence, subcategory=None):
+        err = ImportErrorSummary(err_type)
+        err.add_occurrence(occurrence, subcategory)
+        return err.to_json()
+
     def to_json(self):
         # explode error code into UI-centric category + summary
         ui_summary = get_ui_summary(self.err)

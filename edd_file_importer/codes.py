@@ -63,6 +63,8 @@ class FileProcessingCodes(Enum):
 
     ASSAYS_MISSING_TIME = auto()
 
+    UNEXPECTED_ERROR = auto()
+
 
 parse_code_to_ui_detail = {
     # basic file read errors
@@ -185,6 +187,11 @@ processing_code_to_ui_detail = {
         'category': _('Merge not yet supported'),
         'summary': _("Your study already contains data for this protocol.  Merge with existing "
                      "assays isn't supported"),
+    },
+
+    FileProcessingCodes.UNEXPECTED_ERROR: {
+        'category': _('Error'),
+        'summary': _('An unexpected error occurred'),
     }
 }
 

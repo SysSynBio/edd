@@ -80,6 +80,7 @@ export interface Step2Props extends Step2State {
     clearFeedbackFn: any;
     submitCallback: any;
     jumpToStep: any; // injected by StepZilla
+    stepChangeFnCallback: any; // hacky way of giving the Import component access to change steps
 }
 
 // TODO: merge with similar TS class in Study-Lines-Add-Combos.ts
@@ -139,9 +140,8 @@ class BgTaskFeedback extends React.Component<BgProcessingProps, any> {
     render() {
         if (this.props.synchRequestWait || this.props.asynchProcessingWait) {
             return <div className="alert alert-info">
-                        <h4>{this.props.waitTitle}</h4>
+                        <h4>{this.props.waitTitle} <span className="wait step2-wait"/></h4>
                         { this.props.waitMsg }
-                        <span className="wait step2-wait"/>
                         </div>;
         }
         if ((!this.props.errors || !this.props.warnings) ||
@@ -305,7 +305,7 @@ class ErrCategoryAlert extends React.Component<ErrSequenceProps, any> {
     }
 }
 
-// implements step 2 of the import -- file upload
+// implements step 2 of the import -- file upload (and if format is known, submission)
 class Step2 extends React.Component<Step2Props, any> {
     render() {
         const tenMB: number = 1048576;
@@ -342,6 +342,11 @@ class Step2 extends React.Component<Step2Props, any> {
                     </div>;
     }
 
+    componentDidMount() {
+        // pass the parent component a reference to StepZilla's injected jumpToStep() method. Hack!
+        this.props.stepChangeFnCallback(this.props.jumpToStep)
+    }
+
     isValidated() {
         if (!this.props.postUploadStep) {
             this.props.errorCallback({
@@ -376,7 +381,7 @@ export interface Step5Props extends Step5State {
 
 class Step5 extends React.Component<Step5Props, any> {
     render() {
-        const waitMsg = ("You can wait here to monitor its progress, or continue using EDD." +
+        const waitMsg = ("You can wait here to monitor its progress, or continue using EDD. " +
                          "You'll get a message at top right when your import is finished.");
         return <BgTaskFeedback
                         synchRequestWait={this.props.submitWait}
@@ -490,6 +495,8 @@ export interface ImportState extends Step1State, Step2State, Step5State {
     nextButtonText: string;
     importPk: number;
     importUUID: string;
+    jumpToStep: any;
+    autoSubmit: boolean;
 }
 
 // parent component for the import
@@ -518,6 +525,7 @@ class Import extends React.Component<any, ImportState> {
             postUploadStep: 0,
             uploadErrors: [],
             uploadWarnings: [],
+            autoSubmit: false,
 
             /* Step 5 state */
             submitWait: false,
@@ -525,6 +533,8 @@ class Import extends React.Component<any, ImportState> {
             submitSuccess: false,
             submitErrors: [],
             submitWarnings: [],
+
+            jumpToStep: null,
         };
     }
 
@@ -559,7 +569,8 @@ class Import extends React.Component<any, ImportState> {
                                       submitCallback={this.submitImport.bind(this)}
                                       submitSuccess={this.state.submitSuccess}
                                       submitWait={this.state.submitWait}
-                                      jumpToStep={null}/>,
+                                      jumpToStep={null}
+                                      stepChangeFnCallback={this.setJumpToStep.bind(this)}/>,
                 },
                 {
                     name: '3. Interpret',
@@ -608,6 +619,11 @@ class Import extends React.Component<any, ImportState> {
         this.setState(state);
     }
 
+    setJumpToStep(jumpToStepFn: any) {
+        // hacky function to get a reference to StepZilla's injected jumpToStep() function
+        this.setState({'jumpToStep': jumpToStepFn });
+    }
+
     autoSelectProtocolAndFormat(category: Category, state: any) {
         if (category && category.protocols.length === 1) {
             state.protocol = category.protocols[0];
@@ -615,6 +631,9 @@ class Import extends React.Component<any, ImportState> {
 
         if (category.file_formats && category.file_formats.length === 1) {
             state.format = category.file_formats[0];
+            // TODO: can't always auto-submit, but this works as a stopgap.
+            // unknown (step 3) or data-incomplete file formats can't use this option
+            state.autoSubmit = true;
         }
     }
 
@@ -651,6 +670,9 @@ class Import extends React.Component<any, ImportState> {
         }
         this.setState({
             format: format,
+            // TODO: can't always auto-submit, but this works as a stopgap
+            // unknown (step 3) or data-incomplete file formats can't use this option
+            autoSubmit: true,
         });
         this.clearUploadErrors(true);
     }
@@ -739,6 +761,10 @@ class Import extends React.Component<any, ImportState> {
             data.append('file_format', "" + this.state.format.pk);
             data.append('file', file);
             data.append('uuid', this.state.importUUID);
+
+            if(this.state.autoSubmit) {
+                data.append('status', 'Submitted');
+            }
 
             // if we're re-uploading a file after the import is created, but before
             // submission, creating new DB records for re-uploads
@@ -862,6 +888,8 @@ class Import extends React.Component<any, ImportState> {
             return;
         }
 
+        let state: any;
+
         switch (message.payload.status) {
             case 'Created':
                 // handled by the upload request
@@ -876,18 +904,31 @@ class Import extends React.Component<any, ImportState> {
                 });
                 break;
             case  'Ready':
-                this.setState({
+                state = {
                     postUploadStep: 3,
                     uploadWait: false,
                     uploadProcessingWait: false,
                     uploadWarnings: json.warnings || [],
                     nextButtonText: 'Submit Import',  // StepZilla bug?
-                });
+                } as any;
+
+                // if import matched a known, data-complete file format, skip past user feedback
+                // for the "ready" state
+                if(this.state.autoSubmit) {
+                    state.submitProcessingWait = true;
+                }
+                this.setState(state);
+
+                if(this.state.autoSubmit) {
+                    this.state.jumpToStep(3);
+                }
                 break;
             case 'Failed':
-                let state = {
+                state = {
                     uploadWait: false,
                     uploadProcessingWait: false,
+                    submitWait: false,
+                    submitProcessingWait: false,
                 } as any;
 
                 if (this.state.uploadWait || this.state.uploadProcessingWait) {
@@ -899,13 +940,25 @@ class Import extends React.Component<any, ImportState> {
                 }
                 this.setState(state);
                 break;
+            case 'Submitted':
+                this.setState({
+                    submitProcessingWait: true,
+                    submitWait: false,
+                    submitSuccess: false,
+                    submitWarnings: [],
+                    submitErrors: [],
+                    uploadWait: false,
+                    uploadProcessingWait: false,
+                });
+                // jump to the final step to cover cases where
+                this.state.jumpToStep(3);
+                break;
             case 'Complete':
                 this.setState({
                     submitSuccess: true,
                     submitErrors: json.errors || [],
                     submitWarnings: json.warnings || [],
                     submitWait: false,
-
                 });
         }
     }

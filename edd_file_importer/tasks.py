@@ -8,11 +8,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
 import celery
 
-from .codes import FileProcessingCodes
+from .codes import FileProcessingCodes as err_codes
 from .importer.table import ImportFileHandler
 from .models import Import
 from .utilities import (build_err_payload, build_summary_json, compute_required_context,
-                        EDDImportError, ErrorAggregator, MTYPE_GROUP_TO_CLASS, verify_assay_times)
+                        EDDImportError, ErrorAggregator, ImportErrorSummary, MTYPE_GROUP_TO_CLASS,
+                        verify_assay_times)
 from edd.notify.backend import RedisBroker
 from main.importer.table import ImportBroker
 from main.models import MeasurementUnit, MetadataType
@@ -87,12 +88,12 @@ def process_import_file(import_pk, user_pk, requested_status, encoding, initial_
             import_.status = Import.Status.FAILED
             import_.save()
 
+            # add this error to the list if it's not one detected by the import code
+            if not isinstance(e, EDDImportError):
+                handler.add_error(err_codes.UNEXPECTED_ERROR, occurrence=str(e))
+
             # build a payload including any earlier errors
             payload = build_err_payload(handler, import_) if handler else {}
-
-            # add this error to the payload
-            if not isinstance(e, EDDImportError):
-                payload['errors'].append(str(e))
 
             if notify:
                 notify.notify(f'Processing for your import file "{file_name}" has failed',
@@ -138,14 +139,14 @@ def _verify_status_transition(aggregator, import_, requested_status, user, notif
     # ABORTED.  Reject all other status change requests.
     if requested_status != Import.Status.SUBMITTED:
         msg = f'Clients may not request transition to {requested_status}.'
-        return aggregator.raise_error(FileProcessingCodes.ILLEGAL_STATE_TRANSITION,
+        return aggregator.raise_error(err_codes.ILLEGAL_STATE_TRANSITION,
                                       occurrence=msg)
 
     elif import_.status not in (Import.Status.READY, Import.Status.ABORTED,
                                 Import.Status.FAILED):
         msg = (f'Transition from {import_.status} to {Import.Status.SUBMITTED} is not allowed or '
                f'not yet supported')
-        return aggregator.raise_error(FileProcessingCodes.ILLEGAL_STATE_TRANSITION, occurrence=msg)
+        return aggregator.raise_error(err_codes.ILLEGAL_STATE_TRANSITION, occurrence=msg)
 
 
 def submit_import(import_, user_pk, aggregator, notify, asynch):
@@ -178,15 +179,18 @@ def submit_import(import_, user_pk, aggregator, notify, asynch):
         if asynch:
             chain.delay()
         else:
-            chain.apply(throw=True)
-
+            # TODO: investigate whether this is a Celery bug that can be resolved by an upgrade
+            # chain.apply(throw=True)
+            update_import_status(Import.Status.PROCESSING, uuid, user_pk, notify)
+            import_table_task(import_.study_id, user_pk, notify)
+            update_import_status(Import.Status.COMPLETED, uuid, user_pk, notify)
         return True
 
     except celery.exceptions.OperationalError as e:
         import_.status = Import.Status.FAILED
         import_.save()
         logger.exception(f'Exception submitting import {import_.uuid}')
-        aggregator.raise_error(FileProcessingCodes.COMMUNICATION_ERROR, occurrence=str(e))
+        aggregator.raise_error(err_codes.COMMUNICATION_ERROR, occurrence=str(e))
 
 
 @shared_task
@@ -224,7 +228,7 @@ def build_ui_payload_from_cache(import_pk, user_pk):
 
     if found_count != len(parser.mtype_pks):
         missing_pks = {mtype.pk for mtype in unique_mtypes} - parser.mtype_pks
-        aggregator.raise_errors(FileProcessingCodes.MEASUREMENT_TYPE_NOT_FOUND,
+        aggregator.raise_errors(err_codes.MEASUREMENT_TYPE_NOT_FOUND,
                                 occurrences=missing_pks)
 
     # TODO: fold assay times into UI payload to give user helpful feedback as in UI mockup
