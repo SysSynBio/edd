@@ -8,6 +8,7 @@ from django.db import transaction
 from django.db.models import Prefetch
 from django_filters import filters as django_filters, rest_framework as filters
 from django.http import JsonResponse
+from django.utils.translation import ugettext_lazy as _
 from requests import codes
 from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -223,7 +224,7 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin, mixins.Upd
             re_upload = 'file' in request.data
             import_ = models.Import.objects.get(pk=import_pk)
 
-            # reject changes if the import is already submitted
+            # reject changes if the import is processing or already submitted
             response = self._verify_update_status(import_)
             if response:
                 return response
@@ -273,11 +274,15 @@ class StudyImportsViewSet(ImportFilterMixin, mixins.CreateModelMixin, mixins.Upd
                 detail=r)
 
     def _verify_update_status(self, import_):
-        if import_.status not in (Import.Status.SUBMITTED, Import.Status.COMPLETED):
+        if import_.status == Import.Status.PROCESSING:
+            msg = ('Changes are not permitted while the import is processing.  Wait until'
+                   'processing is complete.')
+        elif import_.status in (Import.Status.SUBMITTED, Import.Status.COMPLETED):
+            msg = 'Modifications are not allowed once imports reach the {import_.status} state'
+        else:
             return None
 
-        msg = 'Modifications are not allowed once imports reach the {import_.status} state'
-        return _build_simple_err_response('Invalid state', msg, codes.internal_server_error)
+        return _build_simple_err_response('Invalid state', msg, codes.bad_request)
 
     def _reprocess_file(self, import_, request, reupload, user_pk):
         process_file = reupload or self._test_context_changed(request, import_)

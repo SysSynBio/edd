@@ -809,6 +809,7 @@ class Import extends React.Component<any, ImportState> {
         if (stepIndex === 3 &&
             (this.state.submitErrors && this.state.submitErrors.length === 0) &&
             (!this.state.submitWait) &&
+            (!this.state.submitProcessingWait) &&
             (!this.state.submitSuccess)) {
             this.submitImport();
         }
@@ -953,12 +954,13 @@ class Import extends React.Component<any, ImportState> {
                 // jump to the final step to cover cases where
                 this.state.jumpToStep(3);
                 break;
-            case 'Complete':
+            case 'Completed':
                 this.setState({
                     submitSuccess: true,
                     submitErrors: json.errors || [],
                     submitWarnings: json.warnings || [],
                     submitWait: false,
+                    submitProcessingWait: false,
                 });
         }
     }
@@ -990,6 +992,14 @@ class Import extends React.Component<any, ImportState> {
 
         notificationSocket.addTagAction('import-status-update',
             this.importMessageReceived.bind(this));
+
+        // silence notifications from the legacy import while this page is visible.
+        // the new import's UI will provide feedback, so displaying notifications in the menu
+        // bar is only useful when user has navigated away from this page
+        notificationSocket.addTagAction('legacy-import-message', (message) => {
+            notificationSocket.markRead(message.uuid);
+        });
+
     }
 }
 

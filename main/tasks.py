@@ -236,7 +236,7 @@ def import_table_task(self, study_id, user_id, import_id):
             message = _(
                 f'Finished import to {study.name}: {total_added} added and {total_updated} '
                 f'updated measurements.')
-            notifications.notify(message)
+            notifications.notify(message, tags=('legacy-import-message',))
             notifications.mark_read(self.request.id)
 
         except Exception as e:
@@ -247,7 +247,7 @@ def import_table_task(self, study_id, user_id, import_id):
             message = _(
                 f'Failed import to {study}, EDD encountered this problem: {e}'
             ).format(study=study.name, ex=e)
-            notifications.notify(message)
+            notifications.notify(message, tags=('legacy-import-message',))
             notifications.mark_read(self.request.id)
             raise RuntimeError(_(f'Failed import to {study.name}, EDD encountered this problem: '
                                  f'{e}'))
