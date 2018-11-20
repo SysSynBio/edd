@@ -16,6 +16,21 @@
   },
   {
     "model": "edd_file_importer.baseimportmodel",
+    "pk": 6,
+    "fields": {
+      "name": "Skyline",
+      "description": "",
+      "active": true,
+      "created": 1,
+      "updated": 1,
+      "uuid": "b0296f42-87f7-4978-8b4d-8a54e24f6787",
+      "updates": [
+        1
+      ]
+    }
+  },
+  {
+    "model": "edd_file_importer.baseimportmodel",
     "pk": 1,
     "fields": {
       "name": "Proteomics",
@@ -85,6 +100,16 @@
     }
   },
   {
+    "model": "edd_file_importer.importformat",
+    "pk": 6,
+    "fields": {
+      "parser_class": "edd_file_importer.parsers.table.SkylineParser",
+      "updates": [
+        1
+      ]
+    }
+  },
+  {
     "model": "edd_file_importer.importcategory",
     "pk": 1,
     "fields": {
@@ -93,7 +118,7 @@
       "updates": [
         1
       ],
-      "protocols": []
+      "protocols": [1]
     }
   },
   {
@@ -129,7 +154,7 @@
       "updates": [
         1
       ],
-      "protocols": []
+      "protocols": [3]
     }
   },
   {
@@ -138,7 +163,7 @@
     "fields": {
       "format": 5,
       "category": 1,
-      "display_order": 1
+      "display_order": 2
     }
   },
   {
@@ -147,7 +172,7 @@
     "fields": {
       "format": 5,
       "category": 2,
-      "display_order": 1
+      "display_order": 2
     }
   },
   {
@@ -165,6 +190,24 @@
     "fields": {
       "format": 5,
       "category": 4,
+      "display_order": 2
+    }
+  },
+  {
+    "model": "edd_file_importer.categoryformat",
+    "pk": 5,
+    "fields": {
+      "format": 6,
+      "category": 1,
+      "display_order": 1
+    }
+  },
+  {
+    "model": "edd_file_importer.categoryformat",
+    "pk": 6,
+    "fields": {
+      "format": 6,
+      "category": 2,
       "display_order": 1
     }
   },

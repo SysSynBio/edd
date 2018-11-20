@@ -3,11 +3,13 @@
   "measurement_name": "CID:440917",
   "metadata_by_name": null,
   "units_name": "g/L",
-  "data": [8,1]
+  "data": [8,1],
+  "src_id": "row 3"
 }, {
   "line_or_assay_name": "B",
   "measurement_name": "CID:5288798",
   "metadata_by_name": null,
   "units_name": "g/L",
-  "data": [24, 2]
+  "data": [24, 2],
+  "src_id": "row 5"
 }]

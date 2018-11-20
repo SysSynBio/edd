@@ -12,7 +12,7 @@ from openpyxl import load_workbook
 from openpyxl.utils.cell import get_column_letter
 from six import string_types
 
-from ..codes import FileParseCodes
+from ..codes import FileParseCodes as err_codes
 from ..utilities import ErrorAggregator, ParseError
 
 logger = logging.getLogger(__name__)
@@ -153,13 +153,13 @@ class TableParser(object):
         wb = load_workbook(BytesIO(file.read()), read_only=True, data_only=True)
         logger.debug('In parse(). workbook has %d sheets' % len(wb.worksheets))
         if not wb.worksheets:
-            self.aggregator.add_error(FileParseCodes.EMPTY_FILE)
+            self.aggregator.add_error(err_codes.EMPTY_FILE)
             raise ParseError(self.aggregator)
         elif len(wb.worksheets) > 1:
             sheet_name = wb.sheetnames[0]
             msg = (f'Only the first sheet in your workbook, "{sheet_name}", was processed.  '
                    f'All other sheets will be ignored.')
-            self.aggregator.add_warning(FileParseCodes.IGNORED_WORKSHEET,
+            self.aggregator.add_warning(err_codes.IGNORED_WORKSHEET,
                                         occurrence=msg)
         worksheet = wb.worksheets[0]
         return self._parse(worksheet.iter_rows())
@@ -185,7 +185,7 @@ class TableParser(object):
         """
         # Clear out state from any previous use of this parser instance
         self.column_layout = None
-        obs_required_cols = set()
+        obs_required_cols = collections.defaultdict(list)
 
         # loop over rows
         for row_index, cols_list in enumerate(rows_iter):
@@ -207,7 +207,7 @@ class TableParser(object):
         # it's badly formatted
         if not self.column_layout:
             logger.debug(f'Required columns were not read {self.req_cols}')
-            self.aggregator.add_error(FileParseCodes.MISSING_REQ_COL_HEADER,
+            self.aggregator.add_error(err_codes.MISSING_REQ_COL_HEADER,
                                       ', '.join(self.req_cols))
 
         if self.aggregator.errors:
@@ -237,14 +237,13 @@ class TableParser(object):
             to read a row in poorly-formatted files.
         :return: the column layout if required columns were found, or None otherwise
         """
-        layout = {}  # maps col name to col index
+        layout = {}  # maps col name to col index for a valid layout
         importer = self.aggregator
-        req_cols_set = set(self.req_cols)
 
         ###########################################################################################
         # loop over columns in the current row
         ###########################################################################################
-        obs_opt_cols = set()
+        obs_opt_cols = collections.defaultdict(list)
         non_header_vals = []
         for col_index, cell in enumerate(row):
             cell_content = self._raw_cell_value(cell)
@@ -269,21 +268,23 @@ class TableParser(object):
                                    obs_required_cols, obs_opt_cols, layout)
 
         # if at least the required columns were found, consider this a successful read
-        if obs_required_cols == req_cols_set:
+        obs_req_cols_set = set(obs_required_cols.keys())
+        req_cols_set = set(self.req_cols)
+        if obs_req_cols_set == req_cols_set:
             for bad_val in non_header_vals:
-                importer.add_warning(FileParseCodes.COLUMN_IGNORED, occurrence=bad_val)
+                importer.add_warning(err_codes.COLUMN_IGNORED, occurrence=bad_val)
             logger.debug(f'Found all {len(self.req_cols)} required column headers in row '
                          f'{row_index+1}')
             return layout
 
         # if some--but not all--required columns were found in this row, consider this a
         # poorly-formatted file
-        if obs_required_cols:
-            missing_cols = req_cols_set.difference(obs_required_cols)
+        if obs_req_cols_set:
+            missing_cols = req_cols_set.difference(obs_required_cols.keys())
             logger.debug(f'Required column headers missing: {missing_cols}')
-            importer.raise_errors(FileParseCodes.MISSING_REQ_COL_HEADER, occurrences=missing_cols)
+            importer.raise_errors(err_codes.MISSING_REQ_COL_HEADER, occurrences=missing_cols)
         else:
-            importer.add_warnings(FileParseCodes.IGNORED_VALUE_BEFORE_HEADERS, non_header_vals)
+            importer.add_warnings(err_codes.IGNORED_VALUE_BEFORE_HEADERS, non_header_vals)
 
         return None
 
@@ -298,37 +299,51 @@ class TableParser(object):
         :param obs_opt_cols: a set of optional columns headers already observed in the row
         :param layout: a dict that maps col name to the column index where it was observed
         """
+
+        # test whether col name matches the pattern for any required or optional column
         req_name = self._parse_col_header(self.req_col_patterns, self.req_cols, row_index,
                                           col_index, cell_content)
         opt_name = self._parse_col_header(self.opt_col_patterns, self.opt_cols, row_index,
                                           col_index, cell_content)
-        agg = self.aggregator
+
+        # process it according to which pattern it matched
         if req_name:
             logger.debug(f'Found required column "{req_name}"'
                          f'({self.cell_coords(row_index, col_index)})')
 
-            if req_name in obs_req_cols:
-                col_desc = self.cell_content_desc(cell_content, row_index, col_index)
-                agg.add_error(FileParseCodes.DUPLICATE_COL_HEADER, occurrence=col_desc)
-            else:
-                obs_req_cols.add(req_name)
-                layout[req_name] = col_index
-                if req_name != cell_content:
-                    self.obs_col_names[req_name] = cell_content
+            self._process_col_helper(layout, req_name, obs_req_cols, cell_content,
+                                     row_index, col_index)
         elif opt_name:
             logger.info(f'Found optional column "{opt_name}".'
                         f'({self.cell_coords(row_index, col_index)})')
-            if opt_name in obs_opt_cols:
-                col_desc = self.cell_content_desc(cell_content, row_index, col_index)
-                agg.add_error(FileParseCodes.DUPLICATE_COL_HEADER, occurrence=col_desc)
-            else:
-                obs_opt_cols.add(opt_name)
-                layout[opt_name] = col_index
-                if cell_content != opt_name:
-                    self.obs_col_names[opt_name] = cell_content
+            self._process_col_helper(layout, opt_name, obs_opt_cols, cell_content,
+                                     row_index, col_index)
         else:
             col_desc = self.cell_content_desc(cell_content, row_index, col_index)
             non_header_vals.append(col_desc)
+
+    def _process_col_helper(self, layout, canonical_name, obs_cols_dict, cell_content, row_index,
+                            col_index):
+        agg = self.aggregator
+
+        # if column name is already observed, build a helpful error message
+        if canonical_name in obs_cols_dict:
+            # if this is the first duplicate, also mention the initial occurrence
+            cols = obs_cols_dict[canonical_name]
+            if len(cols) == 1:
+                col_desc = self.cell_content_desc(cell_content, row_index, cols[0])
+                agg.add_error(err_codes.DUPLICATE_COL_HEADER, occurrence=col_desc)
+
+            col_desc = self.cell_content_desc(cell_content, row_index, col_index)
+            agg.add_error(err_codes.DUPLICATE_COL_HEADER, occurrence=col_desc)
+
+        # otherwise, save additional state re: where we found it
+        else:
+            layout[canonical_name] = col_index
+            if canonical_name != cell_content:
+                self.obs_col_names[canonical_name] = cell_content
+
+        obs_cols_dict[canonical_name].append(col_index)
 
     def _raw_cell_value(self, cell):
         """
@@ -406,7 +421,7 @@ class TableParser(object):
         # if value is missing, but required, log an error
         if val is None:
             if col_name not in self.value_opt_cols:
-                importer.add_error(FileParseCodes.MISSING_REQ_VALUE,
+                importer.add_error(err_codes.MISSING_REQ_VALUE,
                                    subcategory=self.obs_col_name(col_name),
                                    occurrence=self.cell_coords(row_index, col_index))
             return val
@@ -414,7 +429,7 @@ class TableParser(object):
         # if observed value is a string,
         if isinstance(val, string_types):
             if (not val) and col_name not in self.value_opt_cols:
-                importer.add_error(FileParseCodes.MISSING_REQ_VALUE,
+                importer.add_error(err_codes.MISSING_REQ_VALUE,
                                    subcategory=self.obs_col_name(col_name),
                                    occurrence=self.cell_coords(row_index, col_index))
                 return None
@@ -429,7 +444,7 @@ class TableParser(object):
         # assumption (for now) is that value is numeric. should work for both vector (
         # 1-dimensional) and numeric inputs
         if not isinstance(val, numbers.Number):
-            importer.add_error(FileParseCodes.INVALID_VALUE,
+            importer.add_error(err_codes.INVALID_VALUE,
                                subcategory=self.obs_col_name(col_name),
                                occurrence=self.cell_coords(row_index, col_index))
 
@@ -439,7 +454,7 @@ class TableParser(object):
         try:
             return decimal.Decimal(token)
         except (decimal.InvalidOperation, decimal.Clamped):
-            self.aggregator.add_error(FileParseCodes.INVALID_VALUE,
+            self.aggregator.add_error(err_codes.INVALID_VALUE,
                                       subcategory=self.obs_col_name(col_name),
                                       occurrence=self.cell_content_desc(token, row_index,
                                                                         col_index))
@@ -493,7 +508,7 @@ class TableParser(object):
 
     def _verify_required_val(self, value, row_index, col_index, col_title):
         if value is None or (isinstance(value, string_types) and not value.strip()):
-            self.aggregator.add_error(FileParseCodes.MISSING_REQ_VALUE, subcategory=col_title,
+            self.aggregator.add_error(err_codes.MISSING_REQ_VALUE, subcategory=col_title,
                                       occurrence=self.cell_coords(row_index, col_index))
 
 
@@ -522,6 +537,20 @@ class MeasurementParseRecord(object):
         # data source for this measurement...often a row num if input is Excel
         self.src_id = kwargs.get('src_id', None)
 
+    def __eq__(self, other):
+        return (self.line_or_assay_name == self.line_or_assay_name and
+                self.mtype_name == other.mtype_name and
+                self.data == other.data and
+                self.metadata_by_name == other.metadata_by_name and
+                self.units_name == other.units_name)
+
+    def __str__(self):
+        return (f'MeasurementParseRecord(loa_name={self.line_or_assay_name}, '
+                f'mtype_name= {self.mtype_name}, data={self.data} {self.units_name}')
+
+    def __repr__(self):
+        return str(self)
+
     def to_json(self):
         return {
             "line_or_assay_name": self.line_or_assay_name,
@@ -529,6 +558,7 @@ class MeasurementParseRecord(object):
             "metadata_by_name": self.metadata_by_name,
             "units_name": self.units_name,
             "data": self.data,
+            "src_id": self.src_id,
         }
 
 
@@ -630,3 +660,92 @@ class GenericImportParser(TableParser):
         Partial units should be treated as a parse error.
         """
         return True  # overrides default False.  Units is a required column in this format
+
+
+class SkylineParser(TableParser):
+
+    def __init__(self, aggregator=None):
+        super(SkylineParser, self).__init__(
+            req_cols=['Replicate Name', 'Protein Name', 'Peptide', 'Total Area'],
+            numeric_cols=['Total Area'],
+            aggregator=aggregator
+        )
+        self.unique_units = ('counts',)  # implied by format, & "counts" is in EDD's bootstrap.json
+        self.unique_mtypes = set()
+        self.unique_line_or_assay_names = set()
+        self.summed_areas = collections.defaultdict(decimal.Decimal)
+        self.area_sources = collections.defaultdict(list)  # maps (loa, meas) => row # list
+        self._measurements = []
+
+    def _parse_row(self, cells_list, row_index):
+        loa_name = self._get_raw_value(cells_list, 'Replicate Name')
+        protein_id = self._get_raw_value(cells_list, 'Protein Name')
+        total_area_str = self._get_raw_value(cells_list, 'Total Area')
+
+        # skip the row entirely if no in-use cell has content
+        any_value = self._has_value(loa_name, protein_id, total_area_str)
+        if not any_value:
+            return None
+
+        loa_name = self._parse_and_verify_val(loa_name, row_index, 'Replicate Name')
+        protein_id = self._parse_and_verify_val(protein_id, row_index, 'Protein Name')
+        total_area = self._parse_and_verify_val(total_area_str, row_index, 'Total Area')
+
+        if total_area:
+            id = (loa_name, protein_id)
+            self.summed_areas[id] += total_area
+            self.area_sources[id].append(str(row_index+1))
+            self.unique_mtypes.add(protein_id)
+            self.unique_line_or_assay_names.add(loa_name)
+
+    @property
+    def mtypes(self):
+        return self.unique_mtypes
+
+    @property
+    def line_or_assay_names(self):
+        return self.unique_line_or_assay_names
+
+    @property
+    def units(self):
+        return self.unique_units
+
+    @property
+    def series_data(self):
+        if self._measurements:
+            return self._measurements
+
+        time = None  # this format doesn't include time
+        for (line_or_assay_name, protein_id), area in self.summed_areas.items():
+            src_rows = self.area_sources[(line_or_assay_name, protein_id)]
+            src_rows_str = ', '.join(src_rows)
+            src = f'rows {src_rows_str}' if len(src_rows) > 1 else f'row {src_rows_str}'
+
+            m = MeasurementParseRecord(
+                line_or_assay_name=line_or_assay_name,
+                mtype_name=protein_id,
+                data=[time, area],
+                units_name='counts',
+                src_id=src
+            )
+            self._measurements.append(m)
+
+        return self._measurements
+
+    @property
+    def measurement_count(self):
+        return len(self.summed_areas)
+
+    @property
+    def has_all_times(self):
+        """
+        Tests whether the parsed file contained time values for all measurements.
+        """
+        return False  # Time not included as part of this file format
+
+    def has_all_units(self):
+        """
+        Tests whether the parsed file contained units for all measurements
+        Partial units should be treated as a parse error.
+        """
+        return True  # overrides default False.  'counts' Units implied by use of this format
