@@ -6,6 +6,7 @@ Views dealing with displaying and manipulating Study records.
 import collections
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
@@ -391,6 +392,7 @@ class StudyLinesView(StudyDetailBaseView):
             new_assay=edd_forms.AssayForm(prefix="assay", study=study),
             new_line=edd_forms.LineForm(prefix="line", study=study),
             showinglines=True,
+            showImportPrototype="edd_file_importer" in settings.INSTALLED_APPS,
             writable=self.get_object().user_can_write(self.request.user),
         )
         return context
