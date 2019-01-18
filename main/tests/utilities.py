@@ -33,6 +33,7 @@ from main.models import (
     CarbonSource,
     Line,
     MetadataType,
+    Protocol,
     Strain,
     Study,
 )
@@ -58,15 +59,14 @@ class CombinatorialCreationTests(TestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.system_user = User.objects.get(username='system')
-        cls.metabolomics = factory.ProtocolFactory(
-            name="Metabolomics", owned_by=cls.system_user
+        cls.metabolomics, _ = Protocol.objects.get_or_create(
+            name='Metabolomics', owned_by=cls.system_user
         )
-        cls.targeted_proteomics = factory.ProtocolFactory(
+        cls.targeted_proteomics, _ = Protocol.objects.get_or_create(
             name="Targeted Proteomics", owned_by=cls.system_user
         )
         cls.media_mtype, _ = MetadataType.objects.get_or_create(
-            type_name='Media',
-            for_context=MetadataType.LINE,
+            type_name='Media', for_context=MetadataType.LINE,
         )
 
         # query the database and cache MetadataTypes, Protocols, etc that should be static
