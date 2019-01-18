@@ -79,7 +79,7 @@ def process_import_file(import_pk, user_pk, requested_status, initial_upload):
 
         # if client requested a status transition, likely to SUBMITTED, verify
         # that import state is consistent with attempting it. Raises EDDImportError.
-        attempt_status_transition(import_, requested_status, user, notify=notify, async_=False,
+        attempt_status_transition(import_, requested_status, user, notify=notify, run_async=False,
                                   aggregator=handler)
 
     except (EDDImportError, ObjectDoesNotExist, RuntimeError) as e:
@@ -114,30 +114,31 @@ def process_import_file(import_pk, user_pk, requested_status, initial_upload):
         raise e
 
 
-def attempt_status_transition(import_, requested_status, user, async_, notify=None,
+def attempt_status_transition(import_, requested_status, user, run_async, notify=None,
                               aggregator=None):
     """
     Attempts a status transition to the client-requested status.  Does nothing if no status
     transition is requested, raises an EDDImportError if import status doesn't match the
-    requested transition, or schedules a Celery task to finilize the import
-    :param async_ True to attempt the import asynchronously in a separate Celery task, or False
-    to run it synchronously.
+    requested transition, or schedules a Celery task to finilize the import.
+
+    :param run_async True to attempt the import asynchronously in a separate Celery task,
+        or False to run it synchronously.
     :raises EDDImportError if the import isn't in the correct state to fulfill the requested
-    state transition
+        state transition
     :raises celery.exceptions.OperationalError if an error occurred while submitting the Celery
-    task to finalize the import
+        task to finalize the import
     """
     if not aggregator:
         aggregator = ErrorAggregator()
 
     # if client requested a status transition, verify that state is correct to perform it
-    _verify_status_transition(aggregator, import_, requested_status, user, notify, async_)
+    _verify_status_transition(aggregator, import_, requested_status, user, notify)
 
     if requested_status == Import.Status.SUBMITTED:
-        submit_import(import_, user.pk, aggregator, notify, async_)
+        submit_import(import_, user.pk, aggregator, notify, run_async)
 
 
-def _verify_status_transition(aggregator, import_, requested_status, user, notify, asynch):
+def _verify_status_transition(aggregator, import_, requested_status, user, notify):
     if requested_status is None:
         return
 
@@ -155,7 +156,7 @@ def _verify_status_transition(aggregator, import_, requested_status, user, notif
         return aggregator.raise_error(err_codes.ILLEGAL_STATE_TRANSITION, occurrence=msg)
 
 
-def submit_import(import_, user_pk, aggregator, notify, async_):
+def submit_import(import_, user_pk, aggregator, notify, run_async):
     """
     Schedules a Celery task to do the heavy lifting to finish the import data cached in Redis
     """
@@ -182,7 +183,7 @@ def submit_import(import_, user_pk, aggregator, notify, async_):
                              mark_import_complete)
 
         # run the tasks, either synchronously or asynchronously
-        if async_:
+        if run_async:
             chain.delay()
         else:
             # disable celery's check on calling tasks synchronously from other tasks...we aren't
