@@ -33,7 +33,6 @@ from main.models import (
     CarbonSource,
     Line,
     MetadataType,
-    Protocol,
     Strain,
     Study,
 )
@@ -57,14 +56,13 @@ class CombinatorialCreationTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        super().setUpTestData()
         cls.system_user = User.objects.get(username='system')
-        cls.metabolomics, _ = Protocol.objects.get_or_create(
-            name='Metabolomics',
-            owned_by=cls.system_user,
+        cls.metabolomics = factory.ProtocolFactory(
+            name="Metabolomics", owned_by=cls.system_user
         )
-        cls.targeted_proteomics, _ = Protocol.objects.get_or_create(
-            name='Targeted Proteomics',
-            owned_by=cls.system_user,
+        cls.targeted_proteomics = factory.ProtocolFactory(
+            name="Targeted Proteomics", owned_by=cls.system_user
         )
         cls.media_mtype, _ = MetadataType.objects.get_or_create(
             type_name='Media',
@@ -81,7 +79,8 @@ class CombinatorialCreationTests(TestCase):
         # TODO: reinstate once assay generation / naming is implemented for the combinatorial GUI
         cls._OMIT_ASSAYS_FROM_TEST = True
 
-    def setup(self):
+    def setUp(self):
+        super().setUp()
         self.cache.clear_import_specific_cache()
 
     def test_json_schema_valid(self):
